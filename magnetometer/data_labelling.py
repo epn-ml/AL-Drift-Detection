@@ -1,6 +1,7 @@
 # %% some imports
 
 import glob
+import numpy as np
 import pandas as pd
 
 # %% loading the labels
@@ -95,3 +96,22 @@ df_train_minute_labelled_description = df_train_minute_labelled.groupby(
     ['labels']).describe(include='all')
 df_train_minute_labelled_description.to_excel(
     'df_train_minute_labelled_description.xlsx')
+
+# %% split data into chunks and shuffle them
+
+
+def split_df(df, window_size):
+
+    chunks = list()
+    num_chunks = len(df) // window_size + (1 if len(df) % window_size else 0)
+
+    for i in range(num_chunks):
+        chunks.append(df[i*window_size:(i+1)*window_size])
+
+    return chunks
+
+
+df_train_split = split_df(df_train, 10)
+np.random.shuffle(df_train_split)
+
+# %%
