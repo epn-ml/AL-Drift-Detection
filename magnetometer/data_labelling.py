@@ -51,6 +51,8 @@ labels_new = pd.DataFrame(labels_new_data,
                           columns=['Orbit', 'SK outer in', 'SK inner in', 'MP outer in', 'MP inner in',
                                    'MP inner out', 'MP outer out', 'SK inner out', 'SK outer out', 9, 10])
 
+labels_new.to_csv(path + 'messenger-0011_-4104_labelled.csv', index=False)
+
 # %% loading the training data (50 orbits)
 
 all_files = glob.glob(path + 'orbits/*.csv')
