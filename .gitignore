@@ -1,2 +1,3 @@
 data/orbits/*.csv
-magnetometer/*_labelled.csv
+magnetometer/*.csv
+magnetometer/*.xlsx
