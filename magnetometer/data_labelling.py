@@ -8,8 +8,7 @@ import pandas as pd
 # %% loading the labels
 
 path = '../data/'
-labels = pd.read_csv(path + 'messenger-0000_-0200_labelled.csv')
-labels_new_raw = pd.read_csv(path + 'jgra55678-sup-0002-table_si-s01-ts.csv')
+labels = pd.read_csv(path + 'messenger-0011_-4104_labelled.csv')
 
 # %% setting datatype right
 
@@ -18,40 +17,6 @@ labels_date_list = ['SK outer in', 'SK inner in', 'MP outer in', 'MP inner in',
 
 for date_feat in labels_date_list:
     labels[date_feat] = pd.to_datetime(labels[date_feat])
-
-labels_new_raw['Timestamp'] = pd.to_datetime(labels_new_raw['Timestamp'])
-
-# %% reformat new labels
-
-
-def findOrbit(data, o):
-    index = [i for i, row in enumerate(data) if row[0] == o]
-
-    if len(index) > 0:
-        return index[0]
-
-    return -1
-
-
-labels_new_data = list()
-
-for _, row in labels_new_raw.iterrows():
-    o = row['Orbit number']
-    b = row['Boundary number']
-    t = row['Timestamp']
-    i = findOrbit(labels_new_data, o)
-
-    if i == -1:
-        labels_new_data.append(
-            [o, pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT])
-
-    labels_new_data[i][b] = t
-
-labels_new = pd.DataFrame(labels_new_data,
-                          columns=['Orbit', 'SK outer in', 'SK inner in', 'MP outer in', 'MP inner in',
-                                   'MP inner out', 'MP outer out', 'SK inner out', 'SK outer out', 9, 10])
-
-labels_new.to_csv(path + 'messenger-0011_-4104_labelled.csv', index=False)
 
 # %% loading the training data (50 orbits)
 
@@ -112,8 +77,8 @@ def labeller(df_train, labels):
     return df_train
 
 
-df_train_labelled = labeller(df_train, labels_new)
-df_train_minute_labelled = labeller(df_train_minute, labels_new)
+df_train_labelled = labeller(df_train, labels)
+df_train_minute_labelled = labeller(df_train_minute, labels)
 
 # %% df_train to_csv
 
@@ -149,5 +114,3 @@ def split_df(df, window_size):
 
 df_train_split = split_df(df_train, 10)
 np.random.shuffle(df_train_split)
-
-# %%
