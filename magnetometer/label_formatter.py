@@ -13,7 +13,7 @@ labels_new_raw['Timestamp'] = pd.to_datetime(labels_new_raw['Timestamp'])
 
 # %% reformat new labels
 
-labels_new_data = dict()
+labels_new_data = {}
 offset = -11
 
 for _, row in labels_new_raw.iterrows():
