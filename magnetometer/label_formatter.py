@@ -13,32 +13,29 @@ labels_new_raw['Timestamp'] = pd.to_datetime(labels_new_raw['Timestamp'])
 
 # %% reformat new labels
 
-
-def findOrbit(data, o):
-    index = [i for i, row in enumerate(data) if row[0] == o]
-
-    if len(index) > 0:
-        return index[0]
-
-    return -1
-
-
-labels_new_data = list()
+labels_new_data = dict()
+offset = -11
 
 for _, row in labels_new_raw.iterrows():
-    o = row['Orbit number']
-    b = row['Boundary number']
+    o = row['Orbit number'] + offset
+    b = row['Boundary number'] - 1
     t = row['Timestamp']
-    i = findOrbit(labels_new_data, o)
 
-    if i == -1:
-        labels_new_data.append(
-            [o, pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT])
+    if o == 949:
+        offset -= 8
 
-    labels_new_data[i][b] = t
+    if o == 1024:
+        offset -= 1
 
-labels_new = pd.DataFrame(labels_new_data,
-                          columns=['Orbit', 'SK outer in', 'SK inner in', 'MP outer in', 'MP inner in',
-                                   'MP inner out', 'MP outer out', 'SK inner out', 'SK outer out', 9, 10])
+    if not o in labels_new_data:
+        labels_new_data[o] = [pd.NaT] * 8
 
-labels_new.to_csv(path + 'messenger-0011_-4104_labelled.csv', index=False)
+    # boundaries 9 and 10 are ignored
+    if b < 8:
+        labels_new_data[o][b] = t.strftime('%Y-%m-%d %X')
+
+labels_new = pd.DataFrame.from_dict(labels_new_data, orient='index',
+                                    columns=['SK outer in', 'SK inner in', 'MP outer in', 'MP inner in',
+                                             'MP inner out', 'MP outer out', 'SK inner out', 'SK outer out'])
+labels_new.index.name = 'Orbit'
+labels_new.to_csv(path + 'messenger-4084_labelled.csv')
