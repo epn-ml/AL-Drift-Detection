@@ -177,7 +177,13 @@ def split_df(df, window_size):
     return chunks
 
 
-df_train_split = split_df(df_train_selection, 10)
-np.random.shuffle(df_train_split)
+def shuffle_df(df_list):
+
+    np.random.shuffle(df_list)
+
+    return pd.concat(df_list)
+
+
+df_train_split = shuffle_df(split_df(df_train_selection, 10))
 
 # %%
