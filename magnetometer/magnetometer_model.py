@@ -51,35 +51,34 @@ df_test = select_features(df_test, features)
 
 # %% truncate data
 
-df_train = df_train[:10**(len(str(len(df_train)))-1)]
-df_test = df_test[:10**(len(str(len(df_test)))-1)]
+# df_train = df_train[:10**(len(str(len(df_train)))-1)]
+# df_test = df_test[:10**(len(str(len(df_test)))-1)]
 
 # %% split input and output data
 
-x_train = df_train.drop(['LABEL'], axis=1).values.reshape(
-    100, -1, len(features))
-x_test = df_test.drop(['LABEL'], axis=1).values.reshape(100, -1, len(features))
-y_train = df_train[['LABEL']].values.reshape(100, -1, 1)
-y_test = df_test[['LABEL']].values.reshape(100, -1, 1)
+x_train = df_train.drop(['LABEL'], axis=1).values.reshape(-1, len(features), 1)
+x_test = df_test.drop(['LABEL'], axis=1).values.reshape(-1, len(features), 1)
+y_train = df_train[['LABEL']].values.reshape(-1)
+y_test = df_test[['LABEL']].values.reshape(-1)
 
 # %% set up the model
 
 model = keras.Sequential()
-model.add(layers.Conv1D(16, 3, padding='same', activation='relu',
-          batch_input_shape=x_train[1:].shape))
-model.add(layers.MaxPooling1D(2))
-model.add(layers.Conv1D(32, 3, activation='relu'))
-model.add(layers.MaxPooling1D(2))
-model.add(layers.Conv1D(64, 3, activation='relu'))
+model.add(layers.Conv1D(64, 2, activation='relu',
+          input_shape=x_train.shape[1:]))
+model.add(layers.Dense(16, activation='relu'))
+model.add(layers.MaxPooling1D())
 model.add(layers.Flatten())
-model.add(layers.Dense(64, activation='relu'))
 model.add(layers.Dense(5, activation='softmax'))
+
+# %% fit and evaluate the model
 
 model.compile(loss=keras.losses.SparseCategoricalCrossentropy(),
               optimizer='adam',
               metrics=['accuracy'])
 
-model.fit(x_train, y_train, batch_size=64, epochs=5, verbose=2)
-_, acc = model.evaluate(x_test, y_test, batch_size=64, verbose=2)
+model.fit(x_train, y_train, batch_size=16, epochs=10, verbose=2)
+acc = model.evaluate(x_test, y_test, verbose=2)
+print('Loss:', acc[0], ' Accuracy:', acc[1])
 
 # %%
