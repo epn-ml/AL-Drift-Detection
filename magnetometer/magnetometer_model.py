@@ -49,6 +49,11 @@ features = ['X', 'Y', 'Z', 'COSALPHA']
 df_train = select_features(df_train, features)
 df_test = select_features(df_test, features)
 
+# %% normalize data
+
+df_train[features] = df_train[features].apply(lambda x: (x - x.min()) / (x.max() - x.min()))
+df_test[features] = df_test[features].apply(lambda x: (x - x.min()) / (x.max() - x.min()))
+
 # %% truncate data
 
 # df_train = df_train[:10**(len(str(len(df_train)))-1)]
