@@ -2,7 +2,9 @@
 
 import glob
 
+import matplotlib.pyplot as plt
 import pandas as pd
+from sklearn.metrics import confusion_matrix
 from tensorflow import keras
 from tensorflow.keras import layers
 
@@ -45,14 +47,17 @@ def select_features(df, features):
     return df.drop(drop_col, axis=1)
 
 
-features = ['X', 'Y', 'Z', 'COSALPHA']
+features = ['X_MSO', 'Y_MSO', 'Z_MSO', 'RHO_DIPOLE',
+            'X', 'Y', 'Z', 'COSALPHA', 'EXTREMA']
 df_train = select_features(df_train, features)
 df_test = select_features(df_test, features)
 
 # %% normalize data
 
-df_train[features] = df_train[features].apply(lambda x: (x - x.min()) / (x.max() - x.min()))
-df_test[features] = df_test[features].apply(lambda x: (x - x.min()) / (x.max() - x.min()))
+df_train[features] = df_train[features].apply(
+    lambda x: (x - x.min()) / (x.max() - x.min()))
+df_test[features] = df_test[features].apply(
+    lambda x: (x - x.min()) / (x.max() - x.min()))
 
 # %% truncate data
 
@@ -82,8 +87,33 @@ model.compile(loss=keras.losses.SparseCategoricalCrossentropy(),
               optimizer='adam',
               metrics=['accuracy'])
 
-model.fit(x_train, y_train, batch_size=16, epochs=10, verbose=2)
+history = model.fit(x_train, y_train, batch_size=16, epochs=100, verbose=2)
 acc = model.evaluate(x_test, y_test, verbose=2)
+
+# %% plot
+
+plt.plot(history.history['accuracy'])
+# plt.plot(history.history['val_accuracy'])
+plt.title('model accuracy')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.show()
+
+plt.plot(history.history['loss'])
+# plt.plot(history.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.show()
+
+# %% output
+
 print('Loss:', acc[0], ' Accuracy:', acc[1])
+pred = model.predict(x_test)
+pred_y = pred.argmax(axis=-1)
+cm = confusion_matrix(y_test, pred_y)
+print(cm)
 
 # %%
