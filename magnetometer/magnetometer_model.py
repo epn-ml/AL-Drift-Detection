@@ -3,8 +3,11 @@
 import glob
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+from scipy.stats import zscore
 from sklearn.metrics import confusion_matrix
+from sklearn.utils import class_weight
 from tensorflow import keras
 from tensorflow.keras import layers
 
@@ -47,17 +50,20 @@ def select_features(df, features):
     return df.drop(drop_col, axis=1)
 
 
-features = ['X_MSO', 'Y_MSO', 'Z_MSO', 'RHO_DIPOLE',
-            'X', 'Y', 'Z', 'COSALPHA', 'EXTREMA']
+features = ['X_MSO', 'Y_MSO', 'Z_MSO', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'DBX_MSO', 'DBY_MSO', 'DBZ_MSO',
+            'RHO_DIPOLE', 'BX_DIPOLE', 'BY_DIPOLE', 'BZ_DIPOLE', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ', 'COSALPHA', 'EXTREMA']
 df_train = select_features(df_train, features)
 df_test = select_features(df_test, features)
 
 # %% normalize data
 
-df_train[features] = df_train[features].apply(
-    lambda x: (x - x.min()) / (x.max() - x.min()))
-df_test[features] = df_test[features].apply(
-    lambda x: (x - x.min()) / (x.max() - x.min()))
+# df_train[features] = df_train[features].apply(
+#     lambda x: (x - x.min()) / (x.max() - x.min()))
+# df_test[features] = df_test[features].apply(
+#     lambda x: (x - x.min()) / (x.max() - x.min()))
+
+df_train[features] = df_train[features].apply(zscore)
+df_test[features] = df_test[features].apply(zscore)
 
 # %% truncate data
 
@@ -74,7 +80,7 @@ y_test = df_test[['LABEL']].values.reshape(-1)
 # %% set up the model
 
 model = keras.Sequential()
-model.add(layers.Conv1D(64, 2, activation='relu',
+model.add(layers.Conv1D(64, 3, activation='relu',
           input_shape=x_train.shape[1:]))
 model.add(layers.Dense(16, activation='relu'))
 model.add(layers.MaxPooling1D())
@@ -87,7 +93,13 @@ model.compile(loss=keras.losses.SparseCategoricalCrossentropy(),
               optimizer='adam',
               metrics=['accuracy'])
 
-history = model.fit(x_train, y_train, batch_size=16, epochs=100, verbose=2)
+weights = class_weight.compute_class_weight(
+    'balanced', classes=np.unique(y_train), y=y_train)
+
+print(weights)
+
+history = model.fit(x_train, y_train, batch_size=16,
+                    epochs=10, class_weight={k: v for k, v in enumerate(weights)}, verbose=2)
 acc = model.evaluate(x_test, y_test, verbose=2)
 
 # %% plot
@@ -115,5 +127,32 @@ pred = model.predict(x_test)
 pred_y = pred.argmax(axis=-1)
 cm = confusion_matrix(y_test, pred_y)
 print(cm)
+
+# %% precision and recall
+
+
+def calc_stats(cm):
+
+    precision = []
+    recall = []
+
+    for i in range(len(cm)):
+        tp = cm[i][i]
+        fp = 0
+        fn = 0
+
+        for j in range(len(cm)):
+            if j != i:
+                fp += cm[j][i]
+                fn += cm[i][j]
+
+        precision.append(tp / (tp+fp))
+        recall.append(tp / (tp + fn))
+
+    print(precision)
+    print(recall)
+
+
+calc_stats(cm)
 
 # %%
