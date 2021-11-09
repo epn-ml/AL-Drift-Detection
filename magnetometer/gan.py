@@ -653,7 +653,7 @@ def plot_labelled_orbit(df, title):
     #     ))
 
     fig.update_layout({'title': title})
-    fig.show()
+    #fig.show()
     fig.write_image(
         'logs/orbit-' + str(datetime.now().strftime('%Y-%m-%d-%H-%M-%S') + '.png'))
 
