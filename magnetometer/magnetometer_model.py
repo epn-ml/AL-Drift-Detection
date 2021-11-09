@@ -98,8 +98,12 @@ weights = class_weight.compute_class_weight(
 
 print(weights)
 
-history = model.fit(x_train, y_train, batch_size=16,
-                    epochs=10, class_weight={k: v for k, v in enumerate(weights)}, verbose=2)
+history = model.fit(x=x_train,
+                    y=y_train,
+                    batch_size=16,
+                    epochs=20,
+                    class_weight={k: v for k, v in enumerate(weights)},
+                    verbose=2)
 acc = model.evaluate(x_test, y_test, verbose=2)
 
 # %% plot

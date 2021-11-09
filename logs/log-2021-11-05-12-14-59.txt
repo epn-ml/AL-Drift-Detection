@@ -1,0 +1,50 @@
+2021-11-05 12:14:59.975893: The seed for the current execution is 61795 for dataset covtype with device cuda
+2021-11-05 12:15:04.429852: {0: 1523, 1: 201, 2: 552, 3: 58, 4: 1666}
+2021-11-05 12:15:04.430828: {0: 47, 1: 64, 2: 836, 3: 5, 4: 48}
+2021-11-05 12:15:43.099012: Generator(
+  (net): Sequential(
+    (0): Linear(in_features=230, out_features=128, bias=True)
+    (1): Linear(in_features=128, out_features=4096, bias=True)
+    (2): ReLU(inplace=True)
+    (3): Linear(in_features=4096, out_features=23, bias=True)
+  )
+)
+2021-11-05 12:15:43.100932: Discriminator(
+  (net): Sequential(
+    (0): Linear(in_features=23, out_features=1024, bias=True)
+    (1): Linear(in_features=1024, out_features=1024, bias=True)
+    (2): ReLU(inplace=True)
+    (3): Linear(in_features=1024, out_features=512, bias=True)
+    (4): Sigmoid()
+  )
+  (neurons): Linear(in_features=512, out_features=2, bias=True)
+  (softmax): Softmax(dim=1)
+)
+2021-11-05 12:15:50.795056: drift_indices = [(0, 100)]
+2021-11-05 12:15:50.796036: drift_labels = []
+2021-11-05 12:15:50.798884: Accuracy value is 0.947959 for dataset covtype
+2021-11-05 12:15:50.815108: precision = [0.9917877447883765, 0.5874125874125874, 0.9490595611285266, 1.0, 1.0]
+2021-11-05 12:15:50.816529: recall = [1.0, 0.9509433962264151, 0.872478386167147, 0.8571428571428571, 0.9653035935563816]
+2021-11-05 12:15:50.816529: [[1570    0    0    0    0]
+ [  13  252    0    0    0]
+ [   0  177 1211    0    0]
+ [   0    0    9   54    0]
+ [   0    0   56    0 1558]]
+2021-11-05 12:15:50.821400: Accuracy value is 0.992750 for dataset covtype
+2021-11-05 12:15:50.839676: precision = [0.9917877447883765, 0.9836734693877551, 0.9785714285714285, 1.0, 1.0]
+2021-11-05 12:15:50.839676: recall = [1.0, 0.9488188976377953, 0.9927536231884058, 0.9310344827586207, 0.9948914431673053]
+2021-11-05 12:15:50.840620: [[1570    0    0    0    0]
+ [  13  241    0    0    0]
+ [   0    4  548    0    0]
+ [   0    0    4   54    0]
+ [   0    0    8    0 1558]]
+2021-11-05 12:15:50.842574: Accuracy value is 0.767000 for dataset covtype
+2021-11-05 12:15:50.850455: precision = [0.8703703703703703, 0.24782608695652175, 0.9259776536312849, nan, nan]
+2021-11-05 12:15:50.850455: recall = [1.0, 0.890625, 0.7930622009569378, 0.0, 0.0]
+2021-11-05 12:15:50.851396: [[ 47   0   0   0   0]
+ [  7  57   0   0   0]
+ [  0 173 663   0   0]
+ [  0   0   5   0   0]
+ [  0   0  48   0   0]]
+2021-11-05 12:15:50.852372: Execution time is 46 seconds
+2021-11-05 12:15:50.853348: No. of drifts is 0

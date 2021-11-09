@@ -1,0 +1,77 @@
+2021-11-09 11:41:29.108845: The seed for the current execution is 43469 for dataset messenger with device cuda
+2021-11-09 11:41:34.194125: train offset: 61500, size: 4000
+2021-11-09 11:41:34.196079: {0: 1523, 1: 201, 2: 552, 3: 58, 4: 1666}
+2021-11-09 11:41:34.197054: test offset: 19630, size: 1000
+2021-11-09 11:41:34.197054: {0: 47, 1: 64, 2: 836, 3: 5, 4: 48}
+2021-11-09 11:42:40.993561: Generator(
+  (net): Sequential(
+    (0): Linear(in_features=230, out_features=128, bias=True)
+    (1): Linear(in_features=128, out_features=4096, bias=True)
+    (2): ReLU(inplace=True)
+    (3): Linear(in_features=4096, out_features=23, bias=True)
+  )
+)
+2021-11-09 11:42:40.994537: Discriminator(
+  (net): Sequential(
+    (0): Linear(in_features=23, out_features=1024, bias=True)
+    (1): Linear(in_features=1024, out_features=1024, bias=True)
+    (2): ReLU(inplace=True)
+    (3): Linear(in_features=1024, out_features=512, bias=True)
+    (4): Sigmoid()
+  )
+  (neurons): Linear(in_features=512, out_features=2, bias=True)
+  (softmax): Softmax(dim=1)
+)
+2021-11-09 11:42:47.308366: Generator(
+  (net): Sequential(
+    (0): Linear(in_features=230, out_features=128, bias=True)
+    (1): Linear(in_features=128, out_features=4096, bias=True)
+    (2): ReLU(inplace=True)
+    (3): Linear(in_features=4096, out_features=23, bias=True)
+  )
+)
+2021-11-09 11:42:47.309344: Discriminator(
+  (net): Sequential(
+    (0): Linear(in_features=23, out_features=1024, bias=True)
+    (1): Linear(in_features=1024, out_features=1024, bias=True)
+    (2): ReLU(inplace=True)
+    (3): Linear(in_features=1024, out_features=512, bias=True)
+    (4): Sigmoid()
+  )
+  (neurons): Linear(in_features=512, out_features=2, bias=True)
+  (softmax): Softmax(dim=1)
+)
+2021-11-09 11:42:49.434910: drift_indices = [(0, 100)]
+2021-11-09 11:42:49.434910: drift_labels = []
+2021-11-09 11:42:49.438169: Accuracy value is 0.947959 for training and testing datasets messenger
+2021-11-09 11:42:49.453227: accuracy = [1570.6769387755103, 252.90979591836734, 1211.7034693877551, 54.98714285714286, 1558.670612244898]
+2021-11-09 11:42:49.453227: precision = [0.9917877447883765, 0.5874125874125874, 0.9490595611285266, 1.0, 1.0]
+2021-11-09 11:42:49.454169: recall = [1.0, 0.9509433962264151, 0.872478386167147, 0.8571428571428571, 0.9653035935563816]
+2021-11-09 11:42:49.454169: F1 score = [0.9958769425943546, 0.7262247838616714, 0.9091591591591592, 0.923076923076923, 0.9823455233291298]
+2021-11-09 11:42:49.454169: [[1570    0    0    0    0]
+ [  13  252    0    0    0]
+ [   0  177 1211    0    0]
+ [   0    0    9   54    0]
+ [   0    0   56    0 1558]]
+2021-11-09 11:42:49.458124: Accuracy value is 0.992750 for training dataset messenger
+2021-11-09 11:42:49.472675: accuracy = [1570.60425, 241.9355, 548.859, 54.9855, 1558.6085]
+2021-11-09 11:42:49.473652: precision = [0.9917877447883765, 0.9836734693877551, 0.9785714285714285, 1.0, 1.0]
+2021-11-09 11:42:49.473652: recall = [1.0, 0.9488188976377953, 0.9927536231884058, 0.9310344827586207, 0.9948914431673053]
+2021-11-09 11:42:49.474626: F1 score = [0.9958769425943546, 0.965931863727455, 0.9856115107913668, 0.9642857142857143, 0.9974391805377721]
+2021-11-09 11:42:49.474626: [[1570    0    0    0    0]
+ [  13  241    0    0    0]
+ [   0    4  548    0    0]
+ [   0    0    4   54    0]
+ [   0    0    8    0 1558]]
+2021-11-09 11:42:49.477424: Accuracy value is 0.767000 for testing dataset messenger
+2021-11-09 11:42:49.481354: accuracy = [47.946, 57.763, 663.111, 0.995, 0.952]
+2021-11-09 11:42:49.482304: precision = [0.8703703703703703, 0.24782608695652175, 0.9259776536312849, nan, nan]
+2021-11-09 11:42:49.482304: recall = [1.0, 0.890625, 0.7930622009569378, 0.0, 0.0]
+2021-11-09 11:42:49.482304: F1 score = [0.9306930693069307, 0.38775510204081626, 0.854381443298969, nan, nan]
+2021-11-09 11:42:49.483281: [[ 47   0   0   0   0]
+ [  7  57   0   0   0]
+ [  0 173 663   0   0]
+ [  0   0   5   0   0]
+ [  0   0  48   0   0]]
+2021-11-09 11:42:49.484256: Execution time is 75 seconds
+2021-11-09 11:42:49.485238: No. of drifts is 0
