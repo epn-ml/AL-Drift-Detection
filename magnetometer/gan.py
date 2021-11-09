@@ -13,6 +13,7 @@ import glob
 import torch
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 
 global seq_len
 global fptr
@@ -24,7 +25,8 @@ def print_(print_str):
     global fptr
     global dataset
     if fptr is None:
-        name = 'logs/log-' + str(datetime.now().strftime('%Y-%m-%d-%H-%M-%S')) + '.txt'
+        name = 'logs/log-' + \
+            str(datetime.now().strftime('%Y-%m-%d-%H-%M-%S')) + '.txt'
         fptr = open(name, "w")
 
     fptr.write(str(datetime.now()) + ": " + str(print_str) + "\n")
@@ -575,33 +577,25 @@ def load_data(path):
 
 def calc_stats(cm):
 
-    accuracy = []
     precision = []
     recall = []
     f1 = []
 
     for i in range(len(cm)):
         tp = cm[i][i]
-        tn = 0
         fp = 0
         fn = 0
-
-        for k in range(len(cm)):
-            for l in range(len(cm[k])):
-                if k != i and l != i:
-                    tn += cm[k][l]
 
         for j in range(len(cm[i])):
             if j != i:
                 fp += cm[j][i]
                 fn += cm[i][j]
 
-        accuracy.append(tp + tn / (tp + fp + tn + fn))
-        precision.append(tp / (tp + fp))
-        recall.append(tp / (tp + fn))
-        f1.append(2 * precision[i] * recall[i] / (precision[i] + recall[i]))
+        precision.append(tp / (tp + fp) if tp + fp != 0 else 0)
+        recall.append(tp / (tp + fn) if tp + fn != 0 else 0)
+        f1.append(2 * precision[i] * recall[i] / (precision[i] +
+                  recall[i]) if precision[i] + recall[i] != 0 else 0)
 
-    print_(f'accuracy = {accuracy}')
     print_(f'precision = {precision}')
     print_(f'recall = {recall}')
     print_(f'F1 score = {f1}')
@@ -622,6 +616,48 @@ def select_features(df, features):
     return df.drop(drop_col, axis=1)
 
 
+def plot_field(df):
+    fig = go.Figure()
+
+    # Plotting components of the magnetic field B_x, B_y, B_z in MSO coordinates
+    fig.add_trace(go.Scatter(x=df['DATE'], y=df['BX_MSO'], name='B_x'))
+    fig.add_trace(go.Scatter(x=df['DATE'], y=df['BY_MSO'], name='B_y'))
+    fig.add_trace(go.Scatter(x=df['DATE'], y=df['BZ_MSO'], name='B_z'))
+
+    # Plotting total magnetic field magnitude B along the orbit
+    fig.add_trace(go.Scatter(
+        x=df['DATE'], y=-df['B_tot'], name='|B|', line_color='darkgray'))
+    fig.add_trace(go.Scatter(x=df['DATE'], y=df['B_tot'],
+                  name='|B|', line_color='darkgray', showlegend=False))
+
+    return fig
+
+
+def plot_labelled_orbit(df, title):
+
+    # Reading orbit file from FTP
+    # df = pd.read_csv(f'ftp://epn2024.sinp.msu.ru/messenger/messenger-{orbit:04d}.csv', sep = ',')
+    df['B_tot'] = (df['BX_MSO']**2 + df['BY_MSO']**2 + df['BZ_MSO']**2)**0.5
+
+    fig = plot_field(df)
+
+    # # SK & MP crossings times
+    # for i in range(1, 9):
+    #     fig.add_trace(go.Scatter(
+    #         x=[df_cross.iloc[orbit-1][i], df_cross.iloc[orbit-1][i]],
+    #         y=[-450, 450],
+    #         mode='lines',
+    #         name=df_cross.columns[i],
+    #         line_color='black',
+    #         showlegend=False
+    #     ))
+
+    fig.update_layout({'title': title})
+    fig.show()
+    fig.write_image(
+        'logs/orbit-' + str(datetime.now().strftime('%Y-%m-%d-%H-%M-%S') + '.png'))
+
+
 def main():
     # The dataset used for training
     global dataset
@@ -629,11 +665,10 @@ def main():
     fptr = None
 
     dataset = 'messenger'
-    max_dataset_size = 4000
     # Set the number of training instances
     training_window_size = 100
     # Set the number of epochs the GAN should be trained
-    epochs = 50
+    epochs = 20
 
     # 1/factor will be the amount of instances of previous drifts taken for training
     repeat_factor = 10
@@ -663,10 +698,6 @@ def main():
 
     # Set a random seed for the experiment
     seed = np.random.randint(65536)
-    # seed = 62794
-    # seed = 3010
-    # seed = 18174  # Best result for outdoor
-    # 43309
 
     # Get the device the experiment will run on
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -677,10 +708,10 @@ def main():
     #features, labels = read_dataset(dataset)
     #df = pd.read_csv('../covtype.csv')
     df = load_data('data/labelled_orbits/train/*.csv')
-    feats = ['X_MSO', 'Y_MSO', 'Z_MSO', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'DBX_MSO', 'DBY_MSO', 'DBZ_MSO', 'RHO', 'RXY', 'THETA_DIPOLE', 'BABS_DIPOLE'
+    feats = ['DATE', 'X_MSO', 'Y_MSO', 'Z_MSO', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'DBX_MSO', 'DBY_MSO', 'DBZ_MSO', 'RHO', 'RXY', 'THETA_DIPOLE', 'BABS_DIPOLE'
              'RHO_DIPOLE', 'BX_DIPOLE', 'BY_DIPOLE', 'BZ_DIPOLE', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ', 'COSALPHA', 'EXTREMA']
     df = select_features(df, feats)
-    features_full = df.iloc[:, 0:-1].values
+    features_full = df.iloc[:, 1:-1].values
     labels_full = df.iloc[:, -1:].values.reshape(-1).tolist()
     features_full = np.array(features_full)
     mean = np.mean(features_full, axis=1).reshape(features_full.shape[0], 1)
@@ -688,17 +719,18 @@ def main():
     features_full = (features_full - mean)/(std + 0.000001)
 
     offset = 61500
+    max_dataset_size = 4000
     print_(f'train offset: {offset}, size: {max_dataset_size}')
     features = features_full[offset:max_dataset_size+offset]
     labels = labels_full[offset:max_dataset_size+offset]
     u, c = np.unique(labels, return_counts=True)
     print_(dict(zip(u, c)))
-    
-    offset_test = 19630
-    size = 1000
-    print_(f'test offset: {offset_test}, size: {size}')
-    features_test = features_full[offset_test:size+offset_test]
-    labels_test = labels_full[offset_test:size+offset_test]
+
+    offset_test = 19380
+    size_test = 1500
+    print_(f'test offset: {offset_test}, size: {size_test}')
+    features_test = features_full[offset_test:size_test+offset_test]
+    labels_test = labels_full[offset_test:size_test+offset_test]
     u, c = np.unique(labels_test, return_counts=True)
     print_(dict(zip(u, c)))
 
@@ -723,20 +755,25 @@ def main():
     # Get the auc_value
     from sklearn.metrics import accuracy_score
     auc_value = accuracy_score(y_true=y_true, y_pred=y_pred)
-    print_('Accuracy value is %f for training and testing datasets %s' % (auc_value, dataset))
+    print_('Accuracy value is %f for training and testing datasets %s' %
+           (auc_value, dataset))
     cm = confusion_matrix(y_true, y_pred)
     calc_stats(cm)
     print_(cm)
 
-    auc_value = accuracy_score(y_true=y_true[:4000], y_pred=y_pred[:4000])
-    print_('Accuracy value is %f for training dataset %s' % (auc_value, dataset))
-    cm = confusion_matrix(y_true[:4000], y_pred[:4000])
+    auc_value = accuracy_score(
+        y_true=y_true[:max_dataset_size], y_pred=y_pred[:max_dataset_size])
+    print_('Accuracy value is %f for training dataset %s' %
+           (auc_value, dataset))
+    cm = confusion_matrix(y_true[:max_dataset_size], y_pred[:max_dataset_size])
     calc_stats(cm)
     print_(cm)
 
-    auc_value = accuracy_score(y_true=y_true[-1000:], y_pred=y_pred[-1000:])
-    print_('Accuracy value is %f for testing dataset %s' % (auc_value, dataset))
-    cm = confusion_matrix(y_true[-1000:], y_pred[-1000:])
+    auc_value = accuracy_score(
+        y_true=y_true[-size_test:], y_pred=y_pred[-size_test:])
+    print_('Accuracy value is %f for testing dataset %s' %
+           (auc_value, dataset))
+    cm = confusion_matrix(y_true[-size_test:], y_pred[-size_test:])
     calc_stats(cm)
     print_(cm)
 
@@ -744,6 +781,11 @@ def main():
     print_('Execution time is %d seconds' % exec_time)
 
     print_('No. of drifts is %d' % len(drifts_detected))
+
+    plot_labelled_orbit(df[offset:max_dataset_size+offset],
+                        'Labelled training orbit')
+    plot_labelled_orbit(
+        df[offset_test:size_test+offset_test], 'Labelled testing orbit')
 
     if fptr is not None:
         fptr.close()
