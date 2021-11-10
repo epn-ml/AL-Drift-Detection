@@ -7,7 +7,9 @@ from torch.autograd import Variable
 from skmultiflow.trees import HoeffdingTreeClassifier
 from time import time
 from datetime import datetime
+from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
+from sklearn.metrics import precision_recall_fscore_support
 
 import glob
 import torch
@@ -633,7 +635,7 @@ def plot_field(df):
     return fig
 
 
-def plot_labelled_orbit(df, title):
+def plot_labelled_orbit(df, title, labels=None):
 
     # Reading orbit file from FTP
     # df = pd.read_csv(f'ftp://epn2024.sinp.msu.ru/messenger/messenger-{orbit:04d}.csv', sep = ',')
@@ -641,19 +643,26 @@ def plot_labelled_orbit(df, title):
 
     fig = plot_field(df)
 
-    # # SK & MP crossings times
-    # for i in range(1, 9):
-    #     fig.add_trace(go.Scatter(
-    #         x=[df_cross.iloc[orbit-1][i], df_cross.iloc[orbit-1][i]],
-    #         y=[-450, 450],
-    #         mode='lines',
-    #         name=df_cross.columns[i],
-    #         line_color='black',
-    #         showlegend=False
-    #     ))
+    # SK & MP crossings times
+    if labels == None:
+        for _, row in df.iterrows():
+            if row['LABEL'] == 1:
+                fig.add_vline(x=row['DATE'], line_width=1,
+                              line_color='green', opacity=0.3)
+            elif row['LABEL'] == 3:
+                fig.add_vline(x=row['DATE'], line_width=1,
+                              line_color='purple', opacity=0.3)
+    else:
+        for i in range(len(df.index)):
+            if labels[i] == 1:
+                fig.add_vline(x=df.iloc[i][0], line_width=1,
+                              line_color='green', opacity=0.3)
+            elif labels[i] == 3:
+                fig.add_vline(x=df.iloc[i][0], line_width=1,
+                              line_color='purple', opacity=0.3)
 
     fig.update_layout({'title': title})
-    #fig.show()
+    fig.show()
     fig.write_image(
         'logs/orbit-' + str(datetime.now().strftime('%Y-%m-%d-%H-%M-%S') + '.png'))
 
@@ -718,21 +727,31 @@ def main():
     std = np.std(features_full, axis=1).reshape(features_full.shape[0], 1)
     features_full = (features_full - mean)/(std + 0.000001)
 
-    offset = 61500
-    max_dataset_size = 4000
+    print(f'features_full: {len(features_full)}')
+    print(f'labels_full: {len(labels_full)}')
+
+    offset = 62500
+    max_dataset_size = 2000
+    offset_test = 19380
+    size_test = 1500
+
     print_(f'train offset: {offset}, size: {max_dataset_size}')
     features = features_full[offset:max_dataset_size+offset]
     labels = labels_full[offset:max_dataset_size+offset]
     u, c = np.unique(labels, return_counts=True)
     print_(dict(zip(u, c)))
 
-    offset_test = 19380
-    size_test = 1500
+    print(f'features: {len(features)}')
+    print(f'labels: {len(labels)}')
+
     print_(f'test offset: {offset_test}, size: {size_test}')
     features_test = features_full[offset_test:size_test+offset_test]
     labels_test = labels_full[offset_test:size_test+offset_test]
     u, c = np.unique(labels_test, return_counts=True)
     print_(dict(zip(u, c)))
+
+    print(f'features_test: {len(features_test)}')
+    print(f'labels_test: {len(labels_test)}')
 
     """
     # Min max scaling
@@ -752,40 +771,52 @@ def main():
                                                    generator_batch_size=generator_batch_size, equalize=equalize,
                                                    sequence_length=sequence_length, repeat_factor=repeat_factor)
     t2 = time()
+
+    print(f'y_pred: {len(y_pred)}')
+    print(f'y_true: {len(y_true)}')
+
+    max_dataset_size -= training_window_size
+
     # Get the auc_value
-    from sklearn.metrics import accuracy_score
     auc_value = accuracy_score(y_true=y_true, y_pred=y_pred)
     print_('Accuracy value is %f for training and testing datasets %s' %
            (auc_value, dataset))
-    cm = confusion_matrix(y_true, y_pred)
-    calc_stats(cm)
-    print_(cm)
+    print_(precision_recall_fscore_support(
+        y_true, y_pred, average=None, labels=np.unique(y_true)))
+    print_(confusion_matrix(y_true, y_pred))
 
     auc_value = accuracy_score(
         y_true=y_true[:max_dataset_size], y_pred=y_pred[:max_dataset_size])
     print_('Accuracy value is %f for training dataset %s' %
            (auc_value, dataset))
-    cm = confusion_matrix(y_true[:max_dataset_size], y_pred[:max_dataset_size])
-    calc_stats(cm)
-    print_(cm)
+    print_(precision_recall_fscore_support(
+        y_true, y_pred, average=None, labels=np.unique(y_true)))
+    print_(confusion_matrix(
+        y_true[:max_dataset_size], y_pred[:max_dataset_size]))
 
     auc_value = accuracy_score(
         y_true=y_true[-size_test:], y_pred=y_pred[-size_test:])
     print_('Accuracy value is %f for testing dataset %s' %
            (auc_value, dataset))
-    cm = confusion_matrix(y_true[-size_test:], y_pred[-size_test:])
-    calc_stats(cm)
-    print_(cm)
+    print_(precision_recall_fscore_support(
+        y_true, y_pred, average=None, labels=np.unique(y_true)))
+    print_(confusion_matrix(y_true[-size_test:], y_pred[-size_test:]))
 
     exec_time = t2 - t1
     print_('Execution time is %d seconds' % exec_time)
 
     print_('No. of drifts is %d' % len(drifts_detected))
 
+    #plot_labelled_orbit(df[offset:max_dataset_size+offset], 'Train (label)')
     plot_labelled_orbit(df[offset:max_dataset_size+offset],
-                        'Labelled training orbit')
-    plot_labelled_orbit(
-        df[offset_test:size_test+offset_test], 'Labelled testing orbit')
+                        'Train (y_true)', y_true[:max_dataset_size])
+    plot_labelled_orbit(df[offset:max_dataset_size+offset],
+                        'Train (y_pred)', y_pred[:max_dataset_size])
+    #plot_labelled_orbit(df[offset_test:size_test+offset_test], 'Test (label)')
+    plot_labelled_orbit(df[offset_test:size_test+offset_test],
+                        'Test (y_true)', y_true[-size_test:])
+    plot_labelled_orbit(df[offset_test:size_test+offset_test],
+                        'Test (y_pred)', y_pred[-size_test:])
 
     if fptr is not None:
         fptr.close()
