@@ -1,4 +1,5 @@
-#from datasets import read_dataset
+# %% imports
+
 from torch.optim import Adadelta
 from torch import nn
 from torch.nn import Sequential, Linear, Dropout, ReLU, Module
@@ -22,12 +23,14 @@ global fptr
 global dataset
 
 
+# %% functions
+
 # Function to write the log to disk also
 def print_(print_str):
     global fptr
     global dataset
     if fptr is None:
-        name = 'logs/log-' + \
+        name = '../logs/log-' + \
             str(datetime.now().strftime('%Y-%m-%d-%H-%M-%S')) + '.txt'
         fptr = open(name, "w")
 
@@ -427,8 +430,8 @@ def process_data(features, labels, features_window, labels_window, device, epoch
     generator.eval()
     discriminator.eval()
 
-    print_(generator)
-    print_(discriminator)
+    # print_(generator)
+    # print_(discriminator)
 
     while index + training_window_size < len(features):
 
@@ -541,8 +544,8 @@ def process_data(features, labels, features_window, labels_window, device, epoch
         print_('index = %d' % index)
         index += training_window_size
 
-    print_(generator)
-    print_(discriminator)
+    # print_(generator)
+    # print_(discriminator)
 
     # Test on the remaining features
     # features_window = features[index:, :]
@@ -554,13 +557,13 @@ def process_data(features, labels, features_window, labels_window, device, epoch
 
     y_hat, clf = predict_and_partial_fit(
         clf, features=features_window, labels=labels_window, classes=classes)
-    y_pred = y_pred + y_hat.tolist()
-    y_true = y_true + labels_window
+    # y_pred = y_pred + y_hat.tolist()
+    # y_true = y_true + labels_window
 
     print_(f'drift_indices = {drift_indices}')
     print_(f'drift_labels = {drift_labels}')
 
-    return y_pred, y_true, drifts_detected
+    return y_pred, y_true, y_hat.tolist(), labels_window, drifts_detected
 
 
 def load_data(path):
@@ -629,199 +632,206 @@ def plot_field(df):
     # Plotting total magnetic field magnitude B along the orbit
     fig.add_trace(go.Scatter(
         x=df['DATE'], y=-df['B_tot'], name='|B|', line_color='darkgray'))
-    fig.add_trace(go.Scatter(x=df['DATE'], y=df['B_tot'],
-                  name='|B|', line_color='darkgray', showlegend=False))
+    fig.add_trace(go.Scatter(x=df['DATE'], y=df['B_tot'], name='|B|',
+                  line_color='darkgray', showlegend=False))
 
     return fig
 
 
 def plot_labelled_orbit(df, title, labels=None):
 
-    # Reading orbit file from FTP
-    # df = pd.read_csv(f'ftp://epn2024.sinp.msu.ru/messenger/messenger-{orbit:04d}.csv', sep = ',')
     df['B_tot'] = (df['BX_MSO']**2 + df['BY_MSO']**2 + df['BZ_MSO']**2)**0.5
-
     fig = plot_field(df)
 
-    # SK & MP crossings times
-    if labels == None:
-        for _, row in df.iterrows():
-            if row['LABEL'] == 1:
-                fig.add_vline(x=row['DATE'], line_width=1,
-                              line_color='green', opacity=0.3)
-            elif row['LABEL'] == 3:
-                fig.add_vline(x=row['DATE'], line_width=1,
-                              line_color='purple', opacity=0.3)
-    else:
-        for i in range(len(df.index)):
-            if labels[i] == 1:
-                fig.add_vline(x=df.iloc[i][0], line_width=1,
-                              line_color='green', opacity=0.3)
-            elif labels[i] == 3:
-                fig.add_vline(x=df.iloc[i][0], line_width=1,
-                              line_color='purple', opacity=0.3)
+    label_col = 'LABEL'
+    if labels != None:
+        df['LABEL_PRED'] = labels
+        label_col = 'LABEL_PRED'
+
+    for _, row in df[df[label_col] == 1].iterrows():
+        fig.add_trace(go.Scatter(
+            x=[row['DATE'], row['DATE']],
+            y=[-450, 450],
+            mode='lines',
+            line_color='green',
+            opacity=0.05,
+            showlegend=False
+        ))
+
+    for _, row in df[df[label_col] == 3].iterrows():
+        fig.add_trace(go.Scatter(
+            x=[row['DATE'], row['DATE']],
+            y=[-450, 450],
+            mode='lines',
+            line_color='purple',
+            opacity=0.05,
+            showlegend=False
+        ))
 
     fig.update_layout({'title': title})
-    fig.show()
-    fig.write_image(
-        'logs/orbit-' + str(datetime.now().strftime('%Y-%m-%d-%H-%M-%S') + '.png'))
+    fig.write_html(f'fig_{title}.html')
 
 
-def main():
-    # The dataset used for training
-    global dataset
-    global fptr
+# %% setup
+
+fptr = None
+dataset = 'messenger'
+# Set the number of training instances
+training_window_size = 100
+# Set the number of epochs the GAN should be trained
+epochs = 20
+
+# 1/factor will be the amount of instances of previous drifts taken for training
+repeat_factor = 10
+
+# Equalize the number of training instances across different drifts
+equalize = True
+
+# How far in to the past is required for generating current data
+sequence_length = 10
+# For the collate function to split the rows accordingly
+seq_len = sequence_length
+
+# Steps for training
+steps_generator = 50
+
+# Set the batch_size
+batch_size = 8
+generator_batch_size = 2
+# Number of instances that should have the same label for a drift to be confirmed
+test_batch_size = 4
+
+# Set the learning rate
+lr = 0.025  # Changed to Adadelta with a default learning rate of 1
+
+# Set the weight decay rate
+weight_decay = 0.000000
+
+# Set a random seed for the experiment
+seed = np.random.randint(65536)
+
+# Get the device the experiment will run on
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+print_('The seed for the current execution is %d for dataset %s with device %s' % (
+    seed, dataset, device))
+
+
+# %% load data
+
+df1 = load_data('../data/labelled_orbits/1/*.csv')
+df2 = load_data('../data/labelled_orbits/2/*.csv')
+
+
+# %% select data
+
+feats = ['DATE', 'X_MSO', 'Y_MSO', 'Z_MSO', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'DBX_MSO', 'DBY_MSO', 'DBZ_MSO', 'RHO', 'RXY', 'THETA_DIPOLE', 'BABS_DIPOLE'
+         'RHO_DIPOLE', 'BX_DIPOLE', 'BY_DIPOLE', 'BZ_DIPOLE', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ', 'COSALPHA', 'EXTREMA']
+df1 = select_features(df1, feats)
+df2 = select_features(df2, feats)
+
+offset_train = 16080
+size_train = 20880 - offset_train
+offset_test = 19191
+size_test = 20691 - offset_test
+print(f'offset_train: {offset_train}, size_train: {size_train}')
+print(f'offset_test: {offset_test}, size_test: {size_test}')
+
+df1 = df1.iloc[offset_train:offset_train+size_train]
+df2 = df2.iloc[offset_test:offset_test+size_test]
+
+features1 = df1.iloc[:, 1:-1].values
+labels1 = df1.iloc[:, -1].values.tolist()
+mean = np.mean(features1, axis=1).reshape(features1.shape[0], 1)
+std = np.std(features1, axis=1).reshape(features1.shape[0], 1)
+features1 = (features1 - mean)/(std + 0.000001)
+u, c = np.unique(labels1, return_counts=True)
+print_(dict(zip(u, c)))
+print(f'features1: {len(features1)}')
+print(f'labels1: {len(labels1)}')
+
+features2 = df2.iloc[:, 1:-1].values
+labels2 = df2.iloc[:, -1].values.tolist()
+mean = np.mean(features2, axis=1).reshape(features2.shape[0], 1)
+std = np.std(features2, axis=1).reshape(features2.shape[0], 1)
+features2 = (features2 - mean)/(std + 0.000001)
+u, c = np.unique(labels2, return_counts=True)
+print_(dict(zip(u, c)))
+print(f'features2: {len(features2)}')
+print(f'labels2: {len(labels2)}')
+
+
+# %% training
+
+"""
+# Min max scaling
+min_features = np.min(features, axis=1)
+features = features - np.reshape(min_features, newshape=(min_features.shape[0], 1))
+max_features = np.max(features, axis=1)
+max_features = np.reshape(max_features, newshape=(max_features.shape[0], 1)) + 0.000001
+features = features / max_features
+"""
+
+t1 = time()
+train_pred, train_true, test_pred, test_true, drifts_detected = process_data(features=features1, labels=labels1, features_window=features2, labels_window=labels2, device=device, epochs=epochs,
+                                                                             steps_generator=steps_generator, seed=seed,
+                                                                             batch_size=batch_size, lr=lr, momentum=0.9,
+                                                                             weight_decay=weight_decay, test_batch_size=test_batch_size,
+                                                                             training_window_size=training_window_size,
+                                                                             generator_batch_size=generator_batch_size, equalize=equalize,
+                                                                             sequence_length=sequence_length, repeat_factor=repeat_factor)
+t2 = time()
+
+
+# %% pad missing labels
+
+if len(train_pred) < size_train:
+    train_pred + [train_pred[-1]] * (size_train - len(train_pred))
+if len(train_true) < size_train:
+    train_true + [train_true[-1]] * (size_train - len(train_true))
+
+print(f'train_pred: {len(train_pred)}')
+print(f'train_true: {len(train_true)}')
+print(f'test_pred: {len(test_pred)}')
+print(f'test_true: {len(test_true)}')
+
+# %% evaluation
+
+# Get the auc_value
+# auc_value = accuracy_score(y_true=y_true, y_pred=y_pred)
+# print_('Accuracy value is %f for training and testing datasets %s' %
+#        (auc_value, dataset))
+# print_(precision_recall_fscore_support(
+#     y_true, y_pred, average=None, labels=np.unique(y_true)))
+# print_(confusion_matrix(y_true, y_pred))
+
+auc_value = accuracy_score(y_true=train_true, y_pred=train_pred)
+print_('Accuracy value is %f for training dataset %s' % (auc_value, dataset))
+print_(precision_recall_fscore_support(train_true, train_pred,
+       average=None, labels=np.unique(train_true)))
+print_(confusion_matrix(train_true, train_pred))
+
+auc_value = accuracy_score(y_true=test_true, y_pred=test_pred)
+print_('Accuracy value is %f for testing dataset %s' % (auc_value, dataset))
+print_(precision_recall_fscore_support(
+    test_true, test_pred, average=None, labels=np.unique(test_true)))
+print_(confusion_matrix(test_true, test_pred))
+
+exec_time = t2 - t1
+print_('Execution time is %d seconds' % exec_time)
+print_('No. of drifts is %d' % len(drifts_detected))
+
+
+# %% plots
+
+plot_labelled_orbit(df1, 'train_true')
+plot_labelled_orbit(df1, 'train_pred', train_pred)
+plot_labelled_orbit(df2, 'test_true')
+plot_labelled_orbit(df2, 'test_pred', test_pred)
+
+
+# %% close log file
+
+if fptr is not None:
+    fptr.close()
     fptr = None
-
-    dataset = 'messenger'
-    # Set the number of training instances
-    training_window_size = 100
-    # Set the number of epochs the GAN should be trained
-    epochs = 20
-
-    # 1/factor will be the amount of instances of previous drifts taken for training
-    repeat_factor = 10
-
-    # Equalize the number of training instances across different drifts
-    equalize = True
-
-    # How far in to the past is required for generating current data
-    sequence_length = 10
-    global seq_len  # For the collate function to split the rows accordingly
-    seq_len = sequence_length
-
-    # Steps for training
-    steps_generator = 50
-
-    # Set the batch_size
-    batch_size = 8
-    generator_batch_size = 2
-    # Number of instances that should have the same label for a drift to be confirmed
-    test_batch_size = 4
-
-    # Set the learning rate
-    lr = 0.025  # Changed to Adadelta with a default learning rate of 1
-
-    # Set the weight decay rate
-    weight_decay = 0.000000
-
-    # Set a random seed for the experiment
-    seed = np.random.randint(65536)
-
-    # Get the device the experiment will run on
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    print_('The seed for the current execution is %d for dataset %s with device %s' % (
-        seed, dataset, device))
-
-    #features, labels = read_dataset(dataset)
-    #df = pd.read_csv('../covtype.csv')
-    df = load_data('data/labelled_orbits/train/*.csv')
-    feats = ['DATE', 'X_MSO', 'Y_MSO', 'Z_MSO', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'DBX_MSO', 'DBY_MSO', 'DBZ_MSO', 'RHO', 'RXY', 'THETA_DIPOLE', 'BABS_DIPOLE'
-             'RHO_DIPOLE', 'BX_DIPOLE', 'BY_DIPOLE', 'BZ_DIPOLE', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ', 'COSALPHA', 'EXTREMA']
-    df = select_features(df, feats)
-    features_full = df.iloc[:, 1:-1].values
-    labels_full = df.iloc[:, -1:].values.reshape(-1).tolist()
-    features_full = np.array(features_full)
-    mean = np.mean(features_full, axis=1).reshape(features_full.shape[0], 1)
-    std = np.std(features_full, axis=1).reshape(features_full.shape[0], 1)
-    features_full = (features_full - mean)/(std + 0.000001)
-
-    print(f'features_full: {len(features_full)}')
-    print(f'labels_full: {len(labels_full)}')
-
-    offset = 62500
-    max_dataset_size = 2000
-    offset_test = 19380
-    size_test = 1500
-
-    print_(f'train offset: {offset}, size: {max_dataset_size}')
-    features = features_full[offset:max_dataset_size+offset]
-    labels = labels_full[offset:max_dataset_size+offset]
-    u, c = np.unique(labels, return_counts=True)
-    print_(dict(zip(u, c)))
-
-    print(f'features: {len(features)}')
-    print(f'labels: {len(labels)}')
-
-    print_(f'test offset: {offset_test}, size: {size_test}')
-    features_test = features_full[offset_test:size_test+offset_test]
-    labels_test = labels_full[offset_test:size_test+offset_test]
-    u, c = np.unique(labels_test, return_counts=True)
-    print_(dict(zip(u, c)))
-
-    print(f'features_test: {len(features_test)}')
-    print(f'labels_test: {len(labels_test)}')
-
-    """
-    # Min max scaling
-    min_features = np.min(features, axis=1)
-    features = features - np.reshape(min_features, newshape=(min_features.shape[0], 1))
-    max_features = np.max(features, axis=1)
-    max_features = np.reshape(max_features, newshape=(max_features.shape[0], 1)) + 0.000001
-    features = features / max_features
-    """
-
-    t1 = time()
-    y_pred, y_true, drifts_detected = process_data(features=features, labels=labels, features_window=features_test, labels_window=labels_test, device=device, epochs=epochs,
-                                                   steps_generator=steps_generator, seed=seed,
-                                                   batch_size=batch_size, lr=lr, momentum=0.9,
-                                                   weight_decay=weight_decay, test_batch_size=test_batch_size,
-                                                   training_window_size=training_window_size,
-                                                   generator_batch_size=generator_batch_size, equalize=equalize,
-                                                   sequence_length=sequence_length, repeat_factor=repeat_factor)
-    t2 = time()
-
-    print(f'y_pred: {len(y_pred)}')
-    print(f'y_true: {len(y_true)}')
-
-    max_dataset_size -= training_window_size
-
-    # Get the auc_value
-    auc_value = accuracy_score(y_true=y_true, y_pred=y_pred)
-    print_('Accuracy value is %f for training and testing datasets %s' %
-           (auc_value, dataset))
-    print_(precision_recall_fscore_support(
-        y_true, y_pred, average=None, labels=np.unique(y_true)))
-    print_(confusion_matrix(y_true, y_pred))
-
-    auc_value = accuracy_score(
-        y_true=y_true[:max_dataset_size], y_pred=y_pred[:max_dataset_size])
-    print_('Accuracy value is %f for training dataset %s' %
-           (auc_value, dataset))
-    print_(precision_recall_fscore_support(
-        y_true, y_pred, average=None, labels=np.unique(y_true)))
-    print_(confusion_matrix(
-        y_true[:max_dataset_size], y_pred[:max_dataset_size]))
-
-    auc_value = accuracy_score(
-        y_true=y_true[-size_test:], y_pred=y_pred[-size_test:])
-    print_('Accuracy value is %f for testing dataset %s' %
-           (auc_value, dataset))
-    print_(precision_recall_fscore_support(
-        y_true, y_pred, average=None, labels=np.unique(y_true)))
-    print_(confusion_matrix(y_true[-size_test:], y_pred[-size_test:]))
-
-    exec_time = t2 - t1
-    print_('Execution time is %d seconds' % exec_time)
-
-    print_('No. of drifts is %d' % len(drifts_detected))
-
-    #plot_labelled_orbit(df[offset:max_dataset_size+offset], 'Train (label)')
-    plot_labelled_orbit(df[offset:max_dataset_size+offset],
-                        'Train (y_true)', y_true[:max_dataset_size])
-    plot_labelled_orbit(df[offset:max_dataset_size+offset],
-                        'Train (y_pred)', y_pred[:max_dataset_size])
-    #plot_labelled_orbit(df[offset_test:size_test+offset_test], 'Test (label)')
-    plot_labelled_orbit(df[offset_test:size_test+offset_test],
-                        'Test (y_true)', y_true[-size_test:])
-    plot_labelled_orbit(df[offset_test:size_test+offset_test],
-                        'Test (y_pred)', y_pred[-size_test:])
-
-    if fptr is not None:
-        fptr.close()
-        fptr = None
-
-
-if __name__ == '__main__':
-    main()
