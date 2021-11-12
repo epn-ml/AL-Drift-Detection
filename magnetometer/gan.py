@@ -725,9 +725,9 @@ df1 = select_features(df1, feats)
 df2 = select_features(df2, feats)
 
 offset_train = 16080
-size_train = 20880 - offset_train
-offset_test = 19191
-size_test = 20691 - offset_test
+size_train = 26280 - offset_train
+offset_test = 18891
+size_test = 27291 - offset_test
 print(f'offset_train: {offset_train}, size_train: {size_train}')
 print(f'offset_test: {offset_test}, size_test: {size_test}')
 
