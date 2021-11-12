@@ -555,6 +555,18 @@ def process_data(features, labels, features_window, labels_window, device, epoch
     # y_pred = y_pred + y_hat.tolist()
     # y_true = y_true + labels_window
 
+    # save model
+    torch.save(
+        clf, f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_clf.pth')
+    torch.save(
+        generator, f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_gen.pth')
+    torch.save(discriminator,
+               f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_dis.pth')
+    torch.save(generator.state_dict(
+    ), f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_gen_state.pth')
+    torch.save(discriminator.state_dict(
+    ), f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_dis_state.pth')
+
     y_hat, clf = predict_and_partial_fit(
         clf, features=features_window, labels=labels_window, classes=classes)
     # y_pred = y_pred + y_hat.tolist()
@@ -573,6 +585,18 @@ def load_data(path):
 
     for filename in files:
         df = pd.read_csv(filename, index_col=None, header=0)
+        if filename.endswith('df_14.csv'):
+            df = df[(df['DATE'] >= '2011-03-30 13:45:00') &
+                    (df['DATE'] <= '2011-03-30 16:20:00')]
+        elif filename.endswith('df_30.csv'):
+            df = df[(df['DATE'] >= '2011-04-07 15:05:00') &
+                    (df['DATE'] <= '2011-04-07 17:30:00')]
+        elif filename.endswith('df_9.csv'):
+            df = df[(df['DATE'] >= '2011-03-28 01:30:00') &
+                    (df['DATE'] <= '2011-03-28 03:40:00')]
+        elif filename.endswith('df_17.csv'):
+            df = df[(df['DATE'] >= '2011-04-01 01:30:00') &
+                    (df['DATE'] <= '2011-04-01 07:00:00')]
         li.append(df)
 
     df = pd.concat(li, axis=0, ignore_index=True)
@@ -641,7 +665,20 @@ def plot_field(df):
 def plot_orbit(df, title, draw=[1, 3], labels=None):
 
     df['B_tot'] = (df['BX_MSO']**2 + df['BY_MSO']**2 + df['BZ_MSO']**2)**0.5
+
     fig = plot_field(df)
+    if title.startswith('train'):
+        fig.update_xaxes(
+            rangebreaks=[
+                dict(bounds=['2011-03-30 20:36:00', '2011-04-07 09:41:53'])
+            ]
+        )
+    elif title.startswith('test'):
+        fig.update_xaxes(
+            rangebreaks=[
+                dict(bounds=['2011-03-28 08:17:10', '2011-03-31 20:44:47'])
+            ]
+        )
 
     label_col = 'LABEL'
     if labels != None:
@@ -713,46 +750,46 @@ print_('The seed for the current execution is %d for dataset %s with device %s' 
 
 # %% load data
 
-df1 = load_data('../data/labelled_orbits/1/*.csv')
-df2 = load_data('../data/labelled_orbits/2/*.csv')
+df_train = load_data('../data/labelled_orbits/train/*.csv')
+df_test = load_data('../data/labelled_orbits/test/*.csv')
 
 
 # %% select data
 
 feats = ['DATE', 'X_MSO', 'Y_MSO', 'Z_MSO', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'DBX_MSO', 'DBY_MSO', 'DBZ_MSO', 'RHO', 'RXY', 'THETA_DIPOLE', 'BABS_DIPOLE'
          'RHO_DIPOLE', 'BX_DIPOLE', 'BY_DIPOLE', 'BZ_DIPOLE', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ', 'COSALPHA', 'EXTREMA']
-df1 = select_features(df1, feats)
-df2 = select_features(df2, feats)
+df_train = select_features(df_train, feats)
+df_test = select_features(df_test, feats)
 
-offset_train = 16080
-size_train = 26280 - offset_train
-offset_test = 18891
-size_test = 27291 - offset_test
-print(f'offset_train: {offset_train}, size_train: {size_train}')
-print(f'offset_test: {offset_test}, size_test: {size_test}')
+# offset_train = 16080
+# size_train = 26280 - offset_train
+# offset_test = 18891
+# size_test = 27291 - offset_test
+# print(f'offset_train: {offset_train}, size_train: {size_train}')
+# print(f'offset_test: {offset_test}, size_test: {size_test}')
 
-df1 = df1.iloc[offset_train:offset_train+size_train]
-df2 = df2.iloc[offset_test:offset_test+size_test]
+# df_train = df_train.iloc[offset_train:offset_train+size_train]
+# df_test = df_test.iloc[offset_test:offset_test+size_test]
 
-features1 = df1.iloc[:, 1:-1].values
-labels1 = df1.iloc[:, -1].values.tolist()
-mean = np.mean(features1, axis=1).reshape(features1.shape[0], 1)
-std = np.std(features1, axis=1).reshape(features1.shape[0], 1)
-features1 = (features1 - mean)/(std + 0.000001)
-u, c = np.unique(labels1, return_counts=True)
+features_train = df_train.iloc[:, 1:-1].values
+labels_train = df_train.iloc[:, -1].values.tolist()
+mean = np.mean(features_train, axis=1).reshape(features_train.shape[0], 1)
+std = np.std(features_train, axis=1).reshape(features_train.shape[0], 1)
+features_train = (features_train - mean)/(std + 0.000001)
+u, c = np.unique(labels_train, return_counts=True)
 print_(dict(zip(u, c)))
-print(f'features1: {len(features1)}')
-print(f'labels1: {len(labels1)}')
+print(f'features_train: {len(features_train)}')
+print(f'labels_train: {len(labels_train)}')
 
-features2 = df2.iloc[:, 1:-1].values
-labels2 = df2.iloc[:, -1].values.tolist()
-mean = np.mean(features2, axis=1).reshape(features2.shape[0], 1)
-std = np.std(features2, axis=1).reshape(features2.shape[0], 1)
-features2 = (features2 - mean)/(std + 0.000001)
-u, c = np.unique(labels2, return_counts=True)
+features_test = df_test.iloc[:, 1:-1].values
+labels_test = df_test.iloc[:, -1].values.tolist()
+mean = np.mean(features_test, axis=1).reshape(features_test.shape[0], 1)
+std = np.std(features_test, axis=1).reshape(features_test.shape[0], 1)
+features_test = (features_test - mean)/(std + 0.000001)
+u, c = np.unique(labels_test, return_counts=True)
 print_(dict(zip(u, c)))
-print(f'features2: {len(features2)}')
-print(f'labels2: {len(labels2)}')
+print(f'features_test: {len(features_test)}')
+print(f'labels_test: {len(labels_test)}')
 
 
 # %% training
@@ -767,7 +804,7 @@ features = features / max_features
 """
 
 t1 = time()
-train_pred, train_true, test_pred, test_true, drifts_detected = process_data(features=features1, labels=labels1, features_window=features2, labels_window=labels2, device=device, epochs=epochs,
+train_pred, train_true, test_pred, test_true, drifts_detected = process_data(features=features_train, labels=labels_train, features_window=features_test, labels_window=labels_test, device=device, epochs=epochs,
                                                                              steps_generator=steps_generator, seed=seed,
                                                                              batch_size=batch_size, lr=lr, momentum=0.9,
                                                                              weight_decay=weight_decay, test_batch_size=test_batch_size,
@@ -779,10 +816,10 @@ t2 = time()
 
 # %% pad missing labels
 
-if len(train_pred) < size_train:
-    train_pred += [train_pred[-1]] * (size_train - len(train_pred))
-if len(train_true) < size_train:
-    train_true += [train_true[-1]] * (size_train - len(train_true))
+if len(train_pred) < len(df_train.index):
+    train_pred += [train_pred[-1]] * (len(df_train.index) - len(train_pred))
+if len(train_true) < len(df_train.index):
+    train_true += [train_true[-1]] * (len(df_train.index) - len(train_true))
 
 print(f'train_pred: {len(train_pred)}')
 print(f'train_true: {len(train_true)}')
@@ -818,10 +855,10 @@ print_('No. of drifts is %d' % len(drifts_detected))
 
 # %% plots
 
-plot_orbit(df1, 'train_true', draw=[1,2,3,4])
-plot_orbit(df1, 'train_pred', draw=[1,2,3,4], labels=train_pred)
-plot_orbit(df2, 'test_true', draw=[1,2,3,4])
-plot_orbit(df2, 'test_pred', draw=[1,2,3,4], labels=test_pred)
+plot_orbit(df_train, 'train_true', draw=[1, 2, 3, 4])
+plot_orbit(df_train, 'train_pred', draw=[1, 2, 3, 4], labels=train_pred)
+plot_orbit(df_test, 'test_true', draw=[1, 2, 3, 4])
+plot_orbit(df_test, 'test_pred', draw=[1, 2, 3, 4], labels=test_pred)
 
 
 # %% close log file
