@@ -638,7 +638,7 @@ def plot_field(df):
     return fig
 
 
-def plot_labelled_orbit(df, title, labels=None):
+def plot_orbit(df, title, draw=[1, 3], labels=None):
 
     df['B_tot'] = (df['BX_MSO']**2 + df['BY_MSO']**2 + df['BZ_MSO']**2)**0.5
     fig = plot_field(df)
@@ -648,28 +648,22 @@ def plot_labelled_orbit(df, title, labels=None):
         df['LABEL_PRED'] = labels
         label_col = 'LABEL_PRED'
 
-    for _, row in df[df[label_col] == 1].iterrows():
-        fig.add_trace(go.Scatter(
-            x=[row['DATE'], row['DATE']],
-            y=[-450, 450],
-            mode='lines',
-            line_color='green',
-            opacity=0.05,
-            showlegend=False
-        ))
+    colors = {0: 'red', 1: 'green', 2: 'yellow', 3: 'blue', 4: 'purple'}
 
-    for _, row in df[df[label_col] == 3].iterrows():
-        fig.add_trace(go.Scatter(
-            x=[row['DATE'], row['DATE']],
-            y=[-450, 450],
-            mode='lines',
-            line_color='purple',
-            opacity=0.05,
-            showlegend=False
-        ))
+    for i in draw:
+        for _, row in df[df[label_col] == i].iterrows():
+            fig.add_trace(go.Scatter(
+                x=[row['DATE'], row['DATE']],
+                y=[-450, 450],
+                mode='lines',
+                line_color=colors[i],
+                opacity=0.05,
+                showlegend=False
+            ))
 
     fig.update_layout({'title': title})
-    fig.write_html(f'fig_{title}.html')
+    fig.write_html(
+        f'../logs/fig_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_{title}.html')
 
 
 # %% setup
@@ -786,9 +780,9 @@ t2 = time()
 # %% pad missing labels
 
 if len(train_pred) < size_train:
-    train_pred + [train_pred[-1]] * (size_train - len(train_pred))
+    train_pred += [train_pred[-1]] * (size_train - len(train_pred))
 if len(train_true) < size_train:
-    train_true + [train_true[-1]] * (size_train - len(train_true))
+    train_true += [train_true[-1]] * (size_train - len(train_true))
 
 print(f'train_pred: {len(train_pred)}')
 print(f'train_true: {len(train_true)}')
@@ -824,10 +818,10 @@ print_('No. of drifts is %d' % len(drifts_detected))
 
 # %% plots
 
-plot_labelled_orbit(df1, 'train_true')
-plot_labelled_orbit(df1, 'train_pred', train_pred)
-plot_labelled_orbit(df2, 'test_true')
-plot_labelled_orbit(df2, 'test_pred', test_pred)
+plot_orbit(df1, 'train_true', draw=[1,2,3,4])
+plot_orbit(df1, 'train_pred', draw=[1,2,3,4], labels=train_pred)
+plot_orbit(df2, 'test_true', draw=[1,2,3,4])
+plot_orbit(df2, 'test_pred', draw=[1,2,3,4], labels=test_pred)
 
 
 # %% close log file
@@ -835,3 +829,5 @@ plot_labelled_orbit(df2, 'test_pred', test_pred)
 if fptr is not None:
     fptr.close()
     fptr = None
+
+# %%
