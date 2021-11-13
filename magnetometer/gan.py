@@ -708,7 +708,7 @@ def plot_orbit(df, title, draw=[1, 3], labels=None):
 fptr = None
 dataset = 'messenger'
 # Set the number of training instances
-training_window_size = 100
+training_window_size = 1000
 # Set the number of epochs the GAN should be trained
 epochs = 20
 
@@ -756,8 +756,8 @@ df_test = load_data('../data/labelled_orbits/test/*.csv')
 
 # %% select data
 
-feats = ['DATE', 'X_MSO', 'Y_MSO', 'Z_MSO', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'DBX_MSO', 'DBY_MSO', 'DBZ_MSO', 'RHO', 'RXY', 'THETA_DIPOLE', 'BABS_DIPOLE'
-         'RHO_DIPOLE', 'BX_DIPOLE', 'BY_DIPOLE', 'BZ_DIPOLE', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ', 'COSALPHA', 'EXTREMA']
+feats = ['DATE', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'DBX_MSO', 'DBY_MSO', 'DBZ_MSO', 'RHO', 'BABS_DIPOLE',
+         'RHO_DIPOLE', 'BX_DIPOLE', 'BY_DIPOLE', 'BZ_DIPOLE', 'COSALPHA', 'EXTREMA']
 df_train = select_features(df_train, feats)
 df_test = select_features(df_test, feats)
 
