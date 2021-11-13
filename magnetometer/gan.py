@@ -430,9 +430,6 @@ def process_data(features, labels, features_window, labels_window, device, epoch
     generator.eval()
     discriminator.eval()
 
-    # print_(generator)
-    # print_(discriminator)
-
     while index + training_window_size < len(features):
 
         data = features[index:index + test_batch_size]
@@ -544,8 +541,8 @@ def process_data(features, labels, features_window, labels_window, device, epoch
         print_('index = %d' % index)
         index += training_window_size
 
-    # print_(generator)
-    # print_(discriminator)
+    print_(generator)
+    print_(discriminator)
 
     # Test on the remaining features
     # features_window = features[index:, :]
@@ -582,26 +579,17 @@ def load_data(path):
 
     files = glob.glob(path)
     li = []
+    breaks = []
 
     for filename in files:
         df = pd.read_csv(filename, index_col=None, header=0)
-        if filename.endswith('df_14.csv'):
-            df = df[(df['DATE'] >= '2011-03-30 13:45:00') &
-                    (df['DATE'] <= '2011-03-30 16:20:00')]
-        elif filename.endswith('df_30.csv'):
-            df = df[(df['DATE'] >= '2011-04-07 15:05:00') &
-                    (df['DATE'] <= '2011-04-07 17:30:00')]
-        elif filename.endswith('df_9.csv'):
-            df = df[(df['DATE'] >= '2011-03-28 01:30:00') &
-                    (df['DATE'] <= '2011-03-28 03:40:00')]
-        elif filename.endswith('df_17.csv'):
-            df = df[(df['DATE'] >= '2011-04-01 01:30:00') &
-                    (df['DATE'] <= '2011-04-01 07:00:00')]
+        breaks.append(df.iloc[0]['DATE'])
+        breaks.append(df.iloc[-1]['DATE'])
         li.append(df)
 
     df = pd.concat(li, axis=0, ignore_index=True)
 
-    return df.dropna()
+    return df.dropna(), sorted(breaks)[1:-1]
 
 
 def calc_stats(cm):
@@ -662,21 +650,16 @@ def plot_field(df):
     return fig
 
 
-def plot_orbit(df, title, draw=[1, 3], labels=None):
+def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
 
     df['B_tot'] = (df['BX_MSO']**2 + df['BY_MSO']**2 + df['BZ_MSO']**2)**0.5
 
     fig = plot_field(df)
-    if title.startswith('train'):
+    
+    for i in range(0, len(breaks), 2):
         fig.update_xaxes(
             rangebreaks=[
-                dict(bounds=['2011-03-30 20:36:00', '2011-04-07 09:41:53'])
-            ]
-        )
-    elif title.startswith('test'):
-        fig.update_xaxes(
-            rangebreaks=[
-                dict(bounds=['2011-03-28 08:17:10', '2011-03-31 20:44:47'])
+                dict(bounds=[breaks[i], breaks[i+1]])
             ]
         )
 
@@ -709,34 +692,44 @@ fptr = None
 dataset = 'messenger'
 # Set the number of training instances
 training_window_size = 1000
+print_(f'training_window_size: {training_window_size}')
 # Set the number of epochs the GAN should be trained
 epochs = 20
+print_(f'epochs: {epochs}')
 
 # 1/factor will be the amount of instances of previous drifts taken for training
 repeat_factor = 10
+print_(f'repeat_factor: {repeat_factor}')
 
 # Equalize the number of training instances across different drifts
 equalize = True
 
 # How far in to the past is required for generating current data
 sequence_length = 10
+print_(f'sequence_length: {sequence_length}')
 # For the collate function to split the rows accordingly
 seq_len = sequence_length
 
 # Steps for training
 steps_generator = 50
+print_(f'steps_generator: {steps_generator}')
 
 # Set the batch_size
 batch_size = 8
+print_(f'batch_size: {batch_size}')
 generator_batch_size = 2
+print_(f'generator_batch_size: {generator_batch_size}')
 # Number of instances that should have the same label for a drift to be confirmed
 test_batch_size = 4
+print_(f'test_batch_size: {test_batch_size}')
 
 # Set the learning rate
 lr = 0.025  # Changed to Adadelta with a default learning rate of 1
+print_(f'learning rate: {lr}')
 
 # Set the weight decay rate
 weight_decay = 0.000000
+print_(f'weight_decay: {weight_decay}')
 
 # Set a random seed for the experiment
 seed = np.random.randint(65536)
@@ -750,8 +743,8 @@ print_('The seed for the current execution is %d for dataset %s with device %s' 
 
 # %% load data
 
-df_train = load_data('../data/labelled_orbits/train/*.csv')
-df_test = load_data('../data/labelled_orbits/test/*.csv')
+df_train, breaks_train = load_data('../data/labelled_orbits/train/*.csv')
+df_test, breaks_test = load_data('../data/labelled_orbits/test/*.csv')
 
 
 # %% select data
@@ -760,6 +753,7 @@ feats = ['DATE', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'DBX_MSO', 'DBY_MSO', 'DBZ_MSO', 
          'RHO_DIPOLE', 'BX_DIPOLE', 'BY_DIPOLE', 'BZ_DIPOLE', 'COSALPHA', 'EXTREMA']
 df_train = select_features(df_train, feats)
 df_test = select_features(df_test, feats)
+print_(f'selected features: {feats}')
 
 # offset_train = 16080
 # size_train = 26280 - offset_train
@@ -828,14 +822,6 @@ print(f'test_true: {len(test_true)}')
 
 # %% evaluation
 
-# Get the auc_value
-# auc_value = accuracy_score(y_true=y_true, y_pred=y_pred)
-# print_('Accuracy value is %f for training and testing datasets %s' %
-#        (auc_value, dataset))
-# print_(precision_recall_fscore_support(
-#     y_true, y_pred, average=None, labels=np.unique(y_true)))
-# print_(confusion_matrix(y_true, y_pred))
-
 auc_value = accuracy_score(y_true=train_true, y_pred=train_pred)
 print_('Accuracy value is %f for training dataset %s' % (auc_value, dataset))
 print_(precision_recall_fscore_support(train_true, train_pred,
@@ -855,10 +841,12 @@ print_('No. of drifts is %d' % len(drifts_detected))
 
 # %% plots
 
-plot_orbit(df_train, 'train_true', draw=[1, 2, 3, 4])
-plot_orbit(df_train, 'train_pred', draw=[1, 2, 3, 4], labels=train_pred)
-plot_orbit(df_test, 'test_true', draw=[1, 2, 3, 4])
-plot_orbit(df_test, 'test_pred', draw=[1, 2, 3, 4], labels=test_pred)
+print_('plotting...')
+plot_orbit(df_train, breaks_train, 'train_true', draw=[1, 2, 3, 4])
+plot_orbit(df_train, breaks_train, 'train_pred', draw=[1, 2, 3, 4], labels=train_pred)
+plot_orbit(df_test, breaks_test, 'test_true', draw=[1, 2, 3, 4])
+plot_orbit(df_test, breaks_test, 'test_pred', draw=[1, 2, 3, 4], labels=test_pred)
+print_('plotting finished')
 
 
 # %% close log file
