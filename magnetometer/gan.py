@@ -691,7 +691,7 @@ def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
 fptr = None
 dataset = 'messenger'
 # Set the number of training instances
-training_window_size = 1000
+training_window_size = 2500
 print_(f'training_window_size: {training_window_size}')
 # Set the number of epochs the GAN should be trained
 epochs = 20
@@ -810,15 +810,15 @@ t2 = time()
 
 # %% pad missing labels
 
-if len(train_pred) < len(df_train.index):
-    train_pred += [train_pred[-1]] * (len(df_train.index) - len(train_pred))
 if len(train_true) < len(df_train.index):
     train_true += [train_true[-1]] * (len(df_train.index) - len(train_true))
+    print_(f'padded training set true values with [{train_true[-1]}] * {len(df_train.index) - len(train_true)}')
+if len(train_pred) < len(df_train.index):
+    train_pred += [train_pred[-1]] * (len(df_train.index) - len(train_pred))
+    print_(f'padded training set predictions with [{train_pred[-1]}] * {len(df_train.index) - len(train_pred)}')
 
-print(f'train_pred: {len(train_pred)}')
-print(f'train_true: {len(train_true)}')
-print(f'test_pred: {len(test_pred)}')
-print(f'test_true: {len(test_true)}')
+print_(f'training set size: {len(train_true)}')
+print_(f'testing set size: {len(test_true)}')
 
 # %% evaluation
 
