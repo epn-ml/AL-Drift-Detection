@@ -691,7 +691,7 @@ def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
 fptr = None
 dataset = 'messenger'
 # Set the number of training instances
-training_window_size = 2500
+training_window_size = 5000
 print_(f'training_window_size: {training_window_size}')
 # Set the number of epochs the GAN should be trained
 epochs = 20
@@ -773,7 +773,6 @@ features_train = (features_train - mean)/(std + 0.000001)
 u, c = np.unique(labels_train, return_counts=True)
 print_(dict(zip(u, c)))
 print(f'features_train: {len(features_train)}')
-print(f'labels_train: {len(labels_train)}')
 
 features_test = df_test.iloc[:, 1:-1].values
 labels_test = df_test.iloc[:, -1].values.tolist()
@@ -783,7 +782,6 @@ features_test = (features_test - mean)/(std + 0.000001)
 u, c = np.unique(labels_test, return_counts=True)
 print_(dict(zip(u, c)))
 print(f'features_test: {len(features_test)}')
-print(f'labels_test: {len(labels_test)}')
 
 
 # %% training
