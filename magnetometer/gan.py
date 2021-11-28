@@ -1,22 +1,22 @@
 # %% imports
 
-from torch.optim import Adadelta
-from torch import nn
-from torch.nn import Sequential, Linear, Dropout, ReLU, Module
-from torch.utils.data import DataLoader
-from torch.autograd import Variable
-from skmultiflow.trees import HoeffdingTreeClassifier
-from time import time
-from datetime import datetime
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import precision_recall_fscore_support
-
 import glob
-import torch
+import random
+from datetime import datetime
+from time import perf_counter
+
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import torch
+from sklearn.metrics import (accuracy_score, confusion_matrix,
+                             precision_recall_fscore_support)
+from skmultiflow.trees import HoeffdingTreeClassifier
+from torch import nn
+from torch.autograd import Variable
+from torch.nn import Dropout, Linear, Module, ReLU, Sequential
+from torch.optim import Adadelta
+from torch.utils.data import DataLoader
 
 global seq_len
 global fptr
@@ -108,9 +108,7 @@ def fit_and_predict(clf, features, labels, classes):
     predicted = np.empty(shape=len(labels))
     predicted[0] = clf.predict([features[0]])
     clf.reset()
-    ft = [features[0]]
-    lb = [labels[0]]
-    clf.partial_fit(ft, lb, classes=classes)
+    clf.partial_fit([features[0]], [labels[0]], classes=classes)
     for idx in range(1, len(labels)):
         predicted[idx] = clf.predict([features[idx]])
         clf.partial_fit([features[idx]], [labels[idx]], classes=classes)
@@ -362,12 +360,9 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     return generator, discriminator
 
 
-def process_data(features, labels, features_window, labels_window, device, epochs=100, steps_generator=100, equalize=True, test_batch_size=4,
+def process_data(features, labels, device, epochs=100, steps_generator=100, equalize=True, test_batch_size=4,
                  seed=0, batch_size=8, lr=0.001, momentum=0.9, weight_decay=0.0005, training_window_size=100,
                  generator_batch_size=1, sequence_length=2, repeat_factor=4):
-
-    # Set the seed
-    import random
 
     random.seed(seed)
     torch.manual_seed(seed=seed)
@@ -564,15 +559,15 @@ def process_data(features, labels, features_window, labels_window, device, epoch
     torch.save(discriminator.state_dict(
     ), f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_dis_state.pth')
 
-    y_hat, clf = predict_and_partial_fit(
-        clf, features=features_window, labels=labels_window, classes=classes)
+    # y_hat, clf = predict_and_partial_fit(
+    #     clf, features=features_window, labels=labels_window, classes=classes)
     # y_pred = y_pred + y_hat.tolist()
     # y_true = y_true + labels_window
 
     print_(f'drift_indices = {drift_indices}')
     print_(f'drift_labels = {drift_labels}')
 
-    return y_pred, y_true, y_hat.tolist(), labels_window, drifts_detected
+    return y_pred, y_true, drifts_detected, clf
 
 
 def load_data(path):
@@ -598,12 +593,12 @@ def calc_stats(cm):
     recall = []
     f1 = []
 
-    for i in range(len(cm)):
+    for i, _ in enumerate(cm):
         tp = cm[i][i]
         fp = 0
         fn = 0
 
-        for j in range(len(cm[i])):
+        for j, _ in enumerate(cm[i]):
             if j != i:
                 fp += cm[j][i]
                 fn += cm[i][j]
@@ -655,7 +650,7 @@ def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
     df['B_tot'] = (df['BX_MSO']**2 + df['BY_MSO']**2 + df['BZ_MSO']**2)**0.5
 
     fig = plot_field(df)
-    
+
     for i in range(0, len(breaks), 2):
         fig.update_xaxes(
             rangebreaks=[
@@ -694,7 +689,7 @@ dataset = 'messenger'
 training_window_size = 5000
 print_(f'training_window_size: {training_window_size}')
 # Set the number of epochs the GAN should be trained
-epochs = 20
+epochs = 20  # 100
 print_(f'epochs: {epochs}')
 
 # 1/factor will be the amount of instances of previous drifts taken for training
@@ -795,25 +790,34 @@ max_features = np.reshape(max_features, newshape=(max_features.shape[0], 1)) + 0
 features = features / max_features
 """
 
-t1 = time()
-train_pred, train_true, test_pred, test_true, drifts_detected = process_data(features=features_train, labels=labels_train, features_window=features_test, labels_window=labels_test, device=device, epochs=epochs,
-                                                                             steps_generator=steps_generator, seed=seed,
-                                                                             batch_size=batch_size, lr=lr, momentum=0.9,
-                                                                             weight_decay=weight_decay, test_batch_size=test_batch_size,
-                                                                             training_window_size=training_window_size,
-                                                                             generator_batch_size=generator_batch_size, equalize=equalize,
-                                                                             sequence_length=sequence_length, repeat_factor=repeat_factor)
-t2 = time()
+t1 = perf_counter()
+train_pred, train_true, drifts_detected, clf = process_data(features=features_train, labels=labels_train, device=device, epochs=epochs,
+                                                            steps_generator=steps_generator, seed=seed,
+                                                            batch_size=batch_size, lr=lr, momentum=0.9,
+                                                            weight_decay=weight_decay, test_batch_size=test_batch_size,
+                                                            training_window_size=training_window_size,
+                                                            generator_batch_size=generator_batch_size, equalize=equalize,
+                                                            sequence_length=sequence_length, repeat_factor=repeat_factor)
+t2 = perf_counter()
 
+
+# %% testing
+
+test_true = features_test
+test_pred = np.empty(shape=len(test_true))
+for idx in range(0, len(test_true)):
+    test_pred[idx] = clf.predict([test_true[idx]])
 
 # %% pad missing labels
 
 if len(train_true) < len(df_train.index):
+    print_(
+        f'padding training set true values with [{train_true[-1]}] * {len(df_train.index) - len(train_true)}')
     train_true += [train_true[-1]] * (len(df_train.index) - len(train_true))
-    print_(f'padded training set true values with [{train_true[-1]}] * {len(df_train.index) - len(train_true)}')
 if len(train_pred) < len(df_train.index):
+    print_(
+        f'padding training set predictions with [{train_pred[-1]}] * {len(df_train.index) - len(train_pred)}')
     train_pred += [train_pred[-1]] * (len(df_train.index) - len(train_pred))
-    print_(f'padded training set predictions with [{train_pred[-1]}] * {len(df_train.index) - len(train_pred)}')
 
 print_(f'training set size: {len(train_true)}')
 print_(f'testing set size: {len(test_true)}')
@@ -840,10 +844,12 @@ print_('No. of drifts is %d' % len(drifts_detected))
 # %% plots
 
 print_('plotting...')
-plot_orbit(df_train, breaks_train, 'train_true', draw=[1, 2, 3, 4])
-plot_orbit(df_train, breaks_train, 'train_pred', draw=[1, 2, 3, 4], labels=train_pred)
-plot_orbit(df_test, breaks_test, 'test_true', draw=[1, 2, 3, 4])
-plot_orbit(df_test, breaks_test, 'test_pred', draw=[1, 2, 3, 4], labels=test_pred)
+plot_orbit(df_train, breaks_train, 'train_true', draw=[1, 3])
+plot_orbit(df_train, breaks_train, 'train_pred',
+           draw=[1, 3], labels=train_pred)
+plot_orbit(df_test, breaks_test, 'test_true', draw=[1, 3])
+plot_orbit(df_test, breaks_test, 'test_pred',
+           draw=[1, 3], labels=test_pred)
 print_('plotting finished')
 
 
