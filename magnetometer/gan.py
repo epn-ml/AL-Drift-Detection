@@ -659,7 +659,7 @@ def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
         )
 
     label_col = 'LABEL'
-    if labels != None:
+    if labels is not None:
         df['LABEL_PRED'] = labels
         label_col = 'LABEL_PRED'
 
@@ -799,14 +799,14 @@ train_pred, train_true, drifts_detected, clf = process_data(features=features_tr
                                                             generator_batch_size=generator_batch_size, equalize=equalize,
                                                             sequence_length=sequence_length, repeat_factor=repeat_factor)
 t2 = perf_counter()
+test_true = labels_test
 
 
 # %% testing
 
-test_true = features_test
-test_pred = np.empty(shape=len(test_true))
-for idx in range(0, len(test_true)):
-    test_pred[idx] = clf.predict([test_true[idx]])
+test_pred = np.empty(shape=len(features_test))
+for idx in range(0, len(features_test)):
+    test_pred[idx] = clf.predict([features_test[idx]])
 
 # %% pad missing labels
 
