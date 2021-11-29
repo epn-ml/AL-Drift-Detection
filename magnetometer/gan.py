@@ -2,6 +2,7 @@
 
 import glob
 import random
+import sys
 from datetime import datetime
 from time import perf_counter
 
@@ -686,7 +687,9 @@ def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
 fptr = None
 dataset = 'messenger'
 # Set the number of training instances
-training_window_size = 5000
+training_window_size = 1000
+if len(sys.argv) > 1:
+    training_window_size = int(sys.argv[1])
 print_(f'training_window_size: {training_window_size}')
 # Set the number of epochs the GAN should be trained
 epochs = 20  # 100
