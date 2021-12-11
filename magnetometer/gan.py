@@ -741,8 +741,8 @@ print_('The seed for the current execution is %d for dataset %s with device %s' 
 
 # %% load data
 
-df_train, breaks_train = load_data('../data/labelled_orbits/train/*.csv')
-df_test, breaks_test = load_data('../data/labelled_orbits/test/*.csv')
+df_train, breaks_train = load_data('../data/orbits/train/*.csv')
+df_test, breaks_test = load_data('../data/orbits/test/*.csv')
 
 
 # %% select data
