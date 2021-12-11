@@ -688,7 +688,7 @@ fptr = None
 dataset = 'messenger'
 # Set the number of training instances
 training_window_size = 1000
-if len(sys.argv) > 1:
+if len(sys.argv) == 2:
     training_window_size = int(sys.argv[1])
 print_(f'training_window_size: {training_window_size}')
 # Set the number of epochs the GAN should be trained

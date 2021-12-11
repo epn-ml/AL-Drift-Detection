@@ -1,5 +1,4 @@
-data/labelled_orbits/*
-data/orbits/*
+data/*
 logs/*
 magnetometer/*.csv
 magnetometer/*.xlsx
