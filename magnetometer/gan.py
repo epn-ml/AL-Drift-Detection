@@ -1,6 +1,7 @@
 # %% imports
 
 import glob
+import os
 import random
 import sys
 from datetime import datetime
@@ -22,6 +23,7 @@ from torch.utils.data import DataLoader
 global seq_len
 global fptr
 global dataset
+global folder
 
 
 # %% functions
@@ -31,8 +33,8 @@ def print_(print_str):
     global fptr
     global dataset
     if fptr is None:
-        name = '../logs/log-' + \
-            str(datetime.now().strftime('%Y-%m-%d-%H-%M-%S')) + '.txt'
+        os.makedirs(f'../logs/{folder}')
+        name = f'../logs/{folder}/log.txt'
         fptr = open(name, "w")
 
     fptr.write(str(datetime.now()) + ": " + str(print_str) + "\n")
@@ -674,13 +676,14 @@ def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
 
         fig.update_layout({'title': title})
         fig.write_html(
-            f'../logs/fig_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_{title}_{df_orbit.iloc[0]["DATE"][:10]}.html')
+            f'../logs/{folder}/fig_{title}_{df_orbit.iloc[0]["DATE"][:10]}.html')
 
 
 # %% setup
 
 fptr = None
 dataset = 'messenger'
+folder = str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
 # Set the number of training instances
 training_window_size = 1000
 if len(sys.argv) == 2:
