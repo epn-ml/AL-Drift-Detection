@@ -549,16 +549,16 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
     # y_true = y_true + labels_window
 
     # save model
-    torch.save(
-        clf, f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_clf.pth')
-    torch.save(
-        generator, f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_gen.pth')
-    torch.save(discriminator,
-               f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_dis.pth')
-    torch.save(generator.state_dict(
-    ), f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_gen_state.pth')
-    torch.save(discriminator.state_dict(
-    ), f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_dis_state.pth')
+    # torch.save(
+    #     clf, f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_clf.pth')
+    # torch.save(
+    #     generator, f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_gen.pth')
+    # torch.save(discriminator,
+    #            f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_dis.pth')
+    # torch.save(generator.state_dict(
+    # ), f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_gen_state.pth')
+    # torch.save(discriminator.state_dict(
+    # ), f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_dis_state.pth')
 
     # y_hat, clf = predict_and_partial_fit(
     #     clf, features=features_window, labels=labels_window, classes=classes)
