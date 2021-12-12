@@ -579,13 +579,12 @@ def load_data(path):
 
     for filename in files:
         df = pd.read_csv(filename, index_col=None, header=0)
-        breaks.append(df.iloc[0]['DATE'])
-        breaks.append(df.iloc[-1]['DATE'])
+        breaks.append((df.iloc[0]['DATE'], df.iloc[-1]['DATE']))
         li.append(df)
 
     df = pd.concat(li, axis=0, ignore_index=True)
 
-    return df.dropna(), sorted(breaks)[1:-1]
+    return df.dropna().sort_values(by='DATE'), sorted(breaks)
 
 
 def calc_stats(cm):
@@ -649,37 +648,33 @@ def plot_field(df):
 def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
 
     df['B_tot'] = (df['BX_MSO']**2 + df['BY_MSO']**2 + df['BZ_MSO']**2)**0.5
-
-    fig = plot_field(df)
-
-    for i in range(0, len(breaks), 2):
-        fig.update_xaxes(
-            rangebreaks=[
-                dict(bounds=[breaks[i], breaks[i+1]])
-            ]
-        )
+    colors = {0: 'red', 1: 'green', 2: 'yellow', 3: 'blue', 4: 'purple'}
 
     label_col = 'LABEL'
     if labels is not None:
         df['LABEL_PRED'] = labels
         label_col = 'LABEL_PRED'
 
-    colors = {0: 'red', 1: 'green', 2: 'yellow', 3: 'blue', 4: 'purple'}
+    for date_range in breaks:
 
-    for i in draw:
-        for _, row in df[df[label_col] == i].iterrows():
-            fig.add_trace(go.Scatter(
-                x=[row['DATE'], row['DATE']],
-                y=[-450, 450],
-                mode='lines',
-                line_color=colors[i],
-                opacity=0.05,
-                showlegend=False
-            ))
+        df_orbit = df[(df['DATE'] >= date_range[0]) &
+                      (df['DATE'] <= date_range[1])]
+        fig = plot_field(df_orbit)
 
-    fig.update_layout({'title': title})
-    fig.write_html(
-        f'../logs/fig_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_{title}.html')
+        for i in draw:
+            for _, row in df_orbit[df_orbit[label_col] == i].iterrows():
+                fig.add_trace(go.Scatter(
+                    x=[row['DATE'], row['DATE']],
+                    y=[-450, 450],
+                    mode='lines',
+                    line_color=colors[i],
+                    opacity=0.05,
+                    showlegend=False
+                ))
+
+        fig.update_layout({'title': title})
+        fig.write_html(
+            f'../logs/fig_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_{title}_{df_orbit.iloc[0]["DATE"][:10]}.html')
 
 
 # %% setup
@@ -847,12 +842,10 @@ print_('No. of drifts is %d' % len(drifts_detected))
 # %% plots
 
 print_('plotting...')
-plot_orbit(df_train, breaks_train, 'train_true', draw=[1, 3])
-plot_orbit(df_train, breaks_train, 'train_pred',
-           draw=[1, 3], labels=train_pred)
-plot_orbit(df_test, breaks_test, 'test_true', draw=[1, 3])
-plot_orbit(df_test, breaks_test, 'test_pred',
-           draw=[1, 3], labels=test_pred)
+plot_orbit(df_train, breaks_train, 'train_true')
+plot_orbit(df_train, breaks_train, 'train_pred', labels=train_pred)
+plot_orbit(df_test, breaks_test, 'test_true')
+plot_orbit(df_test, breaks_test, 'test_pred', labels=test_pred)
 print_('plotting finished')
 
 
