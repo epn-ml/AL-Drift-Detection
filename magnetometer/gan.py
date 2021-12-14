@@ -703,7 +703,7 @@ def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
 
         fig.update_layout({'title': title})
         fig.write_html(
-            f'../logs/{folder}/fig_{title}_{df_orbit.iloc[0]["DATE"][:10]}.html')
+            f'../logs/{folder}/fig_{df_orbit.iloc[0]["DATE"][:16].replace(" ", "_")}_{title}.html')
 
 
 # %% setup
