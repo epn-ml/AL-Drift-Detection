@@ -337,6 +337,7 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     # Label vectors
     ones = Variable(torch.ones(generator_batch_size)).to(torch.long).to(device)
 
+    print_('concatenating features...')
     # This data contains the current vector and next vector
     concatenated_data = concatenate_features(
         features, sequence_len=sequence_length)
