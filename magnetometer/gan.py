@@ -452,20 +452,23 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
 
         max_idx = max_idx[0]
         # Drift detected
-        print_(f'drift detected, appending {(index, index+training_window_size)} to drift indices {drift_indices}')
+        print_(
+            f'drift detected, appending {(index, index+training_window_size)} to drift indices {drift_indices}')
         drift_indices.append((index, index+training_window_size))
 
         print(f'{max_idx = }')
         print(f'{generator_label = }')
-        print(f'{temp_label = }')        
+        print(f'{temp_label = }')
 
         if temp_label[0] != 0:
             # add the index of the previous drift if it was a recurring drift
-            print_(f'adding index of the previous drift {temp_label[0]} (recurring) to drift labels {drift_labels}')
+            print_(
+                f'adding index of the previous drift {temp_label[0]} (recurring) to drift labels {drift_labels}')
             drift_labels.append(temp_label[0])
 
         else:
-            print_(f'adding generator label {generator_label} to drift labels {drift_labels}')
+            print_(
+                f'adding generator label {generator_label} to drift labels {drift_labels}')
             drift_labels.append(generator_label)
 
         if max_idx != generator_label:
@@ -497,7 +500,8 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
         generator.train()
         discriminator.train()
 
-        print_(f'creating training dataset with {drift_indices = }, {drift_labels = }, {temp_label = }')
+        print_(
+            f'creating training dataset with {drift_indices = }, {drift_labels = }, {temp_label = }')
         training_dataset = create_training_dataset(dataset=features,
                                                    indices=drift_indices,
                                                    drift_labels=drift_labels+temp_label)
@@ -517,11 +521,13 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
         # Set the indices for the training window
         training_idx_start = index
         training_idx_end = training_idx_start + training_window_size
-        print_(f'new training window: [{training_idx_start}, {training_idx_end}]')
+        print_(
+            f'new training window: [{training_idx_start}, {training_idx_end}]')
 
         # If a previous drift has occurred use those for training the classifier but not predict on them
         if temp_label[0] != 0:
-            print_(f'previous drift has occured ({temp_label[0] = }), resetting classifier')
+            print_(
+                f'previous drift has occured ({temp_label[0] = }), resetting classifier')
             clf.reset()
             for indices, label in zip(drift_indices[:-1], drift_labels):
                 if label == temp_label[0]:
@@ -772,7 +778,8 @@ df_test, breaks_test = load_data('../data/orbits/test/*.csv')
 
 # %% select data
 
-feats = ['BX_MSO', 'BY_MSO', 'BZ_MSO', 'COSALPHA', 'EXTREMA']
+feats = ['X_MSO', 'Y_MSO', 'Z_MSO', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'DBX_MSO', 'DBY_MSO', 'DBZ_MSO', 'RHO_DIPOLE', 'PHI_DIPOLE', 'THETA_DIPOLE',
+         'BABS_DIPOLE', 'BX_DIPOLE', 'BY_DIPOLE', 'BZ_DIPOLE', 'RHO', 'RXY', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ', 'VABS', 'D', 'COSALPHA', 'EXTREMA']
 df_train = select_features(df_train, feats)
 df_test = select_features(df_test, feats)
 print_(f'selected features: {feats}')
