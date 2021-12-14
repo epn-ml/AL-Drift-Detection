@@ -355,10 +355,12 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     generator_label = ones * max_label
 
     for epochs_trained in range(epochs):
+        print_(f'training discriminator... ({generator_label = })')
         discriminator = train_discriminator(real_data=real_data, fake_data=generator_data, discriminator=discriminator,
                                             generator=generator, optimizer=optimizer_discriminator,
                                             loss_fn=loss_discriminator, generator_labels=generator_label, device=device)
 
+        print_(f'training generator...')
         generator = train_generator(data_loader=generator_data, discriminator=discriminator, generator=generator,
                                     optimizer=optimizer_generator, loss_fn=loss_generator, loss_mse=loss_mse_generator,
                                     steps=steps_generator, device=device)
@@ -410,6 +412,7 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
 
     initial_epochs = epochs * 2
 
+    print_('fitting classifier to initial training window')
     predicted, clf = fit_and_predict(
         clf=clf, features=x, labels=y, classes=classes)
     y_pred = y_pred + predicted.tolist()
@@ -419,6 +422,7 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
     training_dataset = create_training_dataset(
         dataset=features, indices=drift_indices, drift_labels=[0])
 
+    print_('training GAN on initial training window')
     generator, discriminator = train_gan(features=training_dataset, device=device, discriminator=discriminator,
                                          generator=generator, epochs=initial_epochs, steps_generator=steps_generator,
                                          seed=seed, batch_size=batch_size, lr=lr, momentum=momentum, equalize=equalize,
@@ -438,6 +442,7 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
         prob, max_idx = torch.max(result, dim=1)
         max_idx = max_idx.cpu().detach().numpy()
         if np.all(max_idx != max_idx[0]) or max_idx[0] == 0:
+            print_(f'predict and partial fit ({max_idx = })')
             predicted, clf = predict_and_partial_fit(clf=clf, features=data, labels=data_labels,
                                                      classes=classes)
             y_pred = y_pred + predicted.tolist()
@@ -447,20 +452,29 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
 
         max_idx = max_idx[0]
         # Drift detected
+        print_(f'drift detected, appending {(index, index+training_window_size)} to drift indices {drift_indices}')
         drift_indices.append((index, index+training_window_size))
+
+        print(f'{max_idx = }')
+        print(f'{generator_label = }')
+        print(f'{temp_label = }')        
 
         if temp_label[0] != 0:
             # add the index of the previous drift if it was a recurring drift
+            print_(f'adding index of the previous drift {temp_label[0]} (recurring) to drift labels {drift_labels}')
             drift_labels.append(temp_label[0])
 
         else:
+            print_(f'adding generator label {generator_label} to drift labels {drift_labels}')
             drift_labels.append(generator_label)
 
         if max_idx != generator_label:
             # Increase the max_idx by 1 if it is above the previous drift
             if temp_label[0] <= max_idx and temp_label[0] != 0:
                 max_idx += 1
+                print_(f'max_idx is above the previous drift, {max_idx = }')
             temp_label = [max_idx]
+            print_(f'{temp_label = }')
             # We reset the top layer predictions because the drift order has changed and the network should be retrained
             discriminator.reset_top_layer()
             discriminator = discriminator.to(device)
@@ -474,6 +488,7 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
             discriminator.update()
             discriminator = discriminator.to(device)
             generator_label += 1
+            print_(f'new drift, {generator_label = }')
 
         generator = Generator(
             inp=features.shape[1], out=features.shape[1], sequence_length=sequence_length)
@@ -482,6 +497,7 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
         generator.train()
         discriminator.train()
 
+        print_(f'creating training dataset with {drift_indices = }, {drift_labels = }, {temp_label = }')
         training_dataset = create_training_dataset(dataset=features,
                                                    indices=drift_indices,
                                                    drift_labels=drift_labels+temp_label)
@@ -501,9 +517,11 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
         # Set the indices for the training window
         training_idx_start = index
         training_idx_end = training_idx_start + training_window_size
+        print_(f'new training window: [{training_idx_start}, {training_idx_end}]')
 
         # If a previous drift has occurred use those for training the classifier but not predict on them
         if temp_label[0] != 0:
+            print_(f'previous drift has occured ({temp_label[0] = }), resetting classifier')
             clf.reset()
             for indices, label in zip(drift_indices[:-1], drift_labels):
                 if label == temp_label[0]:
@@ -516,13 +534,18 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
                     # Append rows and targets. Do random.sample and then split the matrix
                     rows = rows[chosen_indices]
                     targets = [targets[x] for x in chosen_indices]
+                    print_(f'fitting to features[{indices[0]}:{indices[1]}]')
+                    print_(f'{chosen_indices = }')
                     clf.partial_fit(X=rows, y=targets, classes=classes)
 
+            print_(f'predict and partial fit to new training window')
             predicted, clf = predict_and_partial_fit(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                                      labels=labels[training_idx_start:training_idx_end],
                                                      classes=classes)
 
         else:
+            print_(f'previous drift has not occured ({temp_label[0] = })')
+            print_(f'fit and predict on new training window')
             predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                              labels=labels[training_idx_start:training_idx_end],
                                              classes=classes)
@@ -536,6 +559,7 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
         y_pred = y_pred + predicted
         y_true = y_true + labels[training_idx_start:training_idx_end]
 
+        print_(f'appending {index = } to {drifts_detected = }')
         drifts_detected.append(index)
 
         print_('index = %d' % index)
@@ -620,7 +644,7 @@ def calc_stats(cm):
 
 def select_features(df, features):
 
-    drop_col = ['Unnamed: 0', 'DATE', 'X_MSO', 'Y_MSO', 'Z_MSO', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'DBX_MSO', 'DBY_MSO', 'DBZ_MSO', 'RHO_DIPOLE', 'PHI_DIPOLE', 'THETA_DIPOLE',
+    drop_col = ['Unnamed: 0', 'X_MSO', 'Y_MSO', 'Z_MSO', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'DBX_MSO', 'DBY_MSO', 'DBZ_MSO', 'RHO_DIPOLE', 'PHI_DIPOLE', 'THETA_DIPOLE',
                 'BABS_DIPOLE', 'BX_DIPOLE', 'BY_DIPOLE', 'BZ_DIPOLE', 'RHO', 'RXY', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ', 'VABS', 'D', 'COSALPHA', 'EXTREMA', 'ORBIT']
 
     for feature in features:
@@ -748,7 +772,7 @@ df_test, breaks_test = load_data('../data/orbits/test/*.csv')
 
 # %% select data
 
-feats = ['DATE', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'COSALPHA', 'EXTREMA']
+feats = ['BX_MSO', 'BY_MSO', 'BZ_MSO', 'COSALPHA', 'EXTREMA']
 df_train = select_features(df_train, feats)
 df_test = select_features(df_test, feats)
 print_(f'selected features: {feats}')
