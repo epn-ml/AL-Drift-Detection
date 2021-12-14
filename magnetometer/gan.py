@@ -340,10 +340,12 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     # This data contains the current vector and next vector
     concatenated_data = concatenate_features(
         features, sequence_len=sequence_length)
+    print_('concatenated data')
 
     if equalize:
         features = equalize_classes(features)
         concatenated_data = equalize_classes(concatenated_data)
+        print_('equalized classes')
 
     # Define the data loader for training
     real_data = DataLoader(features, batch_size=batch_size,
@@ -355,12 +357,12 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     generator_label = ones * max_label
 
     for epochs_trained in range(epochs):
-        print_(f'training discriminator... (generator_label = {generator_label})')
+        print_(f'{epochs_trained+1}/{epochs} training discriminator... (generator_label = {generator_label})')
         discriminator = train_discriminator(real_data=real_data, fake_data=generator_data, discriminator=discriminator,
                                             generator=generator, optimizer=optimizer_discriminator,
                                             loss_fn=loss_discriminator, generator_labels=generator_label, device=device)
 
-        print_(f'training generator...')
+        print_(f'{epochs_trained+1}/{epochs} training generator...')
         generator = train_generator(data_loader=generator_data, discriminator=discriminator, generator=generator,
                                     optimizer=optimizer_generator, loss_fn=loss_generator, loss_mse=loss_mse_generator,
                                     steps=steps_generator, device=device)
