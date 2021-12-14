@@ -39,6 +39,8 @@ def print_(print_str):
 
     fptr.write(str(datetime.now()) + ": " + str(print_str) + "\n")
     print(str(datetime.now()) + ": " + str(print_str))
+    fptr.flush()
+    os.fsync(fptr.fileno())
 
 
 class Generator(Module):
@@ -585,6 +587,7 @@ def load_data(path):
         li.append(df)
 
     df = pd.concat(li, axis=0, ignore_index=True)
+    print_(f'loaded data: {files}')
 
     return df.dropna().sort_values(by='DATE'), sorted(breaks)
 
@@ -745,8 +748,7 @@ df_test, breaks_test = load_data('../data/orbits/test/*.csv')
 
 # %% select data
 
-feats = ['DATE', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'DBX_MSO', 'DBY_MSO', 'DBZ_MSO', 'RHO', 'BABS_DIPOLE',
-         'RHO_DIPOLE', 'BX_DIPOLE', 'BY_DIPOLE', 'BZ_DIPOLE', 'COSALPHA', 'EXTREMA']
+feats = ['DATE', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'COSALPHA', 'EXTREMA']
 df_train = select_features(df_train, feats)
 df_test = select_features(df_test, feats)
 print_(f'selected features: {feats}')
