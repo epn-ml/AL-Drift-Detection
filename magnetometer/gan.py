@@ -709,14 +709,14 @@ def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
 
         fig.update_layout({'title': title})
         fig.write_html(
-            f'../logs/{folder}/fig_{df_orbit.iloc[0]["DATE"][:16].replace(" ", "_")}_{title}.html')
+            f'../logs/{folder}/fig_{df_orbit.iloc[0]["DATE"][:16].replace(" ", "_").replace(":", "-")}_{title}.html')
 
 
 # %% setup
 
 fptr = None
 dataset = 'messenger'
-folder = str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
+folder = str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
 # Set the number of training instances
 training_window_size = 1000
 if len(sys.argv) == 2:
@@ -878,10 +878,10 @@ print_('No. of drifts is %d' % len(drifts_detected))
 # %% plots
 
 print_('plotting...')
-plot_orbit(df_train, breaks_train, 'train_true')
-plot_orbit(df_train, breaks_train, 'train_pred', labels=train_pred)
-plot_orbit(df_test, breaks_test, 'test_true')
-plot_orbit(df_test, breaks_test, 'test_pred', labels=test_pred)
+plot_orbit(df_train, breaks_train, 'train-true')
+plot_orbit(df_train, breaks_train, 'train-pred', labels=train_pred)
+plot_orbit(df_test, breaks_test, 'test-true')
+plot_orbit(df_test, breaks_test, 'test-pred', labels=test_pred)
 print_('plotting finished')
 
 
