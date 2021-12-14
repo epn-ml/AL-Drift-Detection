@@ -770,7 +770,7 @@ std = np.std(features_train, axis=1).reshape(features_train.shape[0], 1)
 features_train = (features_train - mean)/(std + 0.000001)
 u, c = np.unique(labels_train, return_counts=True)
 print_(dict(zip(u, c)))
-print(f'features_train: {len(features_train)}')
+print_(f'features_train: {len(features_train)}')
 
 features_test = df_test.iloc[:, 1:-1].values
 labels_test = df_test.iloc[:, -1].values.tolist()
@@ -779,7 +779,7 @@ std = np.std(features_test, axis=1).reshape(features_test.shape[0], 1)
 features_test = (features_test - mean)/(std + 0.000001)
 u, c = np.unique(labels_test, return_counts=True)
 print_(dict(zip(u, c)))
-print(f'features_test: {len(features_test)}')
+print_(f'features_test: {len(features_test)}')
 
 
 # %% training
