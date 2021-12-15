@@ -445,7 +445,7 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
         prob, max_idx = torch.max(result, dim=1)
         max_idx = max_idx.cpu().detach().numpy()
         if np.all(max_idx != max_idx[0]) or max_idx[0] == 0:
-            print_(f'predict and partial fit (max_idx = {max_idx})')
+            #print_(f'predict and partial fit (max_idx = {max_idx})')
             predicted, clf = predict_and_partial_fit(clf=clf, features=data, labels=data_labels,
                                                      classes=classes)
             y_pred = y_pred + predicted.tolist()
