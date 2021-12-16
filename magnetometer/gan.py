@@ -357,13 +357,13 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     # This is the label for new drifts (any input other than the currently learned distributions)
     generator_label = ones * max_label
 
+    print_(f'training GAN... (generator_label = {generator_label})')
+
     for epochs_trained in range(epochs):
-        print_(f'{epochs_trained+1}/{epochs} training discriminator... (generator_label = {generator_label})')
         discriminator = train_discriminator(real_data=real_data, fake_data=generator_data, discriminator=discriminator,
                                             generator=generator, optimizer=optimizer_discriminator,
                                             loss_fn=loss_discriminator, generator_labels=generator_label, device=device)
 
-        print_(f'{epochs_trained+1}/{epochs} training generator...')
         generator = train_generator(data_loader=generator_data, discriminator=discriminator, generator=generator,
                                     optimizer=optimizer_generator, loss_fn=loss_generator, loss_mse=loss_mse_generator,
                                     steps=steps_generator, device=device)
@@ -459,9 +459,9 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
             f'drift detected, appending {(index, index+training_window_size)} to drift indices {drift_indices}')
         drift_indices.append((index, index+training_window_size))
 
-        print(f'max_idx = {max_idx}')
-        print(f'generator_label = {generator_label}')
-        print(f'temp_label = {temp_label}')
+        print_(f'max_idx = {max_idx}')
+        print_(f'generator_label = {generator_label}')
+        print_(f'temp_label = {temp_label}')
 
         if temp_label[0] != 0:
             # add the index of the previous drift if it was a recurring drift
@@ -478,7 +478,8 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
             # Increase the max_idx by 1 if it is above the previous drift
             if temp_label[0] <= max_idx and temp_label[0] != 0:
                 max_idx += 1
-                print_(f'max_idx is above the previous drift, max_idx = {max_idx}')
+                print_(
+                    f'max_idx is above the previous drift, max_idx = {max_idx}')
             temp_label = [max_idx]
             print_(f'temp_label = {temp_label}')
             # We reset the top layer predictions because the drift order has changed and the network should be retrained
@@ -553,7 +554,8 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
                                                      classes=classes)
 
         else:
-            print_(f'previous drift has not occured (temp_label[0]= {temp_label[0]})')
+            print_(
+                f'previous drift has not occured (temp_label[0]= {temp_label[0]})')
             print_(f'fit and predict on new training window')
             predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                              labels=labels[training_idx_start:training_idx_end],
@@ -568,7 +570,8 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
         y_pred = y_pred + predicted
         y_true = y_true + labels[training_idx_start:training_idx_end]
 
-        print_(f'appending index = {index} to drifts_detected = {drifts_detected}')
+        print_(
+            f'appending index = {index} to drifts_detected = {drifts_detected}')
         drifts_detected.append(index)
 
         print_('index = %d' % index)
@@ -783,6 +786,10 @@ df_test, breaks_test = load_data('../data/orbits/test/*.csv')
 
 feats = ['X_MSO', 'Y_MSO', 'Z_MSO', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'DBX_MSO', 'DBY_MSO', 'DBZ_MSO', 'RHO_DIPOLE', 'PHI_DIPOLE', 'THETA_DIPOLE',
          'BABS_DIPOLE', 'BX_DIPOLE', 'BY_DIPOLE', 'BZ_DIPOLE', 'RHO', 'RXY', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ', 'VABS', 'D', 'COSALPHA', 'EXTREMA']
+
+with open('../data/features.txt', 'r') as f:
+    feats = [line.strip() for line in f]
+
 df_train = select_features(df_train, feats)
 df_test = select_features(df_test, feats)
 print_(f'selected features: {feats}')
