@@ -544,8 +544,8 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
                     # Append rows and targets. Do random.sample and then split the matrix
                     rows = rows[chosen_indices]
                     targets = [targets[x] for x in chosen_indices]
-                    print_(f'fitting to features[{indices[0]}:{indices[1]}]')
-                    print_(f'chosen_indices = {chosen_indices}')
+                    print_(f'fitting to features[{indices[0]}:{indices[1]}], drift label = {label}')
+                    print_(f'randomly chosen {len(chosen_indices)} indices')
                     clf.partial_fit(X=rows, y=targets, classes=classes)
 
             print_(f'predict and partial fit to new training window')
@@ -555,7 +555,7 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
 
         else:
             print_(
-                f'previous drift has not occured (temp_label[0]= {temp_label[0]})')
+                f'previous drift has not occured (temp_label[0] = {temp_label[0]})')
             print_(f'fit and predict on new training window')
             predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                              labels=labels[training_idx_start:training_idx_end],
