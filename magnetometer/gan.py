@@ -357,7 +357,7 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     # This is the label for new drifts (any input other than the currently learned distributions)
     generator_label = ones * max_label
 
-    print_(f'training GAN... (generator_label = {generator_label})')
+    print_(f'training GAN... (epochs = {epochs}, generator_label = {generator_label})')
 
     for epochs_trained in range(epochs):
         discriminator = train_discriminator(real_data=real_data, fake_data=generator_data, discriminator=discriminator,
