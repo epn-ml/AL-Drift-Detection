@@ -255,7 +255,8 @@ def concatenate_features(data, sequence_len=2, has_label=True):
         (modified_data[idx - sequence_len:idx + 1, :].flatten(), data[idx-sequence_len][-1]))
     idx += 1
     while idx < len(modified_data)-1:
-        print_(f'{idx+1}/{len(modified_data)-1} concatenating features...')
+        if idx % 10000 == 0:
+            print_(f'{idx}/{len(modified_data)-1} concatenating features...')
         output = np.vstack((output, np.hstack((modified_data[idx - sequence_len:idx + 1, :].flatten(),
                                                data[idx-sequence_len][-1]))))
         idx += 1
