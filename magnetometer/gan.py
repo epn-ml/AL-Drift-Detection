@@ -255,6 +255,7 @@ def concatenate_features(data, sequence_len=2, has_label=True):
         (modified_data[idx - sequence_len:idx + 1, :].flatten(), data[idx-sequence_len][-1]))
     idx += 1
     while idx < len(modified_data)-1:
+        print_(f'{idx+1}/{len(modified_data)-1} concatenating features...')
         output = np.vstack((output, np.hstack((modified_data[idx - sequence_len:idx + 1, :].flatten(),
                                                data[idx-sequence_len][-1]))))
         idx += 1
@@ -425,7 +426,7 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
     training_dataset = create_training_dataset(
         dataset=features, indices=drift_indices, drift_labels=[0])
 
-    print_('training GAN on initial training window')
+    print_(f'training GAN on initial training window ({initial_epochs} epochs)')
     generator, discriminator = train_gan(features=training_dataset, device=device, discriminator=discriminator,
                                          generator=generator, epochs=initial_epochs, steps_generator=steps_generator,
                                          seed=seed, batch_size=batch_size, lr=lr, momentum=momentum, equalize=equalize,
