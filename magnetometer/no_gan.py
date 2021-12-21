@@ -241,19 +241,19 @@ print_(f'testing set size: {len(test_true)}')
 # %% evaluation
 
 auc_value = accuracy_score(y_true=train_true, y_pred=train_pred)
-print_('Accuracy value is %f for training dataset %s' % auc_value)
+print_(f'Accuracy value is {auc_value} for training dataset')
 print_(precision_recall_fscore_support(train_true, train_pred,
        average=None, labels=np.unique(train_true)))
 print_(confusion_matrix(train_true, train_pred))
 
 auc_value = accuracy_score(y_true=test_true, y_pred=test_pred)
-print_('Accuracy value is %f for testing dataset %s' % auc_value)
+print_(f'Accuracy value is {auc_value} for testing dataset')
 print_(precision_recall_fscore_support(
     test_true, test_pred, average=None, labels=np.unique(test_true)))
 print_(confusion_matrix(test_true, test_pred))
 
 exec_time = t2 - t1
-print_('Execution time is %d seconds' % exec_time)
+print_(f'Execution time is {exec_time} seconds')
 
 
 # %% plots
