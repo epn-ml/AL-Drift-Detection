@@ -4,8 +4,8 @@ import glob
 import os
 import random
 import sys
+import time
 from datetime import datetime
-from time import perf_counter
 
 import numpy as np
 import pandas as pd
@@ -359,7 +359,8 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     # This is the label for new drifts (any input other than the currently learned distributions)
     generator_label = ones * max_label
 
-    print_(f'training GAN... (epochs = {epochs}, generator_label = {generator_label})')
+    print_(
+        f'training GAN... (epochs = {epochs}, generator_label = {generator_label})')
 
     for epochs_trained in range(epochs):
         discriminator = train_discriminator(real_data=real_data, fake_data=generator_data, discriminator=discriminator,
@@ -372,7 +373,7 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     return generator, discriminator
 
 
-def process_data(features, labels, device, epochs=100, steps_generator=100, equalize=True, test_batch_size=4,
+def process_data(features, labels, dates, device, epochs=100, steps_generator=100, equalize=True, test_batch_size=4,
                  seed=0, batch_size=8, lr=0.001, momentum=0.9, weight_decay=0.0005, training_window_size=100,
                  generator_batch_size=1, sequence_length=2, repeat_factor=4):
 
@@ -417,7 +418,8 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
 
     initial_epochs = epochs * 2
 
-    print_('fitting classifier to initial training window')
+    print_(
+        f'fitting classifier to initial training window {(dates[0], dates[training_window_size])}')
     predicted, clf = fit_and_predict(
         clf=clf, features=x, labels=y, classes=classes)
     y_pred = y_pred + predicted.tolist()
@@ -427,7 +429,8 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
     training_dataset = create_training_dataset(
         dataset=features, indices=drift_indices, drift_labels=[0])
 
-    print_(f'training GAN on initial training window ({initial_epochs} epochs)')
+    print_(
+        f'training GAN on initial training window ({initial_epochs} epochs)')
     generator, discriminator = train_gan(features=training_dataset, device=device, discriminator=discriminator,
                                          generator=generator, epochs=initial_epochs, steps_generator=steps_generator,
                                          seed=seed, batch_size=batch_size, lr=lr, momentum=momentum, equalize=equalize,
@@ -458,7 +461,7 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
         max_idx = max_idx[0]
         # Drift detected
         print_(
-            f'drift detected, appending {(index, index+training_window_size)} to drift indices {drift_indices}')
+            f'detected drift, appending {(index, index+training_window_size)} to drift indices')
         drift_indices.append((index, index+training_window_size))
 
         print_(f'max_idx = {max_idx}')
@@ -468,12 +471,12 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
         if temp_label[0] != 0:
             # add the index of the previous drift if it was a recurring drift
             print_(
-                f'adding index of the previous drift {temp_label[0]} (recurring) to drift labels {drift_labels}')
+                f'adding index of the recurring previous drift {temp_label[0]} to drift labels')
             drift_labels.append(temp_label[0])
 
         else:
             print_(
-                f'adding generator label {generator_label} to drift labels {drift_labels}')
+                f'adding generator label {generator_label} to drift labels')
             drift_labels.append(generator_label)
 
         if max_idx != generator_label:
@@ -481,14 +484,14 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
             if temp_label[0] <= max_idx and temp_label[0] != 0:
                 max_idx += 1
                 print_(
-                    f'max_idx is above the previous drift, max_idx = {max_idx}')
+                    f'max_idx is above the previous drift, max_idx = {max_idx} != {generator_label}')
             temp_label = [max_idx]
-            print_(f'temp_label = {temp_label}')
+            print_(f'temp_label set to [max_idx]: {temp_label}')
             # We reset the top layer predictions because the drift order has changed and the network should be retrained
             discriminator.reset_top_layer()
             discriminator = discriminator.to(device)
-            print_('Previous drift %d occurred at index %d.' %
-                   (max_idx, index))
+            print_(
+                f'Previous drift {max_idx} occurred at index {index}, reset top layer predictions')
 
         else:
             # If this is a new drift, label for the previous drift training dataset is the previous highest label
@@ -497,7 +500,8 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
             discriminator.update()
             discriminator = discriminator.to(device)
             generator_label += 1
-            print_(f'new drift, generator_label = {generator_label}')
+            print_(
+                f'new drift, generator_label = {generator_label}, update discriminator')
 
         generator = Generator(
             inp=features.shape[1], out=features.shape[1], sequence_length=sequence_length)
@@ -507,7 +511,9 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
         discriminator.train()
 
         print_(
-            f'creating training dataset with drift_indices = {drift_indices}, drift_labels = {drift_labels}, temp_label = {temp_label}')
+            f'creating training dataset with drift_indices = {drift_indices}')
+        print_(f'drift_labels = {drift_labels}')
+        print_(f'temp_label = {temp_label}')
         training_dataset = create_training_dataset(dataset=features,
                                                    indices=drift_indices,
                                                    drift_labels=drift_labels+temp_label)
@@ -546,7 +552,8 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
                     # Append rows and targets. Do random.sample and then split the matrix
                     rows = rows[chosen_indices]
                     targets = [targets[x] for x in chosen_indices]
-                    print_(f'fitting to features[{indices[0]}:{indices[1]}], drift label = {label}')
+                    print_(
+                        f'fitting to features[{indices[0]}:{indices[1]}], drift label = {label}')
                     print_(f'randomly chosen {len(chosen_indices)} indices')
                     clf.partial_fit(X=rows, y=targets, classes=classes)
 
@@ -572,11 +579,10 @@ def process_data(features, labels, device, epochs=100, steps_generator=100, equa
         y_pred = y_pred + predicted
         y_true = y_true + labels[training_idx_start:training_idx_end]
 
-        print_(
-            f'appending index = {index} to drifts_detected = {drifts_detected}')
+        print_(f'appending index = {index} to drifts_detected')
         drifts_detected.append(index)
 
-        print_('index = %d' % index)
+        print_(f'index {index} = {dates[index]}')
         index += training_window_size
 
     print_(generator)
@@ -625,7 +631,7 @@ def load_data(path):
         li.append(df)
 
     df = pd.concat(li, axis=0, ignore_index=True)
-    print_(f'loaded data: {files}')
+    print_(f'loaded data: {list(map(lambda f: f.split("/")[-1], files))}')
 
     return df.dropna().sort_values(by='DATE'), sorted(breaks)
 
@@ -807,6 +813,7 @@ print_(f'selected features: {feats}')
 # df_test = df_test.iloc[offset_test:offset_test+size_test]
 
 features_train = df_train.iloc[:, 1:-1].values
+dates = df_train.iloc[:, 0].values.tolist()
 labels_train = df_train.iloc[:, -1].values.tolist()
 mean = np.mean(features_train, axis=1).reshape(features_train.shape[0], 1)
 std = np.std(features_train, axis=1).reshape(features_train.shape[0], 1)
@@ -836,15 +843,15 @@ max_features = np.reshape(max_features, newshape=(max_features.shape[0], 1)) + 0
 features = features / max_features
 """
 
-t1 = perf_counter()
-train_pred, train_true, drifts_detected, clf = process_data(features=features_train, labels=labels_train, device=device, epochs=epochs,
-                                                            steps_generator=steps_generator, seed=seed,
+t1 = time.perf_counter()
+train_pred, train_true, drifts_detected, clf = process_data(features=features_train, labels=labels_train, dates=dates, device=device,
+                                                            epochs=epochs, steps_generator=steps_generator, seed=seed,
                                                             batch_size=batch_size, lr=lr, momentum=0.9,
                                                             weight_decay=weight_decay, test_batch_size=test_batch_size,
                                                             training_window_size=training_window_size,
                                                             generator_batch_size=generator_batch_size, equalize=equalize,
                                                             sequence_length=sequence_length, repeat_factor=repeat_factor)
-t2 = perf_counter()
+t2 = time.perf_counter()
 test_true = labels_test
 
 
@@ -872,19 +879,28 @@ print_(f'testing set size: {len(test_true)}')
 
 auc_value = accuracy_score(y_true=train_true, y_pred=train_pred)
 print_('Accuracy value is %f for training dataset %s' % (auc_value, dataset))
-print_(precision_recall_fscore_support(train_true, train_pred,
-       average=None, labels=np.unique(train_true)))
-print_(confusion_matrix(train_true, train_pred))
+prf = precision_recall_fscore_support(
+    train_true, train_pred, average=None, labels=np.unique(train_true))
+print_(f'precision: {prf[0]}')
+print_(f'recall: {prf[1]}')
+print_(f'f-score: {prf[2]}')
+print_(f'support: {prf[3]}')
+print_(f'confusion matrix:\n{confusion_matrix(train_true, train_pred)}')
 
 auc_value = accuracy_score(y_true=test_true, y_pred=test_pred)
 print_('Accuracy value is %f for testing dataset %s' % (auc_value, dataset))
-print_(precision_recall_fscore_support(
-    test_true, test_pred, average=None, labels=np.unique(test_true)))
-print_(confusion_matrix(test_true, test_pred))
+prf = precision_recall_fscore_support(
+    test_true, test_pred, average=None, labels=np.unique(test_true))
+print_(f'precision: {prf[0]}')
+print_(f'recall: {prf[1]}')
+print_(f'f-score: {prf[2]}')
+print_(f'support: {prf[3]}')
+print_(f'confusion matrix:\n{confusion_matrix(test_true, test_pred)}')
 
-exec_time = t2 - t1
-print_('Execution time is %d seconds' % exec_time)
-print_('No. of drifts is %d' % len(drifts_detected))
+exec_time = time.strftime('%H:%M:%S', t2 - t1)
+
+print_(f'Execution time is {exec_time} seconds')
+print_(f'Drifts: {drifts_detected}')
 
 
 # %% plots
