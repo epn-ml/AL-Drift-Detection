@@ -254,6 +254,7 @@ def concatenate_features(data, sequence_len=2, has_label=True):
     output = np.hstack(
         (modified_data[idx - sequence_len:idx + 1, :].flatten(), data[idx-sequence_len][-1]))
     idx += 1
+
     while idx < len(modified_data)-1:
         if idx % 10000 == 0:
             print_(f'{idx}/{len(modified_data)-1} concatenating features...')
@@ -897,9 +898,7 @@ print_(f'f-score: {prf[2]}')
 print_(f'support: {prf[3]}')
 print_(f'confusion matrix:\n{confusion_matrix(test_true, test_pred)}')
 
-exec_time = time.strftime('%H:%M:%S', t2 - t1)
-
-print_(f'Execution time is {exec_time} seconds')
+print_(f'Execution time is {t2 - t1} seconds')
 print_(f'Drifts: {drifts_detected}')
 
 
@@ -918,5 +917,6 @@ print_('plotting finished')
 if fptr is not None:
     fptr.close()
     fptr = None
+
 
 # %%
