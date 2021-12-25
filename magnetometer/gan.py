@@ -483,9 +483,9 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         if max_idx != generator_label:
             # Increase the max_idx by 1 if it is above the previous drift
             if temp_label[0] <= max_idx and temp_label[0] != 0:
-                max_idx += 1
                 print_(
                     f'max_idx is above the previous drift, max_idx = {max_idx} != {generator_label}')
+                max_idx += 1
             temp_label = [max_idx]
             print_(f'temp_label set to [max_idx]: {temp_label}')
             # We reset the top layer predictions because the drift order has changed and the network should be retrained
