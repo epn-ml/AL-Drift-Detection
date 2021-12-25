@@ -420,7 +420,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     initial_epochs = epochs * 2
 
     print_(
-        f'fitting classifier to initial training window {(dates[0], dates[training_window_size])}')
+        f'fitting classifier to initial training window {(0, training_window_size)}')
     predicted, clf = fit_and_predict(
         clf=clf, features=x, labels=y, classes=classes)
     y_pred = y_pred + predicted.tolist()
@@ -484,7 +484,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             # Increase the max_idx by 1 if it is above the previous drift
             if temp_label[0] <= max_idx and temp_label[0] != 0:
                 print_(
-                    f'max_idx is above the previous drift, max_idx = {max_idx} != {generator_label}')
+                    f'max_idx = {max_idx} != {generator_label}, max_idx is above the previous drift, incrementing max_idx')
                 max_idx += 1
             temp_label = [max_idx]
             print_(f'temp_label set to [max_idx]: {temp_label}')
@@ -497,12 +497,12 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         else:
             # If this is a new drift, label for the previous drift training dataset is the previous highest label
             # which is the generator label
+            print_(
+                f'new drift, generator_label = {generator_label}, incrementing generator_label, updating discriminator')
             temp_label = [0]
             discriminator.update()
             discriminator = discriminator.to(device)
             generator_label += 1
-            print_(
-                f'new drift, generator_label = {generator_label}, update discriminator')
 
         generator = Generator(
             inp=features.shape[1], out=features.shape[1], sequence_length=sequence_length)
@@ -749,7 +749,7 @@ print_(f'repeat_factor: {repeat_factor}')
 equalize = True
 
 # How far in to the past is required for generating current data
-sequence_length = 5
+sequence_length = 2
 print_(f'sequence_length: {sequence_length}')
 # For the collate function to split the rows accordingly
 seq_len = sequence_length
