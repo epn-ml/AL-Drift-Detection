@@ -443,6 +443,8 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     generator.eval()
     discriminator.eval()
 
+    no_drifts = index
+
     while index + training_window_size < len(features):
 
         data = features[index:index + test_batch_size]
@@ -458,6 +460,10 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             y_true = y_true + data_labels
             index += test_batch_size
             continue
+
+        if no_drifts < index:
+            print_(f'No drifts detected from index = {no_drifts} ({dates[no_drifts]}) to index = {index} ({dates[index]})')
+            no_drifts = index
 
         max_idx = max_idx[0]
         # Drift detected
@@ -580,10 +586,8 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         y_pred = y_pred + predicted
         y_true = y_true + labels[training_idx_start:training_idx_end]
 
-        print_(f'appending index = {index} to drifts_detected')
+        print_(f'appending index = {index} ({dates[index]}) to drifts_detected')
         drifts_detected.append(index)
-
-        print_(f'index {index} = {dates[index]}')
         index += training_window_size
 
     print_(generator)
