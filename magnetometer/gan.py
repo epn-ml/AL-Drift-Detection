@@ -152,19 +152,12 @@ def collate_generator(batch):
     global seq_len
     # Stack each tensor variable
     feature_length = int(len(batch[0]) / (seq_len + 1))
-    print_('---------------------------------------')
-    print_(f'seq_len = {seq_len}, feature_length = {feature_length}')
-    print_(f'len(batch) = {len(batch)}')
-    print_(f'batch[0].shape = {batch[0].shape}')
     # The last feature length corresponds to the feature we want to predict and
     # the last value is the label of the drift class
     x = torch.stack([torch.Tensor(np.reshape(x[:-feature_length-1], newshape=(seq_len, feature_length)))
                      for x in batch])
-    print_(f'x.size() = {x.size()}')
     y = torch.stack([torch.tensor(x[-feature_length-1:-1]) for x in batch])
-    print_(f'y.size() = {y.size()}')
     labels = torch.stack([torch.tensor(x[-1]) for x in batch])
-    print_(f'labels.size() = {labels.size()}')
     # Return features and targets
     return x.to(torch.double), y, labels
 
@@ -347,21 +340,21 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     # Label vectors
     ones = Variable(torch.ones(generator_batch_size)).to(torch.long).to(device)
 
-    print_('concatenating features...')
-    # This data contains the current vector and next vector
-    concatenated_data = concatenate_features(
-        features, sequence_len=sequence_length)
-    print_('concatenated data')
+    # print_('concatenating features...')
+    # # This data contains the current vector and next vector
+    # concatenated_data = concatenate_features(
+    #     features, sequence_len=sequence_length)
+    # print_('concatenated data')
 
     if equalize:
         features = equalize_classes(features)
-        concatenated_data = equalize_classes(concatenated_data)
+        # concatenated_data = equalize_classes(concatenated_data)
         print_('equalized classes')
 
     # Define the data loader for training
     real_data = DataLoader(features, batch_size=batch_size,
                            shuffle=True, collate_fn=collate)
-    generator_data = DataLoader(concatenated_data, batch_size=generator_batch_size, shuffle=False,
+    generator_data = DataLoader(features, batch_size=generator_batch_size, shuffle=False,
                                 collate_fn=collate_generator)
 
     # This is the label for new drifts (any input other than the currently learned distributions)
@@ -469,7 +462,8 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             continue
 
         if no_drifts < index:
-            print_(f'No drifts detected from index = {no_drifts} ({dates[no_drifts]}) to index = {index} ({dates[index]})')
+            print_(
+                f'No drifts detected from index = {no_drifts} ({dates[no_drifts]}) to index = {index} ({dates[index]})')
             no_drifts = index
 
         max_idx = max_idx[0]
@@ -593,7 +587,8 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         y_pred = y_pred + predicted
         y_true = y_true + labels[training_idx_start:training_idx_end]
 
-        print_(f'appending index = {index} ({dates[index]}) to drifts_detected')
+        print_(
+            f'appending index = {index} ({dates[index]}) to drifts_detected')
         drifts_detected.append(index)
         index += training_window_size
 
