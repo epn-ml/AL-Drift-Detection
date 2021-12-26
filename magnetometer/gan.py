@@ -154,7 +154,8 @@ def collate_generator(batch):
     feature_length = int(len(batch[0]) / (seq_len + 1))
     # The last feature length corresponds to the feature we want to predict and
     # the last value is the label of the drift class
-    x = torch.stack([torch.tensor(x[:-feature_length-1]) for x in batch])
+    x = torch.stack([torch.Tensor(np.reshape(x[:-feature_length-1], newshape=(seq_len, feature_length)))
+                     for x in batch])
     y = torch.stack([torch.tensor(x[-feature_length-1:-1]) for x in batch])
     labels = torch.stack([torch.tensor(x[-1]) for x in batch])
     # Return features and targets
@@ -339,21 +340,27 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     # Label vectors
     ones = Variable(torch.ones(generator_batch_size)).to(torch.long).to(device)
 
-    # print_('concatenating features...')
-    # # This data contains the current vector and next vector
-    # concatenated_data = concatenate_features(
-    #     features, sequence_len=sequence_length)
-    # print_('concatenated data')
+    print_(f'type(features) = {type(features)}')
+    print_(f'features.shape = {features.shape}')
+
+    print_('concatenating features...')
+    # This data contains the current vector and next vector
+    concatenated_data = concatenate_features(
+        features, sequence_len=sequence_length)
+    print_('concatenated data')
+
+    print_(f'type(concatenated_data) = {type(concatenated_data)}')
+    print_(f'concatenated_data.shape = {concatenated_data.shape}')
 
     if equalize:
         features = equalize_classes(features)
-        # concatenated_data = equalize_classes(concatenated_data)
+        concatenated_data = equalize_classes(concatenated_data)
         print_('equalized classes')
 
     # Define the data loader for training
     real_data = DataLoader(features, batch_size=batch_size,
                            shuffle=True, collate_fn=collate)
-    generator_data = DataLoader(features, batch_size=generator_batch_size, shuffle=False,
+    generator_data = DataLoader(concatenated_data, batch_size=generator_batch_size, shuffle=False,
                                 collate_fn=collate_generator)
 
     # This is the label for new drifts (any input other than the currently learned distributions)
