@@ -753,7 +753,7 @@ print_(f'repeat_factor: {repeat_factor}')
 equalize = True
 
 # How far in to the past is required for generating current data
-sequence_length = 2
+sequence_length = 1
 print_(f'sequence_length: {sequence_length}')
 # For the collate function to split the rows accordingly
 seq_len = sequence_length
