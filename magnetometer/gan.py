@@ -152,7 +152,7 @@ def collate_generator(batch):
     global seq_len
     # Stack each tensor variable
     feature_length = int(len(batch[0]) / (seq_len + 1))
-    print_(f'batch.shape = {batch.shape}')
+    print_(f'batch.shape = {len(batch)}')
     print_(batch)
     print_(f'seq_len = {seq_len}, feature_length = {feature_length}')
     # The last feature length corresponds to the feature we want to predict and
