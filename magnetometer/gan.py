@@ -152,8 +152,8 @@ def collate_generator(batch):
     global seq_len
     # Stack each tensor variable
     feature_length = int(len(batch[0]) / (seq_len + 1))
-    print_(f'batch.shape = {len(batch)}')
-    print_(batch)
+    print_(f'len(batch) = {len(batch)}')
+    print_(f'len(batch[0]) = {len(batch[0])}')
     print_(f'seq_len = {seq_len}, feature_length = {feature_length}')
     # The last feature length corresponds to the feature we want to predict and
     # the last value is the label of the drift class
