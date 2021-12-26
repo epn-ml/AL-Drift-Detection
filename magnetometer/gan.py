@@ -153,7 +153,10 @@ def collate_generator(batch):
     # Stack each tensor variable
     feature_length = int(len(batch[0]) / (seq_len + 1))
     print_(f'seq_len = {seq_len}, feature_length = {feature_length}')
-    print_(f'batch.size() = {batch.size()}')
+    print_(f'type(batch) = {type(batch)}')
+    print_(f'type(batch[0]) = {type(batch[0])}')
+    print_(f'len(batch) = {len(batch)}')
+    print_(f'len(batch[0]) = {len(batch[0])}')
     # The last feature length corresponds to the feature we want to predict and
     # the last value is the label of the drift class
     x = torch.stack([torch.Tensor(np.reshape(x[:-feature_length-1], newshape=(seq_len, feature_length)))
