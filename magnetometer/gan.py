@@ -340,21 +340,21 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     # Label vectors
     ones = Variable(torch.ones(generator_batch_size)).to(torch.long).to(device)
 
-    print_('concatenating features...')
-    # This data contains the current vector and next vector
-    concatenated_data = concatenate_features(
-        features, sequence_len=sequence_length)
-    print_('concatenated data')
+    # print_('concatenating features...')
+    # # This data contains the current vector and next vector
+    # concatenated_data = concatenate_features(
+    #     features, sequence_len=sequence_length)
+    # print_('concatenated data')
 
     if equalize:
         features = equalize_classes(features)
-        concatenated_data = equalize_classes(concatenated_data)
+        # concatenated_data = equalize_classes(concatenated_data)
         print_('equalized classes')
 
     # Define the data loader for training
     real_data = DataLoader(features, batch_size=batch_size,
                            shuffle=True, collate_fn=collate)
-    generator_data = DataLoader(concatenated_data, batch_size=generator_batch_size, shuffle=False,
+    generator_data = DataLoader(features, batch_size=generator_batch_size, shuffle=False,
                                 collate_fn=collate_generator)
 
     # This is the label for new drifts (any input other than the currently learned distributions)
@@ -753,7 +753,7 @@ print_(f'repeat_factor: {repeat_factor}')
 equalize = True
 
 # How far in to the past is required for generating current data
-sequence_length = 0
+sequence_length = 1
 print_(f'sequence_length: {sequence_length}')
 # For the collate function to split the rows accordingly
 seq_len = sequence_length
