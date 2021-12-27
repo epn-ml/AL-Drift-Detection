@@ -56,7 +56,8 @@ class Generator(Module):
         )
 
     def forward(self, x_):
-        output = self.net(x_)
+        print_(f'x_.shape = {x_.shape}')
+        output = self.net(x_.reshape(x_.shape[0], x_.shape[1] * x_.shape[2]))
         # output = output.reshape(output.shape[0], output.shape[1] * output.shape[2])
         return output
 
@@ -149,14 +150,20 @@ def collate_generator(batch):
     :param batch:
     :return:
     """
+    print_(f'len(batch) = {len(batch)}')
+    print_(f'batch[0].shape = {batch[0].shape}')
     global seq_len
     # Stack each tensor variable
     feature_length = int(len(batch[0]) / (seq_len + 1))
     # The last feature length corresponds to the feature we want to predict and
     # the last value is the label of the drift class
-    x = torch.stack([torch.tensor(x[:-feature_length-1]) for x in batch])
+    x = torch.stack([torch.Tensor(np.reshape(x[:-feature_length-1], newshape=(seq_len, feature_length)))
+                     for x in batch])
     y = torch.stack([torch.tensor(x[-feature_length-1:-1]) for x in batch])
     labels = torch.stack([torch.tensor(x[-1]) for x in batch])
+    print_(f'x.shape = {x.shape}')
+    print_(f'y.shape = {y.shape}')
+    print_(f'labels.shape = {labels.shape}')
     # Return features and targets
     return x.to(torch.double), y, labels
 
@@ -339,23 +346,23 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     # Label vectors
     ones = Variable(torch.ones(generator_batch_size)).to(torch.long).to(device)
 
-    # print_(f'features.shape = {features.shape}')
-    # print_('concatenating features...')
-    # # This data contains the current vector and next vector
-    # concatenated_data = concatenate_features(
-    #     features, sequence_len=sequence_length)
-    # print_('concatenated data')
-    # print_(f'concatenated_data.shape = {concatenated_data.shape}')
+    print_(f'features.shape = {features.shape}')
+    print_('concatenating features...')
+    # This data contains the current vector and next vector
+    concatenated_data = concatenate_features(
+        features, sequence_len=sequence_length)
+    print_('concatenated data')
+    print_(f'concatenated_data.shape = {concatenated_data.shape}')
 
     if equalize:
         features = equalize_classes(features)
-        # concatenated_data = equalize_classes(concatenated_data)
+        concatenated_data = equalize_classes(concatenated_data)
         print_('equalized classes')
 
     # Define the data loader for training
     real_data = DataLoader(features, batch_size=batch_size,
                            shuffle=True, collate_fn=collate)
-    generator_data = DataLoader(features, batch_size=generator_batch_size, shuffle=False,
+    generator_data = DataLoader(concatenated_data, batch_size=generator_batch_size, shuffle=False,
                                 collate_fn=collate_generator)
 
     # This is the label for new drifts (any input other than the currently learned distributions)
@@ -756,7 +763,7 @@ print_(f'repeat_factor: {repeat_factor}')
 equalize = True
 
 # How far in to the past is required for generating current data
-sequence_length = 1
+sequence_length = 10
 print_(f'sequence_length: {sequence_length}')
 # For the collate function to split the rows accordingly
 seq_len = sequence_length
