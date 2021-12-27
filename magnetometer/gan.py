@@ -56,8 +56,7 @@ class Generator(Module):
         )
 
     def forward(self, x_):
-        print_(f'x_.shape = {x_.shape}')
-        output = self.net(x_.reshape(x_.shape[0], x_.shape[1] * x_.shape[2]))
+        output = self.net(x_)
         # output = output.reshape(output.shape[0], output.shape[1] * output.shape[2])
         return output
 
