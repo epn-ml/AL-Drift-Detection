@@ -25,6 +25,7 @@ global fptr
 global dataset
 global folder
 global print_collate
+global print_forward
 
 
 # %% functions
@@ -57,7 +58,10 @@ class Generator(Module):
         )
 
     def forward(self, x_):
-        print_(f'x_.shape = {x_.shape}')
+        global print_forward
+        if print_forward:
+            print_(f'x_.shape = {x_.shape}')
+            print_forward = False
         output = self.net(x_.reshape(x_.shape[0], x_.shape[1] * x_.shape[2]))
         # output = output.reshape(output.shape[0], output.shape[1] * output.shape[2])
         return output
@@ -351,8 +355,10 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     ones = Variable(torch.ones(generator_batch_size)).to(torch.long).to(device)
 
     global print_collate
+    global print_forward
 
     print_collate = True
+    print_forward = True
     print_(f'features.shape = {features.shape}')
     print_('concatenating features...')
     # This data contains the current vector and next vector
@@ -360,7 +366,6 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
         features, sequence_len=sequence_length)
     print_('concatenated data')
     print_(f'concatenated_data.shape = {concatenated_data.shape}')
-    print_collate = True
 
     if equalize:
         features = equalize_classes(features)
