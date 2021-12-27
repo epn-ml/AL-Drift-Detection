@@ -340,34 +340,30 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     # Label vectors
     ones = Variable(torch.ones(generator_batch_size)).to(torch.long).to(device)
 
-    print_(f'type(features) = {type(features)}')
-    print_(f'features.shape = {features.shape}')
-
-    print_('concatenating features...')
-    # This data contains the current vector and next vector
-    concatenated_data = concatenate_features(
-        features, sequence_len=sequence_length)
-    print_('concatenated data')
-
-    print_(f'type(concatenated_data) = {type(concatenated_data)}')
-    print_(f'concatenated_data.shape = {concatenated_data.shape}')
+    # print_(f'features.shape = {features.shape}')
+    # print_('concatenating features...')
+    # # This data contains the current vector and next vector
+    # concatenated_data = concatenate_features(
+    #     features, sequence_len=sequence_length)
+    # print_('concatenated data')
+    # print_(f'concatenated_data.shape = {concatenated_data.shape}')
 
     if equalize:
         features = equalize_classes(features)
-        concatenated_data = equalize_classes(concatenated_data)
+        # concatenated_data = equalize_classes(concatenated_data)
         print_('equalized classes')
 
     # Define the data loader for training
     real_data = DataLoader(features, batch_size=batch_size,
                            shuffle=True, collate_fn=collate)
-    generator_data = DataLoader(concatenated_data, batch_size=generator_batch_size, shuffle=False,
+    generator_data = DataLoader(features, batch_size=generator_batch_size, shuffle=False,
                                 collate_fn=collate_generator)
 
     # This is the label for new drifts (any input other than the currently learned distributions)
     generator_label = ones * max_label
 
     print_(
-        f'training GAN... (epochs = {epochs}, generator_label = {generator_label})')
+        f'training GAN... (epochs = {epochs}, generator_label / label for new drifts = {generator_label})')
 
     for epochs_trained in range(epochs):
         discriminator = train_discriminator(real_data=real_data, fake_data=generator_data, discriminator=discriminator,
