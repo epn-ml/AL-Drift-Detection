@@ -64,6 +64,7 @@ class Generator(Module):
         if print_forward:
             print_(f'x_.shape = {x_.shape}')
             print_(f'x_r.shape = {x_r.shape}')
+            print_(f'output.shape = {output.shape}')
             print_forward = False
         # output = output.reshape(output.shape[0], output.shape[1] * output.shape[2])
         return output
