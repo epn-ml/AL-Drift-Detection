@@ -24,6 +24,7 @@ global seq_len
 global fptr
 global dataset
 global folder
+global print_collate
 
 
 # %% functions
@@ -150,9 +151,8 @@ def collate_generator(batch):
     :param batch:
     :return:
     """
-    print_(f'len(batch) = {len(batch)}')
-    print_(f'batch[0].shape = {batch[0].shape}')
     global seq_len
+    global print_collate
     # Stack each tensor variable
     feature_length = int(len(batch[0]) / (seq_len + 1))
     # The last feature length corresponds to the feature we want to predict and
@@ -161,9 +161,13 @@ def collate_generator(batch):
                      for x in batch])
     y = torch.stack([torch.tensor(x[-feature_length-1:-1]) for x in batch])
     labels = torch.stack([torch.tensor(x[-1]) for x in batch])
-    print_(f'x.shape = {x.shape}')
-    print_(f'y.shape = {y.shape}')
-    print_(f'labels.shape = {labels.shape}')
+    if print_collate:
+        print_(f'len(batch) = {len(batch)}')
+        print_(f'batch[0].shape = {batch[0].shape}')
+        print_(f'x.shape = {x.shape}')
+        print_(f'y.shape = {y.shape}')
+        print_(f'labels.shape = {labels.shape}')
+        print_collate = False
     # Return features and targets
     return x.to(torch.double), y, labels
 
@@ -346,6 +350,9 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     # Label vectors
     ones = Variable(torch.ones(generator_batch_size)).to(torch.long).to(device)
 
+    global print_collate
+
+    print_collate = True
     print_(f'features.shape = {features.shape}')
     print_('concatenating features...')
     # This data contains the current vector and next vector
@@ -353,11 +360,14 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
         features, sequence_len=sequence_length)
     print_('concatenated data')
     print_(f'concatenated_data.shape = {concatenated_data.shape}')
+    print_collate = True
 
     if equalize:
         features = equalize_classes(features)
         concatenated_data = equalize_classes(concatenated_data)
         print_('equalized classes')
+        print_(f'features.shape = {features.shape}')
+        print_(f'concatenated_data.shape = {concatenated_data.shape}')
 
     # Define the data loader for training
     real_data = DataLoader(features, batch_size=batch_size,
