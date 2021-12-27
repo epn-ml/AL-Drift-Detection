@@ -59,10 +59,12 @@ class Generator(Module):
 
     def forward(self, x_):
         global print_forward
+        x_r = x_.reshape(x_.shape[0], x_.shape[1] * x_.shape[2])
+        output = self.net(x_r)
         if print_forward:
             print_(f'x_.shape = {x_.shape}')
+            print_(f'x_r.shape = {x_r.shape}')
             print_forward = False
-        output = self.net(x_.reshape(x_.shape[0], x_.shape[1] * x_.shape[2]))
         # output = output.reshape(output.shape[0], output.shape[1] * output.shape[2])
         return output
 
