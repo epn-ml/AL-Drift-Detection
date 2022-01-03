@@ -937,9 +937,9 @@ print_(f'Drifts: {drifts_detected}')
 # %% plots
 
 print_('plotting...')
-plot_orbit(df_train, breaks_train, 'train-true')
-plot_orbit(df_train, breaks_train, 'train-pred', labels=train_pred)
-plot_orbit(df_test, breaks_test, 'test-true')
+#plot_orbit(df_train, breaks_train, 'train-true')
+#plot_orbit(df_train, breaks_train, 'train-pred', labels=train_pred)
+#plot_orbit(df_test, breaks_test, 'test-true')
 plot_orbit(df_test, breaks_test, 'test-pred', labels=test_pred)
 print_('plotting finished')
 
