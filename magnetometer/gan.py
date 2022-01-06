@@ -487,16 +487,18 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             y_true = y_true + data_labels
 
             if index % 10000 == 0:
-                print_(
-                    f'No drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
-                no_drifts = index
+                if no_drifts != index:
+                    print_(
+                        f'No drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
+                    no_drifts = index
 
             index += test_batch_size
             continue
 
-        print_(
-            f'No drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
-        no_drifts = index
+        if no_drifts != index:
+            print_(
+                f'No drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
+            no_drifts = index
 
         print_('========== DRIFT DETECTED START ==========')
         print_(f'index = {index}')
@@ -632,7 +634,8 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         print_('========== DRIFT DETECTED END ==========')
         print_(f'Continuing drift detection from {index} ({dates[index]})')
 
-    print_(f'Stopping drift detection, {index} + {training_window_size} < {len(features)}')
+    print_(
+        f'Stopping drift detection, {index} + {training_window_size} < {len(features)}')
 
     print_(generator)
     print_(discriminator)
