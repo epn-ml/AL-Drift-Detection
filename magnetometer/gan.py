@@ -470,6 +470,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     discriminator.eval()
 
     no_drifts = index
+    print_(f'Starting drift detection from index = {index} ({dates[index]})')
 
     while index + training_window_size < len(features):
 
@@ -493,17 +494,23 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             index += test_batch_size
             continue
 
+        print_(
+            f'No drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
+        no_drifts = index
+
         print_('========== DRIFT DETECTED START ==========')
+        print_(f'index = {index}')
+        print_(f'max_idx = {max_idx}')
+        print_(f'prob = {prob}')
+        print_(f'generator_label = {generator_label}')
+        print_(f'temp_label = {temp_label}')
+        print_('np.all(max_idx != max_idx[0]) or max_idx[0] == 0 is False')
 
         max_idx = max_idx[0]
         # Drift detected
         print_(
             f'Detected drift, appending {(index, index+training_window_size)} to drift indices')
         drift_indices.append((index, index+training_window_size))
-
-        print_(f'max_idx = {max_idx}')
-        print_(f'generator_label = {generator_label}')
-        print_(f'temp_label = {temp_label}')
 
         if temp_label[0] != 0:
             # add the index of the previous drift if it was a recurring drift
@@ -623,6 +630,9 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         no_drifts = index
 
         print_('========== DRIFT DETECTED END ==========')
+        print_(f'Continuing drift detection from {index} ({dates[index]})')
+
+    print_(f'Stopping drift detection, {index} + {training_window_size} < {len(features)}')
 
     print_(generator)
     print_(discriminator)
