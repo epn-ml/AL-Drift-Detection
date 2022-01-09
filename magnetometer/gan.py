@@ -635,7 +635,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         print_(f'Continuing drift detection from {index} ({dates[index]})')
 
     print_(
-        f'Stopping drift detection, {index} + {training_window_size} < {len(features)}')
+        f'Stopping drift detection, {index} + {training_window_size} >= {len(features)}')
 
     print_(generator)
     print_(discriminator)
