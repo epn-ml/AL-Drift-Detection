@@ -370,6 +370,8 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
         features, sequence_len=sequence_length)
     print_('concatenated data')
     print_(f'concatenated_data.shape = {concatenated_data.shape}')
+    print_(f'features: {features}')
+    print_(f'concatenated_data: {concatenated_data}')
 
     if equalize:
         features = equalize_classes(features)
@@ -377,6 +379,8 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
         print_('equalized classes')
         print_(f'features.shape = {features.shape}')
         print_(f'concatenated_data.shape = {concatenated_data.shape}')
+    print_(f'features: {features}')
+    print_(f'concatenated_data: {concatenated_data}')
 
     # Define the data loader for training
     real_data = DataLoader(features, batch_size=batch_size,
