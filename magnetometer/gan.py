@@ -123,6 +123,7 @@ def fit_and_predict(clf, features, labels, classes):
     predicted = np.empty(shape=len(labels))
     predicted[0] = clf.predict([features[0]])
     clf.reset()
+    print_('clf.reset()')
     clf.partial_fit([features[0]], [labels[0]], classes=classes)
     for idx in range(1, len(labels)):
         predicted[idx] = clf.predict([features[idx]])
@@ -590,8 +591,9 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         # If a previous drift has occurred use those for training the classifier but not predict on them
         if temp_label[0] != 0:
             print_(
-                f'previous drift has occured (temp_label[0] = {temp_label[0]}), resetting classifier')
+                f'previous drift has occured (temp_label[0] is {temp_label[0]} != 0)')
             clf.reset()
+            print_('clf.reset()')
             for indices, label in zip(drift_indices[:-1], drift_labels):
                 if label == temp_label[0]:
                     rows = features[indices[0]:indices[1], :]
@@ -615,7 +617,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
         else:
             print_(
-                f'previous drift has not occured (temp_label[0] = {temp_label[0]})')
+                f'previous drift has not occured (temp_label[0] is {temp_label[0]})')
             print_(f'fit and predict on new training window')
             predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                              labels=labels[training_idx_start:training_idx_end],
