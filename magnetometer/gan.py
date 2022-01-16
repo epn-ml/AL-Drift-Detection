@@ -794,7 +794,7 @@ def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
 
 fptr = None
 dataset = 'messenger'
-folder = str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+folder = f'{str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))}_{sys.argv[1:]}'
 
 plots = ''
 if len(sys.argv) > 2:
