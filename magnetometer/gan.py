@@ -24,6 +24,7 @@ global seq_len
 global fptr
 global dataset
 global folder
+global plot_format
 global print_collate
 global print_forward
 
@@ -748,6 +749,8 @@ def plot_field(df):
 
 def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
 
+    global plot_format
+
     df['B_tot'] = (df['BX_MSO']**2 + df['BY_MSO']**2 + df['BZ_MSO']**2)**0.5
     colors = {0: 'red', 1: 'green', 2: 'yellow', 3: 'blue', 4: 'purple'}
 
@@ -774,8 +777,13 @@ def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
                 ))
 
         fig.update_layout({'title': title})
-        fig.write_html(
-            f'../logs/{folder}/fig_{df_orbit.iloc[0]["DATE"][:16].replace(" ", "_").replace(":", "-")}_{title}.html')
+
+        if 'png' in plot_format:
+            fig.write_image(
+                f'../logs/{folder}/fig_{df_orbit.iloc[0]["DATE"][:16].replace(" ", "_").replace(":", "-")}_{title}.png')
+        if 'html' in plot_format:
+            fig.write_html(
+                f'../logs/{folder}/fig_{df_orbit.iloc[0]["DATE"][:16].replace(" ", "_").replace(":", "-")}_{title}.html')
 
 
 # %% setup
@@ -783,11 +791,21 @@ def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
 fptr = None
 dataset = 'messenger'
 folder = str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+
+plots = ''
+if len(sys.argv) > 2:
+    plots = sys.argv[2]
+
+plot_format = 'png'
+if len(sys.argv) > 3:
+    plot_format = sys.argv[3]
+
 # Set the number of training instances
 training_window_size = 1000
-if len(sys.argv) == 2:
+if len(sys.argv) > 1:
     training_window_size = int(sys.argv[1])
 print_(f'training_window_size: {training_window_size}')
+
 # Set the number of epochs the GAN should be trained
 epochs = 20  # 100
 print_(f'epochs: {epochs}')
@@ -955,12 +973,17 @@ print_(f'Drifts: {drifts_detected}')
 
 # %% plots
 
-print_('plotting...')
-#plot_orbit(df_train, breaks_train, 'train-true')
-#plot_orbit(df_train, breaks_train, 'train-pred', labels=train_pred)
-#plot_orbit(df_test, breaks_test, 'test-true')
-plot_orbit(df_test, breaks_test, 'test-pred', labels=test_pred)
-print_('plotting finished')
+if plots != '':
+    print_('plotting...')
+    if '0' in plots:
+        plot_orbit(df_train, breaks_train, 'train-true')
+    if '1' in plots:
+        plot_orbit(df_train, breaks_train, 'train-pred', labels=train_pred)
+    if '2' in plots:
+        plot_orbit(df_test, breaks_test, 'test-true')
+    if '3' in plots:
+        plot_orbit(df_test, breaks_test, 'test-pred', labels=test_pred)
+    print_('plotting finished')
 
 
 # %% close log file
