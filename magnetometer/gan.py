@@ -63,9 +63,9 @@ class Generator(Module):
         x_r = x_.reshape(x_.shape[0], x_.shape[1] * x_.shape[2])
         output = self.net(x_r)
         if print_forward:
-            print_(f'x_.shape = {x_.shape}')
-            print_(f'x_r.shape = {x_r.shape}')
-            print_(f'output.shape = {output.shape}')
+            # print_(f'x_.shape = {x_.shape}')
+            # print_(f'x_r.shape = {x_r.shape}')
+            # print_(f'output.shape = {output.shape}')
             print_forward = False
         # output = output.reshape(output.shape[0], output.shape[1] * output.shape[2])
         return output
@@ -123,7 +123,7 @@ def fit_and_predict(clf, features, labels, classes):
     predicted = np.empty(shape=len(labels))
     predicted[0] = clf.predict([features[0]])
     clf.reset()
-    print_('clf.reset()')
+    # print_('clf.reset()')
     clf.partial_fit([features[0]], [labels[0]], classes=classes)
     for idx in range(1, len(labels)):
         predicted[idx] = clf.predict([features[idx]])
@@ -171,11 +171,11 @@ def collate_generator(batch):
     y = torch.stack([torch.tensor(x[-feature_length-1:-1]) for x in batch])
     labels = torch.stack([torch.tensor(x[-1]) for x in batch])
     if print_collate:
-        print_(f'len(batch) = {len(batch)}')
-        print_(f'batch[0].shape = {batch[0].shape}')
-        print_(f'x.shape = {x.shape}')
-        print_(f'y.shape = {y.shape}')
-        print_(f'labels.shape = {labels.shape}')
+        # print_(f'len(batch) = {len(batch)}')
+        # print_(f'batch[0].shape = {batch[0].shape}')
+        # print_(f'x.shape = {x.shape}')
+        # print_(f'y.shape = {y.shape}')
+        # print_(f'labels.shape = {labels.shape}')
         print_collate = False
     # Return features and targets
     return x.to(torch.double), y, labels
@@ -290,6 +290,7 @@ def concatenate_features(data, sequence_len=2, has_label=True):
     return output
 
 
+# Select features according to drift indices and append drift labeles
 def create_training_dataset(dataset, indices, drift_labels):
 
     # If there is a periodicity, we switch all previous drifts to the same label
@@ -364,24 +365,24 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
 
     print_collate = True
     print_forward = True
-    print_(f'features.shape = {features.shape}')
-    print_('concatenating features...')
+    # print_(f'features.shape = {features.shape}')
+    # print_('concatenating features...')
     # This data contains the current vector and next vector
     concatenated_data = concatenate_features(
         features, sequence_len=sequence_length)
-    print_('concatenated data')
-    print_(f'concatenated_data.shape = {concatenated_data.shape}')
-    print_(f'features: {features}')
-    print_(f'concatenated_data: {concatenated_data}')
+    # print_('concatenated data')
+    # print_(f'concatenated_data.shape = {concatenated_data.shape}')
+    # print_(f'features: {features}')
+    # print_(f'concatenated_data: {concatenated_data}')
 
     if equalize:
         features = equalize_classes(features)
         concatenated_data = equalize_classes(concatenated_data)
-        print_('equalized classes')
-        print_(f'features.shape = {features.shape}')
-        print_(f'concatenated_data.shape = {concatenated_data.shape}')
-    print_(f'features: {features}')
-    print_(f'concatenated_data: {concatenated_data}')
+    #     print_('equalized classes')
+    #     print_(f'features.shape = {features.shape}')
+    #     print_(f'concatenated_data.shape = {concatenated_data.shape}')
+    # print_(f'features: {features}')
+    # print_(f'concatenated_data: {concatenated_data}')
 
     # Define the data loader for training
     real_data = DataLoader(features, batch_size=batch_size,
@@ -393,7 +394,7 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     generator_label = ones * max_label
 
     print_(
-        f'training GAN... (epochs = {epochs}, generator_label / label for new drifts = {generator_label})')
+        f'training GAN... (epochs = {epochs}, label for new drifts = {generator_label})')
 
     for epochs_trained in range(epochs):
         discriminator = train_discriminator(real_data=real_data, fake_data=generator_data, discriminator=discriminator,
@@ -403,6 +404,9 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
         generator = train_generator(data_loader=generator_data, discriminator=discriminator, generator=generator,
                                     optimizer=optimizer_generator, loss_fn=loss_generator, loss_mse=loss_mse_generator,
                                     steps=steps_generator, device=device)
+
+    print_(f'train finished')
+
     return generator, discriminator
 
 
@@ -452,9 +456,10 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     initial_epochs = epochs * 2
 
     print_(
-        f'fitting classifier to initial training window {(0, training_window_size)}')
+        f'fit classifier to initial training window {(0, training_window_size)}')
     predicted, clf = fit_and_predict(
         clf=clf, features=x, labels=y, classes=classes)
+    print_(f'fit finished')
     y_pred = y_pred + predicted.tolist()
     y_true = y_true + y
 
@@ -463,7 +468,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         dataset=features, indices=drift_indices, drift_labels=[0])
 
     print_(
-        f'training GAN on initial training window ({initial_epochs} epochs)')
+        f'train GAN on initial training window')
     generator, discriminator = train_gan(features=training_dataset, device=device, discriminator=discriminator,
                                          generator=generator, epochs=initial_epochs, steps_generator=steps_generator,
                                          seed=seed, batch_size=batch_size, lr=lr, momentum=momentum, equalize=equalize,
@@ -476,7 +481,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     discriminator.eval()
 
     no_drifts = index
-    print_(f'Starting drift detection from index = {index} ({dates[index]})')
+    print_(f'starting drift detection from index = {index} ({dates[index]})')
 
     while index + training_window_size < len(features):
 
@@ -495,7 +500,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             if index % 10000 == 0:
                 if no_drifts != index:
                     print_(
-                        f'No drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
+                        f'no drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
                     no_drifts = index
 
             index += test_batch_size
@@ -503,53 +508,53 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
         if no_drifts != index:
             print_(
-                f'No drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
+                f'no drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
             no_drifts = index
 
-        print_('========== DRIFT DETECTED START ==========')
-        print_(f'index = {index}')
-        print_(f'max_idx = {max_idx}')
-        print_(f'prob = {prob}')
-        print_(f'generator_label = {generator_label}')
-        print_(f'temp_label = {temp_label}')
-        print_('np.all(max_idx != max_idx[0]) or max_idx[0] == 0 is False')
+        # print_('========== DRIFT DETECTED START ==========')
+        # print_(f'index = {index}')
+        # print_(f'max_idx = {max_idx}')
+        # print_(f'prob = {prob}')
+        # print_(f'generator_label = {generator_label}')
+        # print_(f'temp_label = {temp_label}')
+        # print_('np.all(max_idx != max_idx[0]) or max_idx[0] == 0 is False')
 
         max_idx = max_idx[0]
         # Drift detected
-        print_(
-            f'Detected drift, appending {(index, index+training_window_size)} to drift indices')
+        # print_(
+        #     f'Detected drift, appending {(index, index+training_window_size)} to drift indices')
         drift_indices.append((index, index+training_window_size))
 
         if temp_label[0] != 0:
             # add the index of the previous drift if it was a recurring drift
             print_(
-                f'adding index of the recurring previous drift {temp_label[0]} to drift labels')
+                f'add index of the recurring previous drift {temp_label[0]} to drift labels')
             drift_labels.append(temp_label[0])
 
         else:
             print_(
-                f'adding generator label {generator_label} to drift labels')
+                f'add generator label {generator_label} to drift labels')
             drift_labels.append(generator_label)
 
         if max_idx != generator_label:
             # Increase the max_idx by 1 if it is above the previous drift
             if temp_label[0] <= max_idx and temp_label[0] != 0:
-                print_(
-                    f'max_idx = {max_idx} != {generator_label}, max_idx is above the previous drift, incrementing max_idx')
+                # print_(
+                #     f'max_idx = {max_idx} != {generator_label}, max_idx is above the previous drift, incrementing max_idx')
                 max_idx += 1
             temp_label = [max_idx]
-            print_(f'temp_label set to [max_idx]: {temp_label}')
+            # print_(f'temp_label set to [max_idx]: {temp_label}')
             # We reset the top layer predictions because the drift order has changed and the network should be retrained
             discriminator.reset_top_layer()
             discriminator = discriminator.to(device)
-            print_(
-                f'Previous drift {max_idx} occurred at index {index}, reset top layer predictions')
+            # print_(
+            #     f'Previous drift {max_idx} occurred at index {index}, reset top layer predictions')
 
         else:
             # If this is a new drift, label for the previous drift training dataset is the previous highest label
             # which is the generator label
-            print_(
-                f'new drift, generator_label = {generator_label}, incrementing generator_label, updating discriminator')
+            # print_(
+            #     f'new drift, generator_label = {generator_label}, incrementing generator_label, updating discriminator')
             temp_label = [0]
             discriminator.update()
             discriminator = discriminator.to(device)
@@ -562,10 +567,10 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         generator.train()
         discriminator.train()
 
-        print_(
-            f'creating training dataset with drift_indices = {drift_indices}')
-        print_(f'drift_labels = {drift_labels}')
-        print_(f'temp_label = {temp_label}')
+        # print_(
+        #     f'creating training dataset with drift_indices = {drift_indices}')
+        # print_(f'drift_labels = {drift_labels}')
+        # print_(f'temp_label = {temp_label}')
         training_dataset = create_training_dataset(dataset=features,
                                                    indices=drift_indices,
                                                    drift_labels=drift_labels+temp_label)
@@ -585,15 +590,15 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         # Set the indices for the training window
         training_idx_start = index
         training_idx_end = training_idx_start + training_window_size
-        print_(
-            f'new training window: [{training_idx_start}, {training_idx_end}]')
+        # print_(
+        #     f'new training window: [{training_idx_start}, {training_idx_end}]')
 
         # If a previous drift has occurred use those for training the classifier but not predict on them
         if temp_label[0] != 0:
-            print_(
-                f'previous drift has occured (temp_label[0] is {temp_label[0]} != 0)')
+            # print_(
+            #     f'previous drift has occured (temp_label[0] is {temp_label[0]} != 0)')
             clf.reset()
-            print_('clf.reset()')
+            # print_('clf.reset()')
             for indices, label in zip(drift_indices[:-1], drift_labels):
                 if label == temp_label[0]:
                     rows = features[indices[0]:indices[1], :]
@@ -606,22 +611,26 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                     rows = rows[chosen_indices]
                     targets = [targets[x] for x in chosen_indices]
                     print_(
-                        f'fitting to features[{indices[0]}:{indices[1]}], drift label = {label}')
-                    print_(f'randomly chosen {len(chosen_indices)} indices')
+                        f'partial fit to {len(chosen_indices)} randomly sampled features, drift label = {label}')
                     clf.partial_fit(X=rows, y=targets, classes=classes)
+                    print_(f'partial fit finished')
 
-            print_(f'predict and partial fit to new training window')
+            print_(
+                f'predict and partial fit to features[{training_idx_start}:{training_idx_end}, :]...')
             predicted, clf = predict_and_partial_fit(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                                      labels=labels[training_idx_start:training_idx_end],
                                                      classes=classes)
+            print_(f'predict and partial fit finished')
 
         else:
+            # print_(
+            #     f'previous drift has not occured (temp_label[0] is {temp_label[0]})')
             print_(
-                f'previous drift has not occured (temp_label[0] is {temp_label[0]})')
-            print_(f'fit and predict on new training window')
+                f'fit and predict on features[{training_idx_start}:{training_idx_end}, :]...')
             predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                              labels=labels[training_idx_start:training_idx_end],
                                              classes=classes)
+            print_(f'fit and predict finished')
         """
         predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                          labels=labels[training_idx_start:training_idx_end],
@@ -633,16 +642,16 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         y_true = y_true + labels[training_idx_start:training_idx_end]
 
         print_(
-            f'appending index = {index} ({dates[index]}) to drifts_detected')
+            f'append index = {index} ({dates[index]}) to drifts_detected')
         drifts_detected.append(index)
         index += training_window_size
         no_drifts = index
 
-        print_('========== DRIFT DETECTED END ==========')
-        print_(f'Continuing drift detection from {index} ({dates[index]})')
+        # print_('========== DRIFT DETECTED END ==========')
+        # print_(f'Continuing drift detection from {index} ({dates[index]})')
 
     print_(
-        f'Stopping drift detection, {index} + {training_window_size} >= {len(features)}')
+        f'stopping drift detection, {index} + {training_window_size} >= {len(features)}')
 
     print_(generator)
     print_(discriminator)
