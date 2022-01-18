@@ -578,8 +578,8 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         generator.train()
         discriminator.train()
 
-        # print_(
-        #     f'creating training dataset with drift_indices = {drift_indices}')
+        print_(
+            f'creating training dataset with drift_indices = {drift_indices}')
         # print_(f'drift_labels = {drift_labels}')
         # print_(f'temp_label = {temp_label}')
         training_dataset = create_training_dataset(dataset=features,
