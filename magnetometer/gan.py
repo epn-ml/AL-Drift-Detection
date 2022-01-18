@@ -398,21 +398,21 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
 
     print_(
         f'training GAN... (epochs = {epochs}, label for new drifts = {generator_label})')
+    print_(
+        f'training discriminator with real_data.dataset.shape = {real_data.dataset.shape} and fake_data.dataset.shape = {generator_data.dataset.shape}')
+    print_(
+        f'training generator with generator_data.dataset.shape = {generator_data.dataset.shape}')
 
     for epochs_trained in range(epochs):
-        print_(
-            f'training discriminator with real_data.dataset.shape = {real_data.dataset.shape} and fake_data.dataset.shape = {generator_data.dataset.shape}')
         discriminator = train_discriminator(real_data=real_data, fake_data=generator_data, discriminator=discriminator,
                                             generator=generator, optimizer=optimizer_discriminator,
                                             loss_fn=loss_discriminator, generator_labels=generator_label, device=device)
-        print_(f'discriminator training finished')
 
-        print_(
-            f'training generator with generator_data.dataset.shape = {generator_data.dataset.shape}')
         generator = train_generator(data_loader=generator_data, discriminator=discriminator, generator=generator,
                                     optimizer=optimizer_generator, loss_fn=loss_generator, loss_mse=loss_mse_generator,
                                     steps=steps_generator, device=device)
-        print_(f'generator training finished')
+
+    print_(f'generator training finished')
 
     return generator, discriminator
 
