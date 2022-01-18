@@ -375,7 +375,6 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     # print_(f'features: {features}')
     # print_(f'concatenated_data: {concatenated_data}')
 
-    print_(f'equalizing data:')
     print_(f'features.shape = {features.shape}')
     print_(f'concatenated_data.shape = {concatenated_data.shape}')
 
@@ -399,19 +398,17 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
 
     print_(
         f'training GAN... (epochs = {epochs}, label for new drifts = {generator_label})')
-    print_(f'features.shape = {features.shape}')
-    print_(f'concatenated_data.shape = {concatenated_data.shape}')
 
     for epochs_trained in range(epochs):
         print_(
-            f'training discriminator with real_data.shape = {real_data.shape} and fake_data.shape = {generator_data.shape}')
+            f'training discriminator with real_data.dataset.shape = {real_data.dataset.shape} and fake_data.dataset.shape = {generator_data.dataset.shape}')
         discriminator = train_discriminator(real_data=real_data, fake_data=generator_data, discriminator=discriminator,
                                             generator=generator, optimizer=optimizer_discriminator,
                                             loss_fn=loss_discriminator, generator_labels=generator_label, device=device)
         print_(f'discriminator training finished')
 
         print_(
-            f'training generator with generator_data.shape = {generator_data.shape}')
+            f'training generator with generator_data.dataset.shape = {generator_data.dataset.shape}')
         generator = train_generator(data_loader=generator_data, discriminator=discriminator, generator=generator,
                                     optimizer=optimizer_generator, loss_fn=loss_generator, loss_mse=loss_mse_generator,
                                     steps=steps_generator, device=device)
@@ -465,15 +462,17 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
     initial_epochs = epochs * 2
 
-    print_(
-        f'fit classifier to initial training window {(0, training_window_size)}')
+    # print_(
+    #     f'fit classifier to initial training window {(0, training_window_size)}')
     predicted, clf = fit_and_predict(
         clf=clf, features=x, labels=y, classes=classes)
-    print_(f'fit finished')
+    # print_(f'fit finished')
     y_pred = y_pred + predicted.tolist()
     y_true = y_true + y
 
     # Create training dataset
+    print_(
+        f'creating training dataset with drift_indices = {drift_indices}')
     training_dataset = create_training_dataset(
         dataset=features, indices=drift_indices, drift_labels=[0])
 
