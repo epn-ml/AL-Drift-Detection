@@ -312,6 +312,8 @@ def create_training_dataset(dataset, indices, drift_labels):
         training_dataset = np.vstack((training_dataset, np.hstack((dataset[indices[idx][0]:indices[idx][1]],
                                       np.ones((indices[idx][1]-indices[idx][0], 1)) * modified_drift_labels[idx]))))
 
+    print_(f'create training dataset (len = {len(training_dataset)}, {len(drift_labels)} total drift labels')
+
     return training_dataset
 
 
@@ -356,6 +358,7 @@ def equalize_and_concatenate(features, max_count=100, sequence_len=2):
     min_count = min(min(counts), max_count)
 
     if min_count == max(counts) == max_count:
+        print_(f'counts = {counts} (min_count = {min_count})')
         return concatenate_features(features, sequence_len=sequence_len)
 
     output = None
@@ -406,15 +409,12 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     # print_(f'features.shape = {features.shape}')
     # print_('concatenating features...')
     # This data contains the current vector and next vector
-    concatenated_data = concatenate_features(
-        features, sequence_len=sequence_length)
+    # concatenated_data = concatenate_features(
+    #     features, sequence_len=sequence_length)
     # print_('concatenated data')
     # print_(f'concatenated_data.shape = {concatenated_data.shape}')
     # print_(f'features: {features}')
     # print_(f'concatenated_data: {concatenated_data}')
-
-    print_(f'features.shape = {features.shape}')
-    print_(f'concatenated_data.shape = {concatenated_data.shape}')
 
     if equalize:
         # equalize and concatenate at the same time
@@ -438,11 +438,7 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     generator_label = ones * max_label
 
     print_(
-        f'training GAN... (epochs = {epochs}, label for new drifts = {generator_label})')
-    print_(
-        f'training discriminator with real_data.dataset.shape = {real_data.dataset.shape} and fake_data.dataset.shape = {generator_data.dataset.shape}')
-    print_(
-        f'training generator with generator_data.dataset.shape = {generator_data.dataset.shape}')
+        f'training GAN... (label for new drifts = {generator_label})')
 
     for epochs_trained in range(epochs):
         discriminator = train_discriminator(real_data=real_data, fake_data=generator_data, discriminator=discriminator,
@@ -453,7 +449,7 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
                                     optimizer=optimizer_generator, loss_fn=loss_generator, loss_mse=loss_mse_generator,
                                     steps=steps_generator, device=device)
 
-    print_(f'generator training finished')
+    print_(f'training finished')
 
     return generator, discriminator
 
@@ -512,14 +508,9 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     y_true = y_true + y
 
     # Create training dataset
-    print_(
-        f'creating training dataset with drift_indices = {drift_indices}')
-    print_(f'drift_labels = {drift_labels} + {temp_label}')
     training_dataset = create_training_dataset(
         dataset=features, indices=drift_indices, drift_labels=[0])
 
-    print_(
-        f'train GAN on initial training window')
     generator, discriminator = train_gan(features=training_dataset, device=device, discriminator=discriminator,
                                          generator=generator, epochs=initial_epochs, steps_generator=steps_generator,
                                          seed=seed, batch_size=batch_size, lr=lr, momentum=momentum, equalize=equalize,
@@ -564,7 +555,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             no_drifts = index
 
         # print_('========== DRIFT DETECTED START ==========')
-        # print_(f'index = {index}')
+        print_(f'index = {index}')
         # print_(f'max_idx = {max_idx}')
         # print_(f'prob = {prob}')
         # print_(f'generator_label = {generator_label}')
@@ -573,8 +564,8 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
         max_idx = max_idx[0]
         # Drift detected
-        # print_(
-        #     f'Detected drift, appending {(index, index+training_window_size)} to drift indices')
+        print_(
+            f'add {(index, index+training_window_size)} to drift indices')
         drift_indices.append((index, index+training_window_size))
 
         if temp_label[0] != 0:
@@ -585,7 +576,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
         else:
             print_(
-                f'add generator label {generator_label} to drift labels')
+                f'add new drift {generator_label} to drift labels')
             drift_labels.append(generator_label)
 
         if max_idx != generator_label:
@@ -619,9 +610,6 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         generator.train()
         discriminator.train()
 
-        print_(
-            f'creating training dataset with drift_indices = {drift_indices}')
-        print_(f'drift_labels = {drift_labels} + {temp_label}')
         training_dataset = create_training_dataset(dataset=features,
                                                    indices=drift_indices,
                                                    drift_labels=drift_labels+temp_label)
