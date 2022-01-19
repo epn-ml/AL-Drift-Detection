@@ -336,6 +336,44 @@ def equalize_classes(features, max_count=100):
     return modified_dataset
 
 
+def concat_feature(data, idx, sequence_len=2):
+    if idx < len(data) - sequence_len - 1:
+        return data[idx:idx + sequence_len + 1, :].flatten()
+    if idx == len(data) - sequence_len - 1:
+        return data[idx:, :].flatten()
+    return np.hstack((data[idx:idx + sequence_len, :].flatten(), data[sequence_length - 1]))
+
+
+def equalize_and_concatenate(features, max_count=100, sequence_len=2):
+    modified_features = features[:, :-1]
+    modified_features = np.vstack(
+        (np.zeros((sequence_len - 1, len(modified_features[sequence_len]))), modified_features))
+
+    labels = features[:, -1]
+    labels[-1] = features[0][-1]
+
+    unique_labels, counts = np.unique(labels, return_counts=True)
+    min_count = min(min(counts), max_count)
+
+    if min_count == max(counts) == max_count:
+        return concatenate_features(features, sequence_len=sequence_len)
+
+    output = None
+
+    for label in unique_labels:
+        indices = np.where(labels == label)[0]
+        chosen_indices = np.random.choice(indices, min_count)
+        for idx in chosen_indices:
+            if output is None:
+                output = np.hstack(
+                    (concat_feature(modified_features, idx, sequence_len=sequence_len), labels[idx]))
+                continue
+            output = np.vstack((output, np.hstack((concat_feature(
+                modified_features, idx, sequence_len=sequence_len), labels[idx]))))
+
+    return output
+
+
 def train_gan(features, device, discriminator, generator, epochs=100, steps_generator=100, weight_decay=0.0005,
               max_label=1, generator_batch_size=1, seed=0, batch_size=8, lr=0.0001, momentum=0.9, equalize=True,
               sequence_length=2):
@@ -379,8 +417,11 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     print_(f'concatenated_data.shape = {concatenated_data.shape}')
 
     if equalize:
+        # equalize and concatenate at the same time
+        concatenated_data = equalize_and_concatenate(
+            features, sequence_len=sequence_length)
         features = equalize_classes(features)
-        concatenated_data = equalize_classes(concatenated_data)
+        # concatenated_data = equalize_classes(concatenated_data)
     #     print_('equalized classes')
     #     print_(f'features.shape = {features.shape}')
     #     print_(f'concatenated_data.shape = {concatenated_data.shape}')
@@ -473,6 +514,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     # Create training dataset
     print_(
         f'creating training dataset with drift_indices = {drift_indices}')
+    print_(f'drift_labels = {drift_labels} + {temp_label}')
     training_dataset = create_training_dataset(
         dataset=features, indices=drift_indices, drift_labels=[0])
 
@@ -501,7 +543,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         prob, max_idx = torch.max(result, dim=1)
         max_idx = max_idx.cpu().detach().numpy()
         if np.all(max_idx != max_idx[0]) or max_idx[0] == 0:
-            #print_(f'predict and partial fit (max_idx = {max_idx})')
+            # print_(f'predict and partial fit (max_idx = {max_idx})')
             predicted, clf = predict_and_partial_fit(clf=clf, features=data, labels=data_labels,
                                                      classes=classes)
             y_pred = y_pred + predicted.tolist()
@@ -579,8 +621,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
         print_(
             f'creating training dataset with drift_indices = {drift_indices}')
-        # print_(f'drift_labels = {drift_labels}')
-        # print_(f'temp_label = {temp_label}')
+        print_(f'drift_labels = {drift_labels} + {temp_label}')
         training_dataset = create_training_dataset(dataset=features,
                                                    indices=drift_indices,
                                                    drift_labels=drift_labels+temp_label)
