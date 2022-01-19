@@ -123,7 +123,6 @@ def fit_and_predict(clf, features, labels, classes):
     predicted = np.empty(shape=len(labels))
     predicted[0] = clf.predict([features[0]])
     clf.reset()
-    # print_('clf.reset()')
     clf.partial_fit([features[0]], [labels[0]], classes=classes)
     for idx in range(1, len(labels)):
         predicted[idx] = clf.predict([features[idx]])
@@ -293,6 +292,8 @@ def concatenate_features(data, sequence_len=2, has_label=True):
 # Select features according to drift indices and append drift labeles
 def create_training_dataset(dataset, indices, drift_labels):
 
+    print_(f'creating training dataset...')
+
     # If there is a periodicity, we switch all previous drifts to the same label
     modified_drift_labels = [x for x in drift_labels]
     if drift_labels[-1] != 0:
@@ -312,7 +313,8 @@ def create_training_dataset(dataset, indices, drift_labels):
         training_dataset = np.vstack((training_dataset, np.hstack((dataset[indices[idx][0]:indices[idx][1]],
                                       np.ones((indices[idx][1]-indices[idx][0], 1)) * modified_drift_labels[idx]))))
 
-    print_(f'create training dataset (len = {len(training_dataset)}, {len(drift_labels)} total drift labels')
+    print_(
+        f'created training dataset (len = {len(training_dataset)}, {len(drift_labels)} total drift labels)')
 
     return training_dataset
 
@@ -499,8 +501,8 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
     initial_epochs = epochs * 2
 
-    # print_(
-    #     f'fit classifier to initial training window {(0, training_window_size)}')
+    print_(
+        f'fit and predict on initial training window {(0, training_window_size)}')
     predicted, clf = fit_and_predict(
         clf=clf, features=x, labels=y, classes=classes)
     # print_(f'fit finished')
@@ -523,6 +525,9 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     discriminator.eval()
 
     no_drifts = index
+    fit_start = index
+    fit_end = index + test_batch_size
+
     print_(f'starting drift detection from index = {index} ({dates[index]})')
     print_('====================')
 
@@ -537,6 +542,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             # print_(f'predict and partial fit (max_idx = {max_idx})')
             predicted, clf = predict_and_partial_fit(clf=clf, features=data, labels=data_labels,
                                                      classes=classes)
+            fit_end = index + test_batch_size
             y_pred = y_pred + predicted.tolist()
             y_true = y_true + data_labels
 
@@ -552,6 +558,9 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         if no_drifts != index:
             print_(
                 f'no drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
+            print_(
+                f'predict and partial fit to features[{fit_start}:{fit_end}]')
+            print_('========== START ==========')
             no_drifts = index
 
         # print_('========== DRIFT DETECTED START ==========')
@@ -571,7 +580,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         if temp_label[0] != 0:
             # add the index of the previous drift if it was a recurring drift
             print_(
-                f'add index of the recurring previous drift {temp_label[0]} to drift labels')
+                f'add recurring previous drift {temp_label[0]} to drift labels')
             drift_labels.append(temp_label[0])
 
         else:
@@ -636,8 +645,8 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         if temp_label[0] != 0:
             # print_(
             #     f'previous drift has occured (temp_label[0] is {temp_label[0]} != 0)')
+            print_('previous drift has occured, reset classifier')
             clf.reset()
-            # print_('clf.reset()')
             for indices, label in zip(drift_indices[:-1], drift_labels):
                 if label == temp_label[0]:
                     rows = features[indices[0]:indices[1], :]
@@ -649,13 +658,13 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                     # Append rows and targets. Do random.sample and then split the matrix
                     rows = rows[chosen_indices]
                     targets = [targets[x] for x in chosen_indices]
-                    # print_(
-                    #     f'partial fit to {len(chosen_indices)} randomly sampled features, drift label = {label}')
+                    print_(
+                        f'partial fit to {len(chosen_indices)} randomly sampled features from [{indices[0]}:{indices[1]}]')
                     clf.partial_fit(X=rows, y=targets, classes=classes)
                     # print_(f'partial fit finished')
 
-            # print_(
-            #     f'predict and partial fit to features[{training_idx_start}:{training_idx_end}, :]...')
+            print_(
+                f'predict and partial fit to features[{training_idx_start}:{training_idx_end}, :]...')
             predicted, clf = predict_and_partial_fit(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                                      labels=labels[training_idx_start:training_idx_end],
                                                      classes=classes)
@@ -664,8 +673,8 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         else:
             # print_(
             #     f'previous drift has not occured (temp_label[0] is {temp_label[0]})')
-            # print_(
-            #     f'fit and predict on features[{training_idx_start}:{training_idx_end}, :]...')
+            print_(
+                f'reset classifier, then fit and predict on features[{training_idx_start}:{training_idx_end}]')
             predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                              labels=labels[training_idx_start:training_idx_end],
                                              classes=classes)
@@ -681,14 +690,15 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         y_true = y_true + labels[training_idx_start:training_idx_end]
 
         print_(
-            f'append index = {index} ({dates[index]}) to drifts_detected')
+            f'add index = {index} ({dates[index]}) to drifts_detected')
         drifts_detected.append(index)
         index += training_window_size
         no_drifts = index
+        fit_start = index
 
         # print_('========== DRIFT DETECTED END ==========')
-        # print_(f'Continuing drift detection from {index} ({dates[index]})')
-        print_('====================')
+        print_(f'continuing drift detection from {index} ({dates[index]})')
+        print_('==========  END  ==========')
 
     print_(
         f'stopping drift detection, {index} + {training_window_size} >= {len(features)}')
