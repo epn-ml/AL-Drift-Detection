@@ -728,14 +728,15 @@ def load_data(path):
     li = []
     breaks = []
 
+    print_(
+        f'loading {len(files)} orbits...')
+
     for filename in files:
         df = pd.read_csv(filename, index_col=None, header=0)
         breaks.append((df.iloc[0]['DATE'], df.iloc[-1]['DATE']))
         li.append(df)
 
     df = pd.concat(li, axis=0, ignore_index=True)
-    print_(
-        f'loaded data: {len(list(map(lambda f: f.split("/")[-1], files)))} orbits')
 
     return df.dropna().sort_values(by='DATE'), sorted(breaks)
 
@@ -930,10 +931,7 @@ labels_train = df_train.iloc[:, -1].values.tolist()
 
 mean = np.mean(features_train, axis=1).reshape(features_train.shape[0], 1)
 std = np.std(features_train, axis=1).reshape(features_train.shape[0], 1)
-if std == 0.0:
-    features_train = (features_train - mean) / (std + 0.000001)
-else:
-    features_train = (features_train - mean) / std
+features_train = (features_train - mean) / (std + 0.000001)
 
 u, c = np.unique(labels_train, return_counts=True)
 print_(dict(zip(u, c)))
@@ -944,10 +942,7 @@ labels_test = df_test.iloc[:, -1].values.tolist()
 
 mean = np.mean(features_test, axis=1).reshape(features_test.shape[0], 1)
 std = np.std(features_test, axis=1).reshape(features_test.shape[0], 1)
-if std == 0.0:
-    features_test = (features_test - mean) / (std + 0.000001)
-else:
-    features_test = (features_test - mean) / std
+features_test = (features_test - mean) / (std + 0.000001)
 
 u, c = np.unique(labels_test, return_counts=True)
 print_(dict(zip(u, c)))
