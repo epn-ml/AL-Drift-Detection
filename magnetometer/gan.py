@@ -976,13 +976,14 @@ test_true = labels_test
 
 # %% testing
 
-# test_pred = np.empty(shape=len(features_test))
-# for idx in range(0, len(features_test)):
-#     test_pred[idx] = clf.predict([features_test[idx]])
+# Predict without fitting
+test_pred = np.empty(shape=len(features_test))
+for idx in range(0, len(features_test)):
+    test_pred[idx] = clf.predict([features_test[idx]])
 
 # Fit to already predicted features
-test_pred, clf = predict_and_partial_fit(
-    clf, features=features_test, labels=test_true, classes=np.unique(test_true))
+# test_pred, clf = predict_and_partial_fit(
+#     clf, features=features_test, labels=test_true, classes=np.unique(test_true))
 
 # %% pad missing labels
 
