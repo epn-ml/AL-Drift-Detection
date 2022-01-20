@@ -697,6 +697,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     print_(discriminator)
 
     # Test on the remaining features
+    print_(f'predict and partial fit to {len(features[index:, :])} remaining features')
     predicted, clf = predict_and_partial_fit(
         clf, features=features[index:, :], labels=labels[index:], classes=classes)
     y_pred = y_pred + predicted.tolist()
