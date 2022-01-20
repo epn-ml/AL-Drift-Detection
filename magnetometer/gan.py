@@ -521,8 +521,6 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     discriminator.eval()
 
     no_drifts = index
-    fit_start = index
-    fit_end = index + test_batch_size
 
     print_(f'starting drift detection from index = {index} ({dates[index]})')
     print_('===========================')
@@ -538,7 +536,6 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             # print_(f'predict and partial fit (max_idx = {max_idx})')
             predicted, clf = predict_and_partial_fit(clf=clf, features=data, labels=data_labels,
                                                      classes=classes)
-            fit_end = index + test_batch_size
             y_pred = y_pred + predicted.tolist()
             y_true = y_true + data_labels
 
@@ -546,6 +543,9 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                 if no_drifts != index:
                     print_(
                         f'no drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
+                    print_(
+                        f'predict and partial fit to features[{no_drifts}:{index + test_batch_size}]')
+                    
                     no_drifts = index
 
             index += test_batch_size
@@ -555,7 +555,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             print_(
                 f'no drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
             print_(
-                f'predict and partial fit to features[{fit_start}:{fit_end}]')
+                f'predict and partial fit to features[{no_drifts}:{index + test_batch_size}]')
             no_drifts = index
 
         print_('========== START ==========')
@@ -639,7 +639,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         # If a previous drift has occurred use those for training the classifier but not predict on them
         if temp_label[0] != 0:
             print_('previous drift has occured, reset classifier')
-            clf.reset()
+            clf.reset()  # don't reset?
             for indices, label in zip(drift_indices[:-1], drift_labels):
                 if label == temp_label[0]:
                     rows = features[indices[0]:indices[1], :]
@@ -697,7 +697,8 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     print_(discriminator)
 
     # Test on the remaining features
-    print_(f'predict and partial fit to {len(features[index:, :])} remaining features')
+    print_(
+        f'predict and partial fit to {len(features[index:, :])} remaining features')
     predicted, clf = predict_and_partial_fit(
         clf, features=features[index:, :], labels=labels[index:], classes=classes)
     y_pred = y_pred + predicted.tolist()
@@ -922,31 +923,32 @@ df_train = select_features(df_train, feats)
 df_test = select_features(df_test, feats)
 print_(f'selected features: {feats}')
 
-# offset_train = 16080
-# size_train = 26280 - offset_train
-# offset_test = 18891
-# size_test = 27291 - offset_test
-# print(f'offset_train: {offset_train}, size_train: {size_train}')
-# print(f'offset_test: {offset_test}, size_test: {size_test}')
-
-# df_train = df_train.iloc[offset_train:offset_train+size_train]
-# df_test = df_test.iloc[offset_test:offset_test+size_test]
-
+# standardization
 features_train = df_train.iloc[:, 1:-1].values
 dates = df_train.iloc[:, 0].values.tolist()
 labels_train = df_train.iloc[:, -1].values.tolist()
+
 mean = np.mean(features_train, axis=1).reshape(features_train.shape[0], 1)
 std = np.std(features_train, axis=1).reshape(features_train.shape[0], 1)
-features_train = (features_train - mean)/(std + 0.000001)
+if std == 0.0:
+    features_train = (features_train - mean) / (std + 0.000001)
+else:
+    features_train = (features_train - mean) / std
+
 u, c = np.unique(labels_train, return_counts=True)
 print_(dict(zip(u, c)))
 print_(f'features_train: {len(features_train)}')
 
 features_test = df_test.iloc[:, 1:-1].values
 labels_test = df_test.iloc[:, -1].values.tolist()
+
 mean = np.mean(features_test, axis=1).reshape(features_test.shape[0], 1)
 std = np.std(features_test, axis=1).reshape(features_test.shape[0], 1)
-features_test = (features_test - mean)/(std + 0.000001)
+if std == 0.0:
+    features_test = (features_test - mean) / (std + 0.000001)
+else:
+    features_test = (features_test - mean) / std
+
 u, c = np.unique(labels_test, return_counts=True)
 print_(dict(zip(u, c)))
 print_(f'features_test: {len(features_test)}')
