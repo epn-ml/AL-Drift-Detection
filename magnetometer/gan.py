@@ -357,7 +357,7 @@ def equalize_and_concatenate(features, max_count=100, sequence_len=2):
     labels[-1] = features[0][-1]
 
     unique_labels, counts = np.unique(labels, return_counts=True)
-    min_count = min(min(counts), max_count)
+    min_count = min(min(counts), max_count) # change max_count?
 
     if min_count == max(counts) == max_count:
         print_(f'counts = {counts} (min_count = {min_count})')
@@ -749,7 +749,7 @@ def load_data(path):
         li.append(df)
 
     df = pd.concat(li, axis=0, ignore_index=True)
-    print_(f'loaded data: {list(map(lambda f: f.split("/")[-1], files))}')
+    print_(f'loaded data: {len(list(map(lambda f: f.split("/")[-1], files)))} orbits')
 
     return df.dropna().sort_values(by='DATE'), sorted(breaks)
 
