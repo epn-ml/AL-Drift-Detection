@@ -292,8 +292,6 @@ def concatenate_features(data, sequence_len=2, has_label=True):
 # Select features according to drift indices and append drift labeles
 def create_training_dataset(dataset, indices, drift_labels):
 
-    print_(f'creating training dataset...')
-
     # If there is a periodicity, we switch all previous drifts to the same label
     modified_drift_labels = [x for x in drift_labels]
     if drift_labels[-1] != 0:
@@ -357,7 +355,7 @@ def equalize_and_concatenate(features, max_count=100, sequence_len=2):
     labels[-1] = features[0][-1]
 
     unique_labels, counts = np.unique(labels, return_counts=True)
-    min_count = min(min(counts), max_count) # change max_count?
+    min_count = min(min(counts), max_count)  # change max_count?
 
     if min_count == max(counts) == max_count:
         print_(f'counts = {counts} (min_count = {min_count})')
@@ -451,8 +449,6 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
                                     optimizer=optimizer_generator, loss_fn=loss_generator, loss_mse=loss_mse_generator,
                                     steps=steps_generator, device=device)
 
-    print_(f'training finished')
-
     return generator, discriminator
 
 
@@ -529,7 +525,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     fit_end = index + test_batch_size
 
     print_(f'starting drift detection from index = {index} ({dates[index]})')
-    print_('====================')
+    print_('===========================')
 
     while index + training_window_size < len(features):
 
@@ -546,7 +542,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             y_pred = y_pred + predicted.tolist()
             y_true = y_true + data_labels
 
-            if index % 10000 == 0:
+            if index % 100000 == 0:
                 if no_drifts != index:
                     print_(
                         f'no drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
@@ -560,10 +556,9 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                 f'no drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
             print_(
                 f'predict and partial fit to features[{fit_start}:{fit_end}]')
-            print_('========== START ==========')
             no_drifts = index
 
-        # print_('========== DRIFT DETECTED START ==========')
+        print_('========== START ==========')
         print_(f'index = {index}')
         # print_(f'max_idx = {max_idx}')
         # print_(f'prob = {prob}')
@@ -643,8 +638,6 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
         # If a previous drift has occurred use those for training the classifier but not predict on them
         if temp_label[0] != 0:
-            # print_(
-            #     f'previous drift has occured (temp_label[0] is {temp_label[0]} != 0)')
             print_('previous drift has occured, reset classifier')
             clf.reset()
             for indices, label in zip(drift_indices[:-1], drift_labels):
@@ -664,15 +657,13 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                     # print_(f'partial fit finished')
 
             print_(
-                f'predict and partial fit to features[{training_idx_start}:{training_idx_end}, :]...')
+                f'predict and partial fit to features[{training_idx_start}:{training_idx_end}]')
             predicted, clf = predict_and_partial_fit(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                                      labels=labels[training_idx_start:training_idx_end],
                                                      classes=classes)
             # print_(f'predict and partial fit finished')
 
         else:
-            # print_(
-            #     f'previous drift has not occured (temp_label[0] is {temp_label[0]})')
             print_(
                 f'reset classifier, then fit and predict on features[{training_idx_start}:{training_idx_end}]')
             predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
@@ -685,8 +676,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                                          classes=classes)
         """
         # Add the predicted and true values to the list
-        predicted = predicted.tolist()
-        y_pred = y_pred + predicted
+        y_pred = y_pred + predicted.tolist()
         y_true = y_true + labels[training_idx_start:training_idx_end]
 
         print_(
@@ -707,12 +697,10 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     print_(discriminator)
 
     # Test on the remaining features
-    # features_window = features[index:, :]
-    # labels_window = labels[index:]
-    # y_hat, clf = predict_and_partial_fit(
-    #     clf, features=features_window, labels=labels_window, classes=classes)
-    # y_pred = y_pred + y_hat.tolist()
-    # y_true = y_true + labels_window
+    predicted, clf = predict_and_partial_fit(
+        clf, features=features[index:, :], labels=labels[index:], classes=classes)
+    y_pred = y_pred + predicted.tolist()
+    y_true = y_true + labels[index:]
 
     # save model
     # torch.save(
@@ -725,11 +713,6 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     # ), f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_gen_state.pth')
     # torch.save(discriminator.state_dict(
     # ), f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_dis_state.pth')
-
-    # y_hat, clf = predict_and_partial_fit(
-    #     clf, features=features_window, labels=labels_window, classes=classes)
-    # y_pred = y_pred + y_hat.tolist()
-    # y_true = y_true + labels_window
 
     print_(f'drift_indices = {drift_indices}')
     print_(f'drift_labels = {drift_labels}')
@@ -749,7 +732,8 @@ def load_data(path):
         li.append(df)
 
     df = pd.concat(li, axis=0, ignore_index=True)
-    print_(f'loaded data: {len(list(map(lambda f: f.split("/")[-1], files)))} orbits')
+    print_(
+        f'loaded data: {len(list(map(lambda f: f.split("/")[-1], files)))} orbits')
 
     return df.dropna().sort_values(by='DATE'), sorted(breaks)
 
@@ -992,9 +976,13 @@ test_true = labels_test
 
 # %% testing
 
-test_pred = np.empty(shape=len(features_test))
-for idx in range(0, len(features_test)):
-    test_pred[idx] = clf.predict([features_test[idx]])
+# test_pred = np.empty(shape=len(features_test))
+# for idx in range(0, len(features_test)):
+#     test_pred[idx] = clf.predict([features_test[idx]])
+
+# Fit to already predicted features
+test_pred, clf = predict_and_partial_fit(
+    clf, features=features_test, labels=test_true, classes=np.unique(test_true))
 
 # %% pad missing labels
 
