@@ -545,7 +545,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                         f'no drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
                     print_(
                         f'predict and partial fit to features[{no_drifts}:{index + test_batch_size}]')
-                    
+
                     no_drifts = index
 
             index += test_batch_size
@@ -728,8 +728,7 @@ def load_data(path):
     li = []
     breaks = []
 
-    print_(
-        f'loading {len(files)} orbits...')
+    print_(f'loading {len(files)} orbits...')
 
     for filename in files:
         df = pd.read_csv(filename, index_col=None, header=0)
