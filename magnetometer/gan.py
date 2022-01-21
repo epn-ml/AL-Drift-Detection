@@ -125,11 +125,11 @@ def fit_and_predict(clf, features, labels, classes, weights):
     predicted[0] = clf.predict([features[0]])
     clf.reset()
     clf.partial_fit([features[0]], [labels[0]],
-                    classes=classes, sample_weight=weights[int(labels[0])])
+                    classes=classes, sample_weight=[weights[int(labels[0])]])
     for idx in range(1, len(labels)):
         predicted[idx] = clf.predict([features[idx]])
         clf.partial_fit([features[idx]], [labels[idx]],
-                        classes=classes, sample_weight=weights[int(labels[idx])])
+                        classes=classes, sample_weight=[weights[int(labels[idx])]])
 
     return predicted, clf
 
@@ -139,7 +139,7 @@ def predict_and_partial_fit(clf, features, labels, classes, weights):
     for idx in range(0, len(labels)):
         predicted[idx] = clf.predict([features[idx]])
         clf.partial_fit([features[idx]], [labels[idx]],
-                        classes=classes, sample_weight=weights[int(labels[idx])])
+                        classes=classes, sample_weight=[weights[int(labels[idx])]])
 
     return predicted, clf
 
