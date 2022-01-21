@@ -531,11 +531,13 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         data_labels = labels[index:index + test_batch_size]
         result = discriminator(torch.Tensor(data).to(torch.float).to(device))
         prob, max_idx = torch.max(result, dim=1)
-        max_idx = max_idx.cpu().detach().numpy()
+        max_idx = max_idx.cpu().detach().numpy()  # this takes more and more time
         if np.all(max_idx != max_idx[0]) or max_idx[0] == 0:
             # print_(f'predict and partial fit (max_idx = {max_idx})')
+            t = time.perf_counter()
             predicted, clf = predict_and_partial_fit(clf=clf, features=data, labels=data_labels,
-                                                     classes=classes)
+                                                     classes=classes)  # or this?
+            print_(f'{time.perf_counter() - t} sec')
             y_pred = y_pred + predicted.tolist()
             y_true = y_true + data_labels
 
@@ -862,7 +864,7 @@ epochs = 20  # 100
 print_(f'epochs: {epochs}')
 
 # 1/factor will be the amount of instances of previous drifts taken for training
-repeat_factor = 10
+repeat_factor = 5  # test this
 print_(f'repeat_factor: {repeat_factor}')
 
 # Equalize the number of training instances across different drifts
@@ -874,14 +876,14 @@ print_(f'sequence_length: {sequence_length}')
 # For the collate function to split the rows accordingly
 seq_len = sequence_length
 
-# Steps for training
-steps_generator = 50
+# Steps for generator training
+steps_generator = 100
 print_(f'steps_generator: {steps_generator}')
 
-# Set the batch_size
+# Set the batch_size for DataLoader
 batch_size = 8
 print_(f'batch_size: {batch_size}')
-generator_batch_size = 2
+generator_batch_size = 8
 print_(f'generator_batch_size: {generator_batch_size}')
 # Number of instances that should have the same label for a drift to be confirmed
 test_batch_size = 10
