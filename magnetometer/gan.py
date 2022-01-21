@@ -13,6 +13,7 @@ import plotly.graph_objects as go
 import torch
 from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support)
+from sklearn.utils.class_weight import compute_class_weight
 from skmultiflow.trees import HoeffdingTreeClassifier
 from torch import nn
 from torch.autograd import Variable
@@ -119,23 +120,26 @@ class Discriminator(Module):
         return net
 
 
-def fit_and_predict(clf, features, labels, classes):
+def fit_and_predict(clf, features, labels, classes, weights):
     predicted = np.empty(shape=len(labels))
     predicted[0] = clf.predict([features[0]])
     clf.reset()
-    clf.partial_fit([features[0]], [labels[0]], classes=classes)
+    clf.partial_fit([features[0]], [labels[0]],
+                    classes=classes, sample_weight=weights)
     for idx in range(1, len(labels)):
         predicted[idx] = clf.predict([features[idx]])
-        clf.partial_fit([features[idx]], [labels[idx]], classes=classes)
+        clf.partial_fit([features[idx]], [labels[idx]],
+                        classes=classes, sample_weight=weights)
 
     return predicted, clf
 
 
-def predict_and_partial_fit(clf, features, labels, classes):
+def predict_and_partial_fit(clf, features, labels, classes, weights):
     predicted = np.empty(shape=len(labels))
     for idx in range(0, len(labels)):
         predicted[idx] = clf.predict([features[idx]])
-        clf.partial_fit([features[idx]], [labels[idx]], classes=classes)
+        clf.partial_fit([features[idx]], [labels[idx]],
+                        classes=classes, sample_weight=weights)
 
     return predicted, clf
 
@@ -497,10 +501,13 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
     initial_epochs = epochs * 2
 
+    weights = compute_class_weight('balanced', classes, labels)
+    print_(f'class weights: {weights}')
+
     print_(
         f'fit and predict on initial training window {(0, training_window_size)}')
     predicted, clf = fit_and_predict(
-        clf=clf, features=x, labels=y, classes=classes)
+        clf=clf, features=x, labels=y, classes=classes, weights=weights)
     # print_(f'fit finished')
     y_pred = y_pred + predicted.tolist()
     y_true = y_true + y
@@ -529,23 +536,25 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
         data = features[index:index + test_batch_size]
         data_labels = labels[index:index + test_batch_size]
-        
+
         t1 = time.perf_counter()
         result = discriminator(torch.Tensor(data).to(torch.float).to(device))
         prob, max_idx = torch.max(result, dim=1)
         max_idx = max_idx.cpu().detach().numpy()  # this takes more and more time
         t2 = time.perf_counter()
         if t2 - t1 > 0.05:
-            print_(f'discriminator took {t2 - t1} seconds, len(data) = {len(data)}, len(classes) = {len(classes)}')
+            print_(
+                f'discriminator took {t2 - t1} seconds, len(data) = {len(data)}, len(classes) = {len(classes)}')
 
         if np.all(max_idx != max_idx[0]) or max_idx[0] == 0:
             # print_(f'predict and partial fit (max_idx = {max_idx})')
             t1 = time.perf_counter()
             predicted, clf = predict_and_partial_fit(clf=clf, features=data, labels=data_labels,
-                                                     classes=classes)  # or this?
+                                                     classes=classes, weights=weights)  # or this?
             t2 = time.perf_counter()
             if t2 - t1 > 0.05:
-                print_(f'predict and partial fit took {t2 - t1} seconds, len(data) = {len(data)}, len(classes) = {len(classes)}')
+                print_(
+                    f'predict and partial fit took {t2 - t1} seconds, len(data) = {len(data)}, len(classes) = {len(classes)}')
             y_pred = y_pred + predicted.tolist()
             y_true = y_true + data_labels
 
@@ -663,14 +672,15 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                     targets = [targets[x] for x in chosen_indices]
                     print_(
                         f'partial fit to {len(chosen_indices)} randomly sampled features from [{indices[0]}:{indices[1]}]')
-                    clf.partial_fit(X=rows, y=targets, classes=classes)
+                    clf.partial_fit(X=rows, y=targets,
+                                    classes=classes, weights=weights)
                     # print_(f'partial fit finished')
 
             print_(
                 f'predict and partial fit to features[{training_idx_start}:{training_idx_end}]')
             predicted, clf = predict_and_partial_fit(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                                      labels=labels[training_idx_start:training_idx_end],
-                                                     classes=classes)
+                                                     classes=classes, weights=weights)
             # print_(f'predict and partial fit finished')
 
         else:
@@ -678,7 +688,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                 f'reset classifier, then fit and predict on features[{training_idx_start}:{training_idx_end}]')
             predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                              labels=labels[training_idx_start:training_idx_end],
-                                             classes=classes)
+                                             classes=classes, weights=weights)
             # print_(f'fit and predict finished')
         """
         predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
@@ -710,7 +720,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     print_(
         f'predict and partial fit to {len(features[index:, :])} remaining features')
     predicted, clf = predict_and_partial_fit(
-        clf, features=features[index:, :], labels=labels[index:], classes=classes)
+        clf, features=features[index:, :], labels=labels[index:], classes=classes, weights=weights)
     y_pred = y_pred + predicted.tolist()
     y_true = y_true + labels[index:]
 
@@ -851,7 +861,7 @@ def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
 
 fptr = None
 dataset = 'messenger'
-folder = f'{str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))}_{sys.argv[1:]}'
+folder = f'{str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))}_{1000}'
 
 plots = ''
 if len(sys.argv) > 2:
@@ -864,7 +874,7 @@ if len(sys.argv) > 3:
 # Set the number of training instances
 training_window_size = 1000
 if len(sys.argv) > 1:
-    training_window_size = int(sys.argv[1])
+    training_window_size = 1000
 print_(f'training_window_size: {training_window_size}')
 
 # Set the number of epochs the GAN should be trained
