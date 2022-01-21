@@ -497,7 +497,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
     initial_epochs = epochs * 2
 
-    weights = dict(zip(classes, compute_class_weight('balanced', classes=classes, y=labels)))
+    weights = compute_class_weight('balanced', classes=classes, y=labels)
     print_(f'class weights: {weights}')
 
     print_(
