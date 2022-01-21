@@ -529,15 +529,23 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
         data = features[index:index + test_batch_size]
         data_labels = labels[index:index + test_batch_size]
+        
+        t1 = time.perf_counter()
         result = discriminator(torch.Tensor(data).to(torch.float).to(device))
         prob, max_idx = torch.max(result, dim=1)
         max_idx = max_idx.cpu().detach().numpy()  # this takes more and more time
+        t2 = time.perf_counter()
+        if t2 - t1 > 0.05:
+            print_(f'discriminator took {t2 - t1} seconds, len(data) = {len(data)}, len(classes) = {len(classes)}')
+
         if np.all(max_idx != max_idx[0]) or max_idx[0] == 0:
             # print_(f'predict and partial fit (max_idx = {max_idx})')
-            t = time.perf_counter()
+            t1 = time.perf_counter()
             predicted, clf = predict_and_partial_fit(clf=clf, features=data, labels=data_labels,
                                                      classes=classes)  # or this?
-            print_(f'{time.perf_counter() - t} sec')
+            t2 = time.perf_counter()
+            if t2 - t1 > 0.05:
+                print_(f'predict and partial fit took {t2 - t1} seconds, len(data) = {len(data)}, len(classes) = {len(classes)}')
             y_pred = y_pred + predicted.tolist()
             y_true = y_true + data_labels
 
