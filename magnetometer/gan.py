@@ -495,7 +495,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
     initial_epochs = epochs * 2
 
-    weights = compute_class_weight('balanced', classes, labels)
+    weights = compute_class_weight('balanced', classes=classes, y=labels)
     print_(f'class weights: {weights}')
 
     print_(
@@ -874,7 +874,7 @@ def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
 
 fptr = None
 dataset = 'messenger'
-folder = f'{str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))}_{1000}'
+folder = f'{str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))}_{sys.argv[1:]}'
 
 plots = ''
 if len(sys.argv) > 2:
@@ -885,9 +885,9 @@ if len(sys.argv) > 3:
     plot_format = sys.argv[3]
 
 # Set the number of training instances
-training_window_size = 1000
+training_window_size = int(sys.argv[1])
 if len(sys.argv) > 1:
-    training_window_size = 1000
+    training_window_size = 10000
 print_(f'training_window_size: {training_window_size}')
 
 # Set the number of epochs the GAN should be trained
