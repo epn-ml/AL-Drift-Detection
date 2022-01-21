@@ -315,9 +315,6 @@ def create_training_dataset(dataset, indices, drift_labels):
         training_dataset = np.vstack((training_dataset, np.hstack((dataset[indices[idx][0]:indices[idx][1]],
                                       np.ones((indices[idx][1]-indices[idx][0], 1)) * modified_drift_labels[idx]))))
 
-    print_(
-        f'created training dataset (len = {len(training_dataset)}, {len(drift_labels)} total drift labels)')
-
     return training_dataset
 
 
@@ -441,9 +438,6 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     # This is the label for new drifts (any input other than the currently learned distributions)
     generator_label = ones * max_label
 
-    print_(
-        f'training GAN... (label for new drifts = {generator_label})')
-
     for epochs_trained in range(epochs):
         discriminator = train_discriminator(real_data=real_data, fake_data=generator_data, discriminator=discriminator,
                                             generator=generator, optimizer=optimizer_discriminator,
@@ -513,14 +507,21 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     y_true = y_true + y
 
     # Create training dataset
+    print_(f'creating training dataset...')
+    t1 = time.perf_counter()
     training_dataset = create_training_dataset(
         dataset=features, indices=drift_indices, drift_labels=[0])
+    print_(
+        f'^ length = {len(training_dataset)} ({time.perf_counter() - t1} sec)')
 
+    print_(f'training GAN...')
+    t1 = time.perf_counter()
     generator, discriminator = train_gan(features=training_dataset, device=device, discriminator=discriminator,
                                          generator=generator, epochs=initial_epochs, steps_generator=steps_generator,
                                          seed=seed, batch_size=batch_size, lr=lr, momentum=momentum, equalize=equalize,
                                          max_label=generator_label, generator_batch_size=generator_batch_size,
                                          weight_decay=weight_decay, sequence_length=sequence_length)
+    print_(f'^ {time.perf_counter() - t1} sec')
 
     index = training_window_size
 
@@ -578,7 +579,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             no_drifts = index
 
         print_('========== START ==========')
-        print_(f'index = {index}')
+        # print_(f'index = {index}')
         # print_(f'max_idx = {max_idx}')
         # print_(f'prob = {prob}')
         # print_(f'generator_label = {generator_label}')
@@ -613,18 +614,18 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             # We reset the top layer predictions because the drift order has changed and the network should be retrained
             discriminator.reset_top_layer()
             discriminator = discriminator.to(device)
-            # print_(
-            #     f'Previous drift {max_idx} occurred at index {index}, reset top layer predictions')
+            print_(
+                f'previous drift {max_idx} occurred, reset top layer predictions')
 
         else:
             # If this is a new drift, label for the previous drift training dataset is the previous highest label
             # which is the generator label
-            # print_(
-            #     f'new drift, generator_label = {generator_label}, incrementing generator_label, updating discriminator')
             temp_label = [0]
             discriminator.update()
             discriminator = discriminator.to(device)
             generator_label += 1
+            print_(
+                f'new drift occured, generator_label = {generator_label} += 1, update discriminator')
 
         generator = Generator(
             inp=features.shape[1], out=features.shape[1], sequence_length=sequence_length)
@@ -633,10 +634,16 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         generator.train()
         discriminator.train()
 
+        print_(f'creating training dataset...')
+        t1 = time.perf_counter()
         training_dataset = create_training_dataset(dataset=features,
                                                    indices=drift_indices,
                                                    drift_labels=drift_labels+temp_label)
+        print_(
+            f'^ length = {len(training_dataset)} ({time.perf_counter() - t1} sec)')
 
+        print_(f'training GAN...')
+        t1 = time.perf_counter()
         generator, discriminator = train_gan(features=training_dataset, device=device,
                                              discriminator=discriminator,
                                              generator=generator, epochs=epochs,
@@ -644,6 +651,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                                              batch_size=current_batch_size, max_label=generator_label,
                                              lr=lr/10, momentum=momentum, equalize=equalize,
                                              weight_decay=weight_decay, sequence_length=sequence_length)
+        print_(f'^ {time.perf_counter() - t1} sec')
 
         # Set the generator and discriminator to evaluation mode
         generator.eval()
@@ -659,6 +667,8 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         if temp_label[0] != 0:
             print_('previous drift has occured, reset classifier')
             clf.reset()  # don't reset?
+
+            t1 = time.perf_counter()
             for indices, label in zip(drift_indices[:-1], drift_labels):
                 if label == temp_label[0]:
                     rows = features[indices[0]:indices[1], :]
@@ -671,25 +681,28 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                     rows = rows[chosen_indices]
                     targets = [targets[x] for x in chosen_indices]
                     print_(
-                        f'partial fit to {len(chosen_indices)} randomly sampled features from [{indices[0]}:{indices[1]}]')
+                        f'{indices}, {label} - partial fit to {len(chosen_indices)} randomly sampled features from [{indices[0]}:{indices[1]}]')
                     clf.partial_fit(X=rows, y=targets,
                                     classes=classes, weights=weights)
                     # print_(f'partial fit finished')
+            print_(f'^ {time.perf_counter() - t1} sec')
 
             print_(
                 f'predict and partial fit to features[{training_idx_start}:{training_idx_end}]')
+            t1 = time.perf_counter()
             predicted, clf = predict_and_partial_fit(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                                      labels=labels[training_idx_start:training_idx_end],
                                                      classes=classes, weights=weights)
-            # print_(f'predict and partial fit finished')
+            print_(f'^ {time.perf_counter() - t1} sec')
 
         else:
             print_(
                 f'reset classifier, then fit and predict on features[{training_idx_start}:{training_idx_end}]')
+            t1 = time.perf_counter()
             predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                              labels=labels[training_idx_start:training_idx_end],
                                              classes=classes, weights=weights)
-            # print_(f'fit and predict finished')
+            print_(f'^ {time.perf_counter() - t1} sec')
         """
         predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                          labels=labels[training_idx_start:training_idx_end],
