@@ -125,11 +125,11 @@ def fit_and_predict(clf, features, labels, classes, weights):
     predicted[0] = clf.predict([features[0]])
     clf.reset()
     clf.partial_fit([features[0]], [labels[0]],
-                    classes=classes, sample_weight=weights[labels[0]])
+                    classes=classes, sample_weight=weights[int(labels[0])])
     for idx in range(1, len(labels)):
         predicted[idx] = clf.predict([features[idx]])
         clf.partial_fit([features[idx]], [labels[idx]],
-                        classes=classes, sample_weight=weights[labels[idx]])
+                        classes=classes, sample_weight=weights[int(labels[idx])])
 
     return predicted, clf
 
@@ -139,7 +139,7 @@ def predict_and_partial_fit(clf, features, labels, classes, weights):
     for idx in range(0, len(labels)):
         predicted[idx] = clf.predict([features[idx]])
         clf.partial_fit([features[idx]], [labels[idx]],
-                        classes=classes, sample_weight=weights[labels[idx]])
+                        classes=classes, sample_weight=weights[int(labels[idx])])
 
     return predicted, clf
 
@@ -673,7 +673,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                 if label == temp_label[0]:
                     rows = features[indices[0]:indices[1], :]
                     targets = labels[indices[0]:indices[1]]
-                    targets_labels = np.unique(targets)
+                    targets_labels = np.unique(targets).astype(int)
                     # Randomly sample .1 of the data
                     len_indices = list(range(0, rows.shape[0]))
                     chosen_indices = random.sample(
