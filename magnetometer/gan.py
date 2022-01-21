@@ -121,7 +121,7 @@ class Discriminator(Module):
 
 
 def fit_and_predict(clf, features, labels, classes, weights):
-    unique_labels = np.unique(labels).tolist()
+    unique_labels = np.unique(labels)
     predicted = np.empty(shape=len(labels))
     predicted[0] = clf.predict([features[0]])
     clf.reset()
@@ -136,7 +136,7 @@ def fit_and_predict(clf, features, labels, classes, weights):
 
 
 def predict_and_partial_fit(clf, features, labels, classes, weights):
-    unique_labels = np.unique(labels).tolist()
+    unique_labels = np.unique(labels)
     predicted = np.empty(shape=len(labels))
     for idx in range(0, len(labels)):
         predicted[idx] = clf.predict([features[idx]])
@@ -675,7 +675,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                 if label == temp_label[0]:
                     rows = features[indices[0]:indices[1], :]
                     targets = labels[indices[0]:indices[1]]
-                    targets_labels = np.unique(targets).tolist()
+                    targets_labels = np.unique(targets)
                     # Randomly sample .1 of the data
                     len_indices = list(range(0, rows.shape[0]))
                     chosen_indices = random.sample(
