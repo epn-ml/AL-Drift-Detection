@@ -469,7 +469,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     y_true = []
     clf = HoeffdingTreeClassifier()
 
-    classes = np.array([0, 1, 2, 3, 4])
+    classes = np.unique(labels)
     x = features[:training_window_size, :]
     y = labels[:training_window_size]
 
@@ -495,7 +495,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
     initial_epochs = epochs * 2
 
-    weights = compute_class_weight('balanced', classes=classes, y=labels)
+    weights = dict(zip(classes, compute_class_weight('balanced', classes=classes, y=labels)))
     print_(f'class weights: {weights}')
 
     print_(
