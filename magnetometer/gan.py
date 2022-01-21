@@ -469,7 +469,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     y_true = []
     clf = HoeffdingTreeClassifier()
 
-    classes = np.unique(labels)
+    classes = np.array([0, 1, 2, 3, 4])
     x = features[:training_window_size, :]
     y = labels[:training_window_size]
 
