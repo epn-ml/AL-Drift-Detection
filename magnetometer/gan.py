@@ -669,9 +669,10 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             print_('previous drift has occured, reset classifier')
             clf.reset()  # don't reset?
 
-            print_(f'drift_labels - {drift_labels}')
+            zd = zip(drift_indices[:-1], drift_labels)
+            print_(f'drifts - {zd}')
             t1 = time.perf_counter()
-            for indices, label in zip(drift_indices[:-1], drift_labels):
+            for indices, label in zd:
                 if label == temp_label[0]:
                     rows = features[indices[0]:indices[1], :]
                     targets = labels[indices[0]:indices[1]]
@@ -893,9 +894,9 @@ if len(sys.argv) > 3:
     plot_format = sys.argv[3]
 
 # Set the number of training instances
-training_window_size = int(sys.argv[1])
+training_window_size = 10000
 if len(sys.argv) > 1:
-    training_window_size = 10000
+    training_window_size = int(sys.argv[1])
 print_(f'training_window_size: {training_window_size}')
 
 # Set the number of epochs the GAN should be trained
