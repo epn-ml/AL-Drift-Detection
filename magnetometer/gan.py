@@ -13,7 +13,8 @@ import plotly.graph_objects as go
 import torch
 from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support)
-from sklearn.utils.class_weight import compute_class_weight
+from sklearn.utils.class_weight import (compute_class_weight,
+                                        compute_sample_weight)
 from skmultiflow.trees import HoeffdingTreeClassifier
 from torch import nn
 from torch.autograd import Variable
@@ -125,11 +126,11 @@ def fit_and_predict(clf, features, labels, classes, weights):
     predicted[0] = clf.predict([features[0]])
     clf.reset()
     clf.partial_fit([features[0]], [labels[0]],
-                    classes=classes, sample_weight=[weights[int(labels[0])]])
+                    classes=classes, sample_weight=[weights[labels[0]]])
     for idx in range(1, len(labels)):
         predicted[idx] = clf.predict([features[idx]])
         clf.partial_fit([features[idx]], [labels[idx]],
-                        classes=classes, sample_weight=[weights[int(labels[idx])]])
+                        classes=classes, sample_weight=[weights[labels[idx]]])
 
     return predicted, clf
 
@@ -139,7 +140,7 @@ def predict_and_partial_fit(clf, features, labels, classes, weights):
     for idx in range(0, len(labels)):
         predicted[idx] = clf.predict([features[idx]])
         clf.partial_fit([features[idx]], [labels[idx]],
-                        classes=classes, sample_weight=[weights[int(labels[idx])]])
+                        classes=classes, sample_weight=[weights[labels[idx]]])
 
     return predicted, clf
 
@@ -673,7 +674,6 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                 if label == temp_label[0]:
                     rows = features[indices[0]:indices[1], :]
                     targets = labels[indices[0]:indices[1]]
-                    targets_labels = np.unique(targets).astype(int)
                     # Randomly sample .1 of the data
                     len_indices = list(range(0, rows.shape[0]))
                     chosen_indices = random.sample(
@@ -681,10 +681,15 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                     # Append rows and targets. Do random.sample and then split the matrix
                     rows = rows[chosen_indices]
                     targets = [targets[x] for x in chosen_indices]
+                    ut = np.unique(targets)
+                    sample_weights = compute_sample_weight(
+                        dict(zip(ut, weights[ut])), y=targets)
                     print_(
-                        f'{indices}, {label} - partial fit to {len(chosen_indices)} randomly sampled features from [{indices[0]}:{indices[1]}]')
+                        f'unique sample weights - {np.unique(sample_weights)}, len - {len(sample_weights)}')
+                    print_(
+                        f'{indices}, {label} - partial fit to {len(chosen_indices)} randomly sampled features')
                     clf.partial_fit(X=rows, y=targets,
-                                    classes=classes, sample_weight=weights[targets_labels])
+                                    classes=classes, sample_weight=sample_weights)
                     # print_(f'partial fit finished')
             print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
