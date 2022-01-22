@@ -684,6 +684,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                     ut = np.unique(targets)
                     sample_weights = compute_sample_weight(
                         dict(zip(ut, weights[ut])), y=targets)
+                    print_(f'unique targets - {ut}')
                     print_(
                         f'unique sample weights - {np.unique(sample_weights)}, len - {len(sample_weights)}')
                     print_(
