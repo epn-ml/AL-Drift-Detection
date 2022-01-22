@@ -669,6 +669,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             print_('previous drift has occured, reset classifier')
             clf.reset()  # don't reset?
 
+            print_(f'drift_labels - {drift_labels}')
             t1 = time.perf_counter()
             for indices, label in zip(drift_indices[:-1], drift_labels):
                 if label == temp_label[0]:
