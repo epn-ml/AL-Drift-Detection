@@ -512,7 +512,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     training_dataset = create_training_dataset(
         dataset=features, indices=drift_indices, drift_labels=[0])
     print_(
-        f'^ length = {len(training_dataset)} ({time.perf_counter() - t1} sec)')
+        f'^ length = {len(training_dataset)} ({time.perf_counter() - t1:.2f} sec)')
 
     print_(f'training GAN...')
     t1 = time.perf_counter()
@@ -521,7 +521,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                                          seed=seed, batch_size=batch_size, lr=lr, momentum=momentum, equalize=equalize,
                                          max_label=generator_label, generator_batch_size=generator_batch_size,
                                          weight_decay=weight_decay, sequence_length=sequence_length)
-    print_(f'^ {time.perf_counter() - t1} sec')
+    print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
     index = training_window_size
 
@@ -545,7 +545,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         t2 = time.perf_counter()
         if t2 - t1 > 0.05:
             print_(
-                f'discriminator took {t2 - t1} seconds, len(data) = {len(data)}, len(classes) = {len(classes)}')
+                f'discriminator took {t2 - t1:.2f} seconds, len(data) = {len(data)}, len(classes) = {len(classes)}')
 
         if np.all(max_idx != max_idx[0]) or max_idx[0] == 0:
             # print_(f'predict and partial fit (max_idx = {max_idx})')
@@ -555,7 +555,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             t2 = time.perf_counter()
             if t2 - t1 > 0.05:
                 print_(
-                    f'predict and partial fit took {t2 - t1} seconds, len(data) = {len(data)}, len(classes) = {len(classes)}')
+                    f'predict and partial fit took {t2 - t1:.2f} seconds, len(data) = {len(data)}, len(classes) = {len(classes)}')
             y_pred = y_pred + predicted.tolist()
             y_true = y_true + data_labels
 
@@ -640,7 +640,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                                                    indices=drift_indices,
                                                    drift_labels=drift_labels+temp_label)
         print_(
-            f'^ length = {len(training_dataset)} ({time.perf_counter() - t1} sec)')
+            f'^ length = {len(training_dataset)} ({time.perf_counter() - t1:.2f} sec)')
 
         print_(f'training GAN...')
         t1 = time.perf_counter()
@@ -651,7 +651,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                                              batch_size=current_batch_size, max_label=generator_label,
                                              lr=lr/10, momentum=momentum, equalize=equalize,
                                              weight_decay=weight_decay, sequence_length=sequence_length)
-        print_(f'^ {time.perf_counter() - t1} sec')
+        print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
         # Set the generator and discriminator to evaluation mode
         generator.eval()
@@ -686,7 +686,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                     clf.partial_fit(X=rows, y=targets,
                                     classes=classes, sample_weight=weights[targets_labels])
                     # print_(f'partial fit finished')
-            print_(f'^ {time.perf_counter() - t1} sec')
+            print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
             print_(
                 f'predict and partial fit to features[{training_idx_start}:{training_idx_end}]')
@@ -694,7 +694,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             predicted, clf = predict_and_partial_fit(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                                      labels=labels[training_idx_start:training_idx_end],
                                                      classes=classes, weights=weights)
-            print_(f'^ {time.perf_counter() - t1} sec')
+            print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
         else:
             print_(
@@ -703,7 +703,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                              labels=labels[training_idx_start:training_idx_end],
                                              classes=classes, weights=weights)
-            print_(f'^ {time.perf_counter() - t1} sec')
+            print_(f'^ {time.perf_counter() - t1:.2f} sec')
         """
         predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                          labels=labels[training_idx_start:training_idx_end],
@@ -1052,7 +1052,7 @@ print_(f'f-score: {prf[2]}')
 print_(f'support: {prf[3]}')
 print_(f'confusion matrix:\n{confusion_matrix(test_true, test_pred)}')
 
-print_(f'Execution time is {t2 - t1} seconds')
+print_(f'Execution time is {t2 - t1:.2f} seconds')
 print_(f'Drifts: {drifts_detected}')
 
 
