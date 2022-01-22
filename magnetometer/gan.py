@@ -684,7 +684,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                     print_(
                         f'{indices}, {label} - partial fit to {len(chosen_indices)} randomly sampled features from [{indices[0]}:{indices[1]}]')
                     clf.partial_fit(X=rows, y=targets,
-                                    classes=classes, weights=weights[targets_labels])
+                                    classes=classes, sample_weight=weights[targets_labels])
                     # print_(f'partial fit finished')
             print_(f'^ {time.perf_counter() - t1} sec')
 
