@@ -670,7 +670,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             clf.reset()  # don't reset?
 
             zd = zip(drift_indices[:-1], drift_labels)
-            print_(f'drifts - {zd}')
+            print_(f'drifts - {list(zd)}')
             t1 = time.perf_counter()
             for indices, label in zd:
                 if label == temp_label[0]:
@@ -685,10 +685,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                     targets = [targets[x] for x in chosen_indices]
                     ut = np.unique(targets)
                     sample_weights = compute_sample_weight(
-                        dict(zip(ut, weights[ut])), y=targets)
-                    print_(f'unique targets - {ut}')
-                    print_(
-                        f'unique sample weights - {np.unique(sample_weights)}, len - {len(sample_weights)}')
+                        dict(zip(ut, weights[ut])), y=targets)  # debug this
                     print_(
                         f'{indices}, {label} - partial fit to {len(chosen_indices)} randomly sampled features')
                     clf.partial_fit(X=rows, y=targets,
