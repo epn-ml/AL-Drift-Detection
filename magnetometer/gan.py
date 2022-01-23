@@ -666,13 +666,12 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
         # If a previous drift has occurred use those for training the classifier but not predict on them
         if temp_label[0] != 0:
-            print_('previous drift has occured, reset classifier')
+            print_(
+                f'previous drift has occured (label {temp_label[0]}), reset classifier')
             clf.reset()  # don't reset?
 
-            zd = zip(drift_indices[:-1], drift_labels)
-            print_(f'drifts - {list(zd)}')
             t1 = time.perf_counter()
-            for indices, label in zd:
+            for indices, label in zip(drift_indices[:-1], drift_labels):
                 if label == temp_label[0]:
                     rows = features[indices[0]:indices[1], :]
                     targets = labels[indices[0]:indices[1]]
@@ -687,7 +686,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                     sample_weights = compute_sample_weight(
                         dict(zip(ut, weights[ut])), y=targets)  # debug this
                     print_(
-                        f'{indices}, {label} - partial fit to {len(chosen_indices)} randomly sampled features')
+                        f'{indices} - partial fit to {len(chosen_indices)} randomly sampled features')
                     clf.partial_fit(X=rows, y=targets,
                                     classes=classes, sample_weight=sample_weights)
                     # print_(f'partial fit finished')
