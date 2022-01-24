@@ -27,8 +27,6 @@ global fptr
 global dataset
 global folder
 global plot_format
-global print_collate
-global print_forward
 
 
 # %% functions
@@ -61,14 +59,9 @@ class Generator(Module):
         )
 
     def forward(self, x_):
-        global print_forward
         x_r = x_.reshape(x_.shape[0], x_.shape[1] * x_.shape[2])
         output = self.net(x_r)
-        if print_forward:
-            # print_(f'x_.shape = {x_.shape}')
-            # print_(f'x_r.shape = {x_r.shape}')
-            # print_(f'output.shape = {output.shape}')
-            print_forward = False
+
         # output = output.reshape(output.shape[0], output.shape[1] * output.shape[2])
         return output
 
@@ -165,7 +158,7 @@ def collate_generator(batch):
     :return:
     """
     global seq_len
-    global print_collate
+
     # Stack each tensor variable
     feature_length = int(len(batch[0]) / (seq_len + 1))
     # The last feature length corresponds to the feature we want to predict and
@@ -174,13 +167,7 @@ def collate_generator(batch):
                      for x in batch])
     y = torch.stack([torch.tensor(x[-feature_length-1:-1]) for x in batch])
     labels = torch.stack([torch.tensor(x[-1]) for x in batch])
-    if print_collate:
-        # print_(f'len(batch) = {len(batch)}')
-        # print_(f'batch[0].shape = {batch[0].shape}')
-        # print_(f'x.shape = {x.shape}')
-        # print_(f'y.shape = {y.shape}')
-        # print_(f'labels.shape = {labels.shape}')
-        print_collate = False
+
     # Return features and targets
     return x.to(torch.double), y, labels
 
@@ -297,6 +284,9 @@ def concatenate_features(data, sequence_len=2, has_label=True):
 # Select features according to drift indices and append drift labeles
 def create_training_dataset(dataset, indices, drift_labels):
 
+    print_(f'creating training dataset...')
+    t1 = time.perf_counter()
+
     # If there is a periodicity, we switch all previous drifts to the same label
     modified_drift_labels = [x for x in drift_labels]
     if drift_labels[-1] != 0:
@@ -316,10 +306,13 @@ def create_training_dataset(dataset, indices, drift_labels):
         training_dataset = np.vstack((training_dataset, np.hstack((dataset[indices[idx][0]:indices[idx][1]],
                                       np.ones((indices[idx][1]-indices[idx][0], 1)) * modified_drift_labels[idx]))))
 
+    print_(
+        f'^ length = {len(training_dataset)} ({time.perf_counter() - t1:.2f} sec)')
+
     return training_dataset
 
 
-def equalize_classes(features, max_count=100):
+def equalize_classes(features, max_count=500):
     modified_dataset = None
 
     labels = features[:, -1]
@@ -348,7 +341,7 @@ def concat_feature(data, idx, sequence_len=2):
     return np.hstack((data[idx:idx + sequence_len, :].flatten(), data[sequence_length - 1]))
 
 
-def equalize_and_concatenate(features, max_count=100, sequence_len=2):
+def equalize_and_concatenate(features, max_count=500, sequence_len=2):
     modified_features = features[:, :-1]
     modified_features = np.vstack(
         (np.zeros((sequence_len - 1, len(modified_features[sequence_len]))), modified_features))
@@ -403,42 +396,34 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     # Label vectors
     ones = Variable(torch.ones(generator_batch_size)).to(torch.long).to(device)
 
-    global print_collate
-    global print_forward
-
-    print_collate = True
-    print_forward = True
-    # print_(f'features.shape = {features.shape}')
-    # print_('concatenating features...')
-    # This data contains the current vector and next vector
-    # concatenated_data = concatenate_features(
-    #     features, sequence_len=sequence_length)
-    # print_('concatenated data')
-    # print_(f'concatenated_data.shape = {concatenated_data.shape}')
-    # print_(f'features: {features}')
-    # print_(f'concatenated_data: {concatenated_data}')
-
+    print_(f'equalizing and concatenating data data...')
+    t1 = time.perf_counter()
     if equalize:
         # equalize and concatenate at the same time
         concatenated_data = equalize_and_concatenate(
             features, sequence_len=sequence_length)
         features = equalize_classes(features)
         # concatenated_data = equalize_classes(concatenated_data)
-    #     print_('equalized classes')
-    #     print_(f'features.shape = {features.shape}')
-    #     print_(f'concatenated_data.shape = {concatenated_data.shape}')
-    # print_(f'features: {features}')
-    # print_(f'concatenated_data: {concatenated_data}')
+    else:
+        # This data contains the current vector and next vector
+        concatenated_data = concatenate_features(
+            features, sequence_len=sequence_length)
+    print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
+    print_(f'data loader...')
+    t1 = time.perf_counter()
     # Define the data loader for training
     real_data = DataLoader(features, batch_size=batch_size,
                            shuffle=True, collate_fn=collate)
     generator_data = DataLoader(concatenated_data, batch_size=generator_batch_size, shuffle=False,
                                 collate_fn=collate_generator)
+    print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
     # This is the label for new drifts (any input other than the currently learned distributions)
     generator_label = ones * max_label
 
+    print_(f'training GAN...')
+    t1 = time.perf_counter()
     for epochs_trained in range(epochs):
         discriminator = train_discriminator(real_data=real_data, fake_data=generator_data, discriminator=discriminator,
                                             generator=generator, optimizer=optimizer_discriminator,
@@ -447,6 +432,7 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
         generator = train_generator(data_loader=generator_data, discriminator=discriminator, generator=generator,
                                     optimizer=optimizer_generator, loss_fn=loss_generator, loss_mse=loss_mse_generator,
                                     steps=steps_generator, device=device)
+    print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
     return generator, discriminator
 
@@ -508,21 +494,15 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     y_true = y_true + y
 
     # Create training dataset
-    print_(f'creating training dataset...')
-    t1 = time.perf_counter()
     training_dataset = create_training_dataset(
         dataset=features, indices=drift_indices, drift_labels=[0])
-    print_(
-        f'^ length = {len(training_dataset)} ({time.perf_counter() - t1:.2f} sec)')
 
-    print_(f'training GAN...')
     t1 = time.perf_counter()
     generator, discriminator = train_gan(features=training_dataset, device=device, discriminator=discriminator,
                                          generator=generator, epochs=initial_epochs, steps_generator=steps_generator,
                                          seed=seed, batch_size=batch_size, lr=lr, momentum=momentum, equalize=equalize,
                                          max_label=generator_label, generator_batch_size=generator_batch_size,
                                          weight_decay=weight_decay, sequence_length=sequence_length)
-    print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
     index = training_window_size
 
@@ -538,25 +518,13 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
         data = features[index:index + test_batch_size]
         data_labels = labels[index:index + test_batch_size]
-
-        t1 = time.perf_counter()
         result = discriminator(torch.Tensor(data).to(torch.float).to(device))
         prob, max_idx = torch.max(result, dim=1)
         max_idx = max_idx.cpu().detach().numpy()  # this takes more and more time
-        t2 = time.perf_counter()
-        if t2 - t1 > 0.05:
-            print_(
-                f'discriminator took {t2 - t1:.2f} seconds, len(data) = {len(data)}, len(classes) = {len(classes)}')
 
         if np.all(max_idx != max_idx[0]) or max_idx[0] == 0:
-            # print_(f'predict and partial fit (max_idx = {max_idx})')
-            t1 = time.perf_counter()
             predicted, clf = predict_and_partial_fit(clf=clf, features=data, labels=data_labels,
                                                      classes=classes, weights=weights)  # or this?
-            t2 = time.perf_counter()
-            if t2 - t1 > 0.05:
-                print_(
-                    f'predict and partial fit took {t2 - t1:.2f} seconds, len(data) = {len(data)}, len(classes) = {len(classes)}')
             y_pred = y_pred + predicted.tolist()
             y_true = y_true + data_labels
 
@@ -585,7 +553,6 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         # print_(f'prob = {prob}')
         # print_(f'generator_label = {generator_label}')
         # print_(f'temp_label = {temp_label}')
-        # print_('np.all(max_idx != max_idx[0]) or max_idx[0] == 0 is False')
 
         max_idx = max_idx[0]
         # Drift detected
@@ -607,11 +574,10 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         if max_idx != generator_label:
             # Increase the max_idx by 1 if it is above the previous drift
             if temp_label[0] <= max_idx and temp_label[0] != 0:
-                # print_(
-                #     f'max_idx = {max_idx} != {generator_label}, max_idx is above the previous drift, incrementing max_idx')
+                print_(
+                    f'drift {max_idx} is above the previous drift, increment it')
                 max_idx += 1
             temp_label = [max_idx]
-            # print_(f'temp_label set to [max_idx]: {temp_label}')
             # We reset the top layer predictions because the drift order has changed and the network should be retrained
             discriminator.reset_top_layer()
             discriminator = discriminator.to(device)
@@ -624,9 +590,9 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             temp_label = [0]
             discriminator.update()
             discriminator = discriminator.to(device)
-            generator_label += 1
             print_(
                 f'new drift occured, generator_label = {generator_label} += 1, update discriminator')
+            generator_label += 1
 
         generator = Generator(
             inp=features.shape[1], out=features.shape[1], sequence_length=sequence_length)
@@ -635,16 +601,10 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         generator.train()
         discriminator.train()
 
-        print_(f'creating training dataset...')
-        t1 = time.perf_counter()
         training_dataset = create_training_dataset(dataset=features,
                                                    indices=drift_indices,
                                                    drift_labels=drift_labels+temp_label)
-        print_(
-            f'^ length = {len(training_dataset)} ({time.perf_counter() - t1:.2f} sec)')
 
-        print_(f'training GAN...')
-        t1 = time.perf_counter()
         generator, discriminator = train_gan(features=training_dataset, device=device,
                                              discriminator=discriminator,
                                              generator=generator, epochs=epochs,
@@ -652,7 +612,6 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                                              batch_size=current_batch_size, max_label=generator_label,
                                              lr=lr/10, momentum=momentum, equalize=equalize,
                                              weight_decay=weight_decay, sequence_length=sequence_length)
-        print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
         # Set the generator and discriminator to evaluation mode
         generator.eval()
@@ -661,8 +620,6 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         # Set the indices for the training window
         training_idx_start = index
         training_idx_end = training_idx_start + training_window_size
-        # print_(
-        #     f'new training window: [{training_idx_start}, {training_idx_end}]')
 
         # If a previous drift has occurred use those for training the classifier but not predict on them
         if temp_label[0] != 0:
@@ -675,21 +632,23 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                 if label == temp_label[0]:
                     rows = features[indices[0]:indices[1], :]
                     targets = labels[indices[0]:indices[1]]
+
                     # Randomly sample .1 of the data
                     len_indices = list(range(0, rows.shape[0]))
                     chosen_indices = random.sample(
                         len_indices, int(rows.shape[0] / repeat_factor))
+
                     # Append rows and targets. Do random.sample and then split the matrix
                     rows = rows[chosen_indices]
                     targets = [targets[x] for x in chosen_indices]
                     ut = np.unique(targets)
                     sample_weights = compute_sample_weight(
                         dict(zip(ut, weights[ut])), y=targets)  # debug this
+
                     print_(
                         f'{indices} - partial fit to {len(chosen_indices)} randomly sampled features')
                     clf.partial_fit(X=rows, y=targets,
                                     classes=classes, sample_weight=sample_weights)
-                    # print_(f'partial fit finished')
             print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
             print_(
@@ -708,11 +667,13 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                                              labels=labels[training_idx_start:training_idx_end],
                                              classes=classes, weights=weights)
             print_(f'^ {time.perf_counter() - t1:.2f} sec')
+       
         """
         predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                          labels=labels[training_idx_start:training_idx_end],
                                          classes=classes)
         """
+        
         # Add the predicted and true values to the list
         y_pred = y_pred + predicted.tolist()
         y_true = y_true + labels[training_idx_start:training_idx_end]
@@ -722,9 +683,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         drifts_detected.append(index)
         index += training_window_size
         no_drifts = index
-        fit_start = index
 
-        # print_('========== DRIFT DETECTED END ==========')
         print_(f'continuing drift detection from {index} ({dates[index]})')
         print_('==========  END  ==========')
 
@@ -743,16 +702,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     y_true = y_true + labels[index:]
 
     # save model
-    # torch.save(
-    #     clf, f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_clf.pth')
-    # torch.save(
-    #     generator, f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_gen.pth')
-    # torch.save(discriminator,
-    #            f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_dis.pth')
-    # torch.save(generator.state_dict(
-    # ), f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_gen_state.pth')
-    # torch.save(discriminator.state_dict(
-    # ), f'../logs/model_{str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))}_dis_state.pth')
+    # torch.save(clf, f'../logs/model.pth')
 
     print_(f'drift_indices = {drift_indices}')
     print_(f'drift_labels = {drift_labels}')
@@ -896,11 +846,11 @@ if len(sys.argv) > 1:
 print_(f'training_window_size: {training_window_size}')
 
 # Set the number of epochs the GAN should be trained
-epochs = 20  # 100
+epochs = 50
 print_(f'epochs: {epochs}')
 
 # 1/factor will be the amount of instances of previous drifts taken for training
-repeat_factor = 5  # test this
+repeat_factor = 10  # test this
 print_(f'repeat_factor: {repeat_factor}')
 
 # Equalize the number of training instances across different drifts
@@ -913,13 +863,13 @@ print_(f'sequence_length: {sequence_length}')
 seq_len = sequence_length
 
 # Steps for generator training
-steps_generator = 100
+steps_generator = 50
 print_(f'steps_generator: {steps_generator}')
 
 # Set the batch_size for DataLoader
 batch_size = 8
 print_(f'batch_size: {batch_size}')
-generator_batch_size = 8
+generator_batch_size = 2
 print_(f'generator_batch_size: {generator_batch_size}')
 # Number of instances that should have the same label for a drift to be confirmed
 test_batch_size = 10
