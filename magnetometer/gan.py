@@ -884,7 +884,7 @@ print_(f'batch_size: {batch_size}')
 generator_batch_size = 2
 print_(f'generator_batch_size: {generator_batch_size}')
 # Number of instances that should have the same label for a drift to be confirmed
-test_batch_size = 10
+test_batch_size = 4
 print_(f'test_batch_size: {test_batch_size}')
 
 # Set the learning rate
