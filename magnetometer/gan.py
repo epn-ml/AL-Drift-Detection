@@ -312,7 +312,7 @@ def create_training_dataset(dataset, indices, drift_labels):
     return training_dataset
 
 
-def equalize_classes(features, max_count=500):
+def equalize_classes(features, max_count=100):
     modified_dataset = None
 
     labels = features[:, -1]
@@ -341,7 +341,7 @@ def concat_feature(data, idx, sequence_len=2):
     return np.hstack((data[idx:idx + sequence_len, :].flatten(), data[sequence_length - 1]))
 
 
-def equalize_and_concatenate(features, max_count=500, sequence_len=2):
+def equalize_and_concatenate(features, max_count=100, sequence_len=2):
     modified_features = features[:, :-1]
     modified_features = np.vstack(
         (np.zeros((sequence_len - 1, len(modified_features[sequence_len]))), modified_features))
@@ -522,12 +522,14 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         result = discriminator(torch.Tensor(data).to(torch.float).to(device))
         prob, max_idx = torch.max(result, dim=1)
         max_idx = max_idx.cpu().detach().numpy()  # too slow?
-        
+
         if not np.array_equal(max_idx, max_idx_prev):
-            print_(f'max_idx changed from {max_idx_prev} to {max_idx} at {index}')
+            print_(
+                f'max_idx changed from {max_idx_prev} to {max_idx} at {index}')
             max_idx_prev = max_idx
 
-        if np.all(max_idx != max_idx[0]) or max_idx[0] == 0:  # 1st condition is always false?
+        # 1st condition is always false?
+        if np.all(max_idx != max_idx[0]) or max_idx[0] == 0:
             predicted, clf = predict_and_partial_fit(clf=clf, features=data, labels=data_labels,
                                                      classes=classes, weights=weights)  # too slow?
             y_pred = y_pred + predicted.tolist()
