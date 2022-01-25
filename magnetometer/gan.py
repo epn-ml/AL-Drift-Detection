@@ -537,7 +537,6 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
             if index % 100000 == 0:
                 if no_drifts != index:
-                    print_(f'max_idx = {max_idx}')
                     print_(
                         f'no drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
                     print_(
