@@ -396,7 +396,7 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     # Label vectors
     ones = Variable(torch.ones(generator_batch_size)).to(torch.long).to(device)
 
-    print_(f'equalizing and concatenating data data...')
+    print_(f'equalizing and concatenating data...')
     t1 = time.perf_counter()
     if equalize:
         # equalize and concatenate at the same time
@@ -510,6 +510,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
     no_drifts = index
     t_drifts = time.perf_counter()
+    max_idx_prev = np.array(['initial'])
 
     print_(f'starting drift detection from index = {index} ({dates[index]})')
     print_('===========================')
@@ -520,18 +521,21 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         data_labels = labels[index:index + test_batch_size]
         result = discriminator(torch.Tensor(data).to(torch.float).to(device))
         prob, max_idx = torch.max(result, dim=1)
-        max_idx = max_idx.cpu().detach().numpy()  # this takes more and more time
+        max_idx = max_idx.cpu().detach().numpy()  # too slow?
+        
+        if not np.array_equal(max_idx, max_idx_prev):
+            print_(f'max_idx changed from {max_idx_prev} to {max_idx} at {index}')
+            max_idx_prev = max_idx
 
-        if np.all(max_idx != max_idx[0]) or max_idx[0] == 0:
+        if np.all(max_idx != max_idx[0]) or max_idx[0] == 0:  # 1st condition is always false?
             predicted, clf = predict_and_partial_fit(clf=clf, features=data, labels=data_labels,
-                                                     classes=classes, weights=weights)  # or this?
+                                                     classes=classes, weights=weights)  # too slow?
             y_pred = y_pred + predicted.tolist()
             y_true = y_true + data_labels
 
             if index % 100000 == 0:
                 if no_drifts != index:
                     print_(f'max_idx = {max_idx}')
-                    print_(f'np.all(max_idx != max_idx[0]) or max_idx[0] == 0')
                     print_(
                         f'no drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
                     print_(
@@ -545,8 +549,6 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             continue
 
         if no_drifts != index:
-            print_(f'max_idx = {max_idx}')
-            print_(f'np.all(max_idx != max_idx[0]) or max_idx[0] != 0')
             print_(
                 f'no drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
             print_(
