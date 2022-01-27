@@ -410,14 +410,11 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
             features, sequence_len=sequence_length)
     print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
-    print_(f'data loader...')
-    t1 = time.perf_counter()
     # Define the data loader for training
     real_data = DataLoader(features, batch_size=batch_size,
                            shuffle=True, collate_fn=collate)
     generator_data = DataLoader(concatenated_data, batch_size=generator_batch_size, shuffle=False,
                                 collate_fn=collate_generator)
-    print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
     # This is the label for new drifts (any input other than the currently learned distributions)
     generator_label = ones * max_label
@@ -861,11 +858,11 @@ if len(sys.argv) > 1:
 print_(f'training_window_size: {training_window_size}')
 
 # Set the number of epochs the GAN should be trained
-epochs = 50
+epochs = 20  # 50
 print_(f'epochs: {epochs}')
 
 # 1/factor will be the amount of instances of previous drifts taken for training
-repeat_factor = 10  # test this
+repeat_factor = 1  # 10 test this
 print_(f'repeat_factor: {repeat_factor}')
 
 # Equalize the number of training instances across different drifts
