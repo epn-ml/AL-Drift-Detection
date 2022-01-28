@@ -858,11 +858,11 @@ if len(sys.argv) > 1:
 print_(f'training_window_size: {training_window_size}')
 
 # Set the number of epochs the GAN should be trained
-epochs = 20  # 50
+epochs = 50  # 50
 print_(f'epochs: {epochs}')
 
 # 1/factor will be the amount of instances of previous drifts taken for training
-repeat_factor = 1  # 10 test this
+repeat_factor = 10  # 10 test this
 print_(f'repeat_factor: {repeat_factor}')
 
 # Equalize the number of training instances across different drifts
