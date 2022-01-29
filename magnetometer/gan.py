@@ -285,7 +285,6 @@ def concatenate_features(data, sequence_len=2, has_label=True):
 def create_training_dataset(dataset, indices, drift_labels):
 
     print_(f'creating training dataset...')
-    t1 = time.perf_counter()
 
     # If there is a periodicity, we switch all previous drifts to the same label
     modified_drift_labels = [x for x in drift_labels]
@@ -307,7 +306,7 @@ def create_training_dataset(dataset, indices, drift_labels):
                                       np.ones((indices[idx][1]-indices[idx][0], 1)) * modified_drift_labels[idx]))))
 
     print_(
-        f'^ length = {len(training_dataset)} ({time.perf_counter() - t1:.2f} sec)')
+        f'^ length = {len(training_dataset)}')
 
     return training_dataset
 
@@ -397,7 +396,6 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     ones = Variable(torch.ones(generator_batch_size)).to(torch.long).to(device)
 
     print_(f'equalizing and concatenating data...')
-    t1 = time.perf_counter()
     if equalize:
         # equalize and concatenate at the same time
         concatenated_data = equalize_and_concatenate(
@@ -408,7 +406,6 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
         # This data contains the current vector and next vector
         concatenated_data = concatenate_features(
             features, sequence_len=sequence_length)
-    print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
     # Define the data loader for training
     real_data = DataLoader(features, batch_size=batch_size,
@@ -523,9 +520,11 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         if not np.array_equal(max_idx, max_idx_prev):
             print_(
                 f'max_idx changed from {max_idx_prev} to {max_idx} at {index}')
+            print_(f'prob = {prob.cpu().detach().numpy()}')
+            print_(f'discriminator output:\n{result.cpu().detach().numpy()}')
             max_idx_prev = max_idx
 
-        # 1st condition is always false?
+        # 1st condition is always false? (max_idx[1:] != ...)
         if np.all(max_idx != max_idx[0]) or max_idx[0] == 0:
             predicted, clf = predict_and_partial_fit(clf=clf, features=data, labels=data_labels,
                                                      classes=classes, weights=weights)  # too slow?
@@ -537,7 +536,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                     print_(
                         f'no drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
                     print_(
-                        f'predict and partial fit to features[{no_drifts}:{index + test_batch_size}]')
+                        f'predict and partial fit to features[{no_drifts}:{index}]')
                     print_(f'^ {time.perf_counter() - t_drifts:.2f} sec')
 
                     no_drifts = index
@@ -557,8 +556,6 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             t_drifts = time.perf_counter()
 
         print_('========== START ==========')
-        print_(
-            f'index = {index}, max_idx = {max_idx}, prob = {prob}, generator_label = {generator_label}, temp_label = {temp_label}')
 
         max_idx = max_idx[0]
         # Drift detected
@@ -577,7 +574,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                 f'add new drift {generator_label} to drift labels')
             drift_labels.append(generator_label)
 
-        print(f'{drift_labels}')
+        print_(f'{drift_labels}')
 
         if max_idx != generator_label:
             # Increase the max_idx by 1 if it is above the previous drift
@@ -693,8 +690,6 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         no_drifts = index
 
         print_(f'continuing drift detection from {index} ({dates[index]})')
-        print_(
-            f'index = {index}, max_idx = {max_idx}, prob = {prob}, generator_label = {generator_label}, temp_label = {temp_label}')
         print_('==========  END  ==========')
 
         t_drifts = time.perf_counter()
@@ -858,11 +853,11 @@ if len(sys.argv) > 1:
 print_(f'training_window_size: {training_window_size}')
 
 # Set the number of epochs the GAN should be trained
-epochs = 50  # 50
+epochs = 20  # 50
 print_(f'epochs: {epochs}')
 
 # 1/factor will be the amount of instances of previous drifts taken for training
-repeat_factor = 10  # 10 test this
+repeat_factor = 5  # 10 test this
 print_(f'repeat_factor: {repeat_factor}')
 
 # Equalize the number of training instances across different drifts
@@ -875,7 +870,7 @@ print_(f'sequence_length: {sequence_length}')
 seq_len = sequence_length
 
 # Steps for generator training
-steps_generator = 50
+steps_generator = 20
 print_(f'steps_generator: {steps_generator}')
 
 # Set the batch_size for DataLoader
@@ -901,8 +896,8 @@ seed = np.random.randint(65536)
 # Get the device the experiment will run on
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-print_('The seed for the current execution is %d for dataset %s with device %s' % (
-    seed, dataset, device))
+print_(
+    f'the seed for the current execution is {seed} for dataset {dataset} with device {device}')
 
 
 # %% load data
@@ -999,7 +994,7 @@ print_(f'testing set size: {len(test_true)}')
 # %% evaluation
 
 auc_value = accuracy_score(y_true=train_true, y_pred=train_pred)
-print_('Accuracy value is %f for training dataset %s' % (auc_value, dataset))
+print_(f'accuracy value is {auc_value} for training dataset {dataset}')
 prf = precision_recall_fscore_support(
     train_true, train_pred, average=None, labels=np.unique(train_true))
 print_(f'precision: {prf[0]}')
@@ -1009,7 +1004,7 @@ print_(f'support: {prf[3]}')
 print_(f'confusion matrix:\n{confusion_matrix(train_true, train_pred)}')
 
 auc_value = accuracy_score(y_true=test_true, y_pred=test_pred)
-print_('Accuracy value is %f for testing dataset %s' % (auc_value, dataset))
+print_(f'accuracy value is {auc_value} for testing dataset {dataset}')
 prf = precision_recall_fscore_support(
     test_true, test_pred, average=None, labels=np.unique(test_true))
 print_(f'precision: {prf[0]}')
@@ -1018,8 +1013,8 @@ print_(f'f-score: {prf[2]}')
 print_(f'support: {prf[3]}')
 print_(f'confusion matrix:\n{confusion_matrix(test_true, test_pred)}')
 
-print_(f'Execution time is {t2 - t1:.2f} seconds')
-print_(f'Drifts: {drifts_detected}')
+print_(f'execution time is {t2 - t1:.2f} seconds')
+print_(f'drifts: {drifts_detected}')
 
 
 # %% plots
