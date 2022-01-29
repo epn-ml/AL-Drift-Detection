@@ -480,7 +480,9 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     print_(f'class weights: {weights}')
 
     print_(
-        f'fit and predict on initial training window {(0, training_window_size)}')
+        f'fit and predict on initial training window {(0, training_window_size)} {(dates[0], dates[training_window_size])}')
+    u, c = np.unique(y, return_counts=True)
+    print_(dict(zip(u, c)))
     predicted, clf = fit_and_predict(
         clf=clf, features=x, labels=y, classes=classes, weights=weights)
     y_pred = y_pred + predicted.tolist()
@@ -520,8 +522,8 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         if not np.array_equal(max_idx, max_idx_prev):
             print_(
                 f'max_idx changed from {max_idx_prev} to {max_idx} at {index}')
-            print_(f'prob = {prob.cpu().detach().numpy()}')
-            print_(f'discriminator output:\n{result.cpu().detach().numpy()}')
+            # print_(f'prob = {prob.cpu().detach().numpy()}')
+            # print_(f'discriminator output:\n{result.cpu().detach().numpy()}')
             max_idx_prev = max_idx
 
         # 1st condition is always false? (max_idx[1:] != ...)
@@ -534,9 +536,12 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             if index % 100000 == 0:
                 if no_drifts != index:
                     print_(
-                        f'no drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
+                        f'no drifts detected from index {no_drifts} to {index}')
                     print_(
-                        f'predict and partial fit to features[{no_drifts}:{index}]')
+                        f'predict and partial fit to features[{no_drifts}:{index}] {(dates[no_drifts], dates[index])}')
+                    u, c = np.unique(
+                        labels[no_drifts:index], return_counts=True)
+                    print_(dict(zip(u, c)))
                     print_(f'^ {time.perf_counter() - t_drifts:.2f} sec')
 
                     no_drifts = index
@@ -547,9 +552,11 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
         if no_drifts != index:
             print_(
-                f'no drifts detected from index {no_drifts} ({dates[no_drifts]}) to {index} ({dates[index]})')
+                f'no drifts detected from index {no_drifts} to {index}')
             print_(
-                f'predict and partial fit to features[{no_drifts}:{index + test_batch_size}]')
+                f'predict and partial fit to features[{no_drifts}:{index}] {(dates[no_drifts], dates[index])}')
+            u, c = np.unique(labels[no_drifts:index], return_counts=True)
+            print_(dict(zip(u, c)))
             print_(f'^ {time.perf_counter() - t_drifts:.2f} sec')
 
             no_drifts = index
@@ -566,37 +573,38 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         if temp_label[0] != 0:
             # add the index of the previous drift if it was a recurring drift
             print_(
-                f'add recurring previous drift {temp_label[0]} to drift labels')
+                f'add recurring previous drift temp_label[0] {temp_label[0]} (!= 0) to drift labels')
             drift_labels.append(temp_label[0])
 
         else:
             print_(
-                f'add new drift {generator_label} to drift labels')
+                f'add new drift generator_label {generator_label} to drift labels (temp_label[0] == 0)')
             drift_labels.append(generator_label)
-
-        print_(f'{drift_labels}')
 
         if max_idx != generator_label:
             # Increase the max_idx by 1 if it is above the previous drift
             if temp_label[0] <= max_idx and temp_label[0] != 0:
+                print_(f'Increase the max_idx by 1 if it is above the previous drift')
                 print_(
-                    f'drift {max_idx} is above the previous drift, increment it')
+                    f'max_idx {max_idx} != generator_label {generator_label}, max_idx += 1')
                 max_idx += 1
+            print_(f'temp_label {temp_label} -> {[max_idx]}')
             temp_label = [max_idx]
             # We reset the top layer predictions because the drift order has changed and the network should be retrained
+            print_(f'We reset the top layer predictions because the drift order has changed and the network should be retrained')
             discriminator.reset_top_layer()
             discriminator = discriminator.to(device)
-            print_(
-                f'previous drift {max_idx} occurred, reset top layer predictions')
 
         else:
             # If this is a new drift, label for the previous drift training dataset is the previous highest label
             # which is the generator label
+            print_(f'If this is a new drift, label for the previous drift training dataset is the previous highest label which is the generator label')
+            print_(f'temp_label {temp_label} -> {[0]}')
             temp_label = [0]
             discriminator.update()
             discriminator = discriminator.to(device)
             print_(
-                f'new drift occured, generator_label = {generator_label} += 1, update discriminator')
+                f'max_idx {max_idx} == generator_label {generator_label}, generator_label += 1')
             generator_label += 1
 
         generator = Generator(
@@ -606,6 +614,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         generator.train()
         discriminator.train()
 
+        print_(f'drift labels + temp_label = {drift_labels} + {temp_label}')
         training_dataset = create_training_dataset(dataset=features,
                                                    indices=drift_indices,
                                                    drift_labels=drift_labels+temp_label)
@@ -629,7 +638,9 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         # If a previous drift has occurred use those for training the classifier but not predict on them
         if temp_label[0] != 0:
             print_(
-                f'previous drift has occured (label {temp_label[0]}), reset classifier')
+                f'If a previous drift has occurred use those for training the classifier but not predict on them')
+            print_(
+                f'previous drift has occured (temp_label[0] {temp_label[0]} != 0), reset classifier')
             clf.reset()  # don't reset?
 
             t1 = time.perf_counter()
@@ -638,39 +649,49 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                     rows = features[indices[0]:indices[1], :]
                     targets = labels[indices[0]:indices[1]]
 
-                    # Randomly sample .1 of the data
-                    len_indices = list(range(0, rows.shape[0]))
-                    chosen_indices = random.sample(
-                        len_indices, int(rows.shape[0] / repeat_factor))
+                    # # Randomly sample .1 of the data
+                    # len_indices = list(range(0, rows.shape[0]))
+                    # chosen_indices = random.sample(
+                    #     len_indices, int(rows.shape[0] / repeat_factor))
 
-                    # Append rows and targets. Do random.sample and then split the matrix
-                    rows = rows[chosen_indices]
-                    targets = [targets[x] for x in chosen_indices]
+                    # # Append rows and targets. Do random.sample and then split the matrix
+                    # rows = rows[chosen_indices]
+                    # targets = [targets[x] for x in chosen_indices]
                     ut = np.unique(targets)
                     sample_weights = compute_sample_weight(
                         dict(zip(ut, weights[ut])), y=targets)
 
                     print_(
-                        f'{indices} - partial fit to {len(chosen_indices)} randomly sampled features')
+                        f'partial fit to features[{indices[0]}:{indices[1]}] {(dates[indices[0]], dates[indices[1]])}')
+                    u, c = np.unique(targets, return_counts=True)
+                    print_(dict(zip(u, c)))
                     clf.partial_fit(X=rows, y=targets,
                                     classes=classes, sample_weight=sample_weights)
             print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
             print_(
-                f'predict and partial fit to features[{training_idx_start}:{training_idx_end}]')
+                f'predict and partial fit to features[{training_idx_start}:{training_idx_end}] {(dates[training_idx_start], dates[training_idx_end])}')
             t1 = time.perf_counter()
             predicted, clf = predict_and_partial_fit(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                                      labels=labels[training_idx_start:training_idx_end],
                                                      classes=classes, weights=weights)
+            u, c = np.unique(
+                labels[training_idx_start:training_idx_end], return_counts=True)
+            print_(dict(zip(u, c)))
             print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
         else:
             print_(
-                f'reset classifier, then fit and predict on features[{training_idx_start}:{training_idx_end}]')
+                f'new drift has occured (temp_label[0] {temp_label[0]} == 0), reset classifier')
+            print_(
+                f'fit and predict on features[{training_idx_start}:{training_idx_end}] {(dates[training_idx_start], dates[training_idx_end])}')
             t1 = time.perf_counter()
             predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
                                              labels=labels[training_idx_start:training_idx_end],
                                              classes=classes, weights=weights)
+            u, c = np.unique(
+                labels[training_idx_start:training_idx_end], return_counts=True)
+            print_(dict(zip(u, c)))
             print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
         """
@@ -702,9 +723,12 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
     # Test on the remaining features
     print_(
-        f'predict and partial fit to {len(features[index:, :])} remaining features')
+        f'predict and partial fit to remaining features[{index}:{len(features)-1}] {(dates[index], dates[len(features)-1])}')
     predicted, clf = predict_and_partial_fit(
         clf, features=features[index:, :], labels=labels[index:], classes=classes, weights=weights)
+    u, c = np.unique(
+        labels[training_idx_start:training_idx_end], return_counts=True)
+    print_(dict(zip(u, c)))
     y_pred = y_pred + predicted.tolist()
     y_true = y_true + labels[index:]
 
