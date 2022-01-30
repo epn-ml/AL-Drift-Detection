@@ -679,7 +679,6 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
                                                      labels=labels[training_idx_start:training_idx_end],
                                                      classes=classes, weights=weights)
             print_(np.unique(labels[training_idx_start:training_idx_end]))
-            print_(dict(zip(u, c)))
             print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
         else:
