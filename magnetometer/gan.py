@@ -566,7 +566,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             f'add {(index, index+training_window_size)} to drift indices')
         drift_indices.append((index, index+training_window_size))
 
-        print_(f'is temp_label[0] != 0 ?')
+        print_(f'temp_label[0] != 0 ?')
         if temp_label[0] != 0:
             # add the index of the previous drift if it was a recurring drift
             print_(
@@ -579,10 +579,10 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
             drift_labels.append(generator_label)
         print_(f'endif')
 
-        print_(f'is max_idx != generator_label ?')
+        print_(f'max_idx != generator_label ?')
         if max_idx != generator_label:
             print_(f'yes, {max_idx} != {generator_label}')
-            print_(f'is temp_label[0] <= max_idx and temp_label[0] != 0 ?')
+            print_(f'temp_label[0] <= max_idx and temp_label[0] != 0 ?')
             # Increase the max_idx by 1 if it is above the previous drift
             if temp_label[0] <= max_idx and temp_label[0] != 0:
                 print_(
@@ -641,7 +641,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         training_idx_end = training_idx_start + training_window_size
 
         # If a previous drift has occurred use those for training the classifier but not predict on them
-        print_(f'is temp_label[0] != 0 ?')
+        print_(f'temp_label[0] != 0 ?')
         if temp_label[0] != 0:
             print_(
                 f'yes, {temp_label[0]} != 0, previous drift has occured, reset classifier')
