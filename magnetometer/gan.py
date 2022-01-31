@@ -725,7 +725,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
     # Test on the remaining features
     print_(
-        f'predict and partial fit to remaining features[{index}:{len(features)}] {(dates[index], dates[len(features)])}')
+        f'predict and partial fit to remaining features[{index}:{len(features)-1}] {(dates[index], dates[len(features)-1])}')
     predicted, clf = predict_and_partial_fit(
         clf, features=features[index:, :], labels=labels[index:], classes=classes, weights=weights)
     print_(np.unique(labels[index:]))
