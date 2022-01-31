@@ -724,10 +724,10 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
     # Test on the remaining features
     print_(
-        f'predict and partial fit to remaining features[{index}:{len(features)-1}] {(dates[index], dates[len(features)-1])}')
+        f'predict and partial fit to remaining features[{index}:{len(features)}] {(dates[index], dates[len(features)])}')
     predicted, clf = predict_and_partial_fit(
         clf, features=features[index:, :], labels=labels[index:], classes=classes, weights=weights)
-    print_(np.unique(labels[training_idx_start:training_idx_end]))
+    print_(np.unique(labels[index:]))
     y_pred = y_pred + predicted.tolist()
     y_true = y_true + labels[index:]
 
