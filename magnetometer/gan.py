@@ -506,6 +506,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     no_drifts = index
     t_drifts = time.perf_counter()
     max_idx_prev = np.array(['initial'])
+    np.set_printoptions(suppress=True)
     np.set_printoptions(precision=2)
 
     print_(f'starting drift detection from index = {index} ({dates[index]})')
