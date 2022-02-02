@@ -712,6 +712,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 def load_data(path):
 
     files = glob.glob(path)
+    random.shuffle(files)
     li = []
     breaks = []
 
@@ -724,7 +725,7 @@ def load_data(path):
 
     df = pd.concat(li, axis=0, ignore_index=True)
 
-    return df.dropna().sort_values(by='DATE'), sorted(breaks)
+    return df.dropna(), breaks
 
 
 def calc_stats(cm):
