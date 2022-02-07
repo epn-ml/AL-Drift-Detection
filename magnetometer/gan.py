@@ -128,6 +128,14 @@ def fit_and_predict(clf, features, labels, classes, weights):
     return predicted, clf
 
 
+def fit(clf, features, labels, classes, weights):
+    for idx in range(0, len(labels)):
+        clf.partial_fit([features[idx]], [labels[idx]],
+                        classes=classes, sample_weight=[weights[labels[idx]]])
+
+    return clf
+
+
 def predict_and_partial_fit(clf, features, labels, classes, weights):
     predicted = np.empty(shape=len(labels))
     for idx in range(0, len(labels)):
@@ -136,6 +144,14 @@ def predict_and_partial_fit(clf, features, labels, classes, weights):
                         classes=classes, sample_weight=[weights[labels[idx]]])
 
     return predicted, clf
+
+
+def predict(clf, features):
+    predicted = np.empty(shape=len(features))
+    for idx in range(0, len(features)):
+        predicted[idx] = clf.predict([features[idx]])
+
+    return predicted
 
 
 def collate(batch):
@@ -417,7 +433,6 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     generator_label = ones * max_label
 
     print_(f'training GAN...')
-    # t1 = time.perf_counter()
     for epochs_trained in range(epochs):
         discriminator = train_discriminator(real_data=real_data, fake_data=generator_data, discriminator=discriminator,
                                             generator=generator, optimizer=optimizer_discriminator,
@@ -426,14 +441,13 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
         generator = train_generator(data_loader=generator_data, discriminator=discriminator, generator=generator,
                                     optimizer=optimizer_generator, loss_fn=loss_generator, loss_mse=loss_mse_generator,
                                     steps=steps_generator, device=device)
-    # print_(f'^ {time.perf_counter() - t1:.2f} sec')
 
     return generator, discriminator
 
 
-def process_data(features, labels, dates, device, epochs=100, steps_generator=100, equalize=True, test_batch_size=4,
-                 seed=0, batch_size=8, lr=0.001, momentum=0.9, weight_decay=0.0005, training_window_size=100,
-                 generator_batch_size=1, sequence_length=2, repeat_factor=4):
+def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equalize=True, test_batch_size=4,
+                  seed=0, batch_size=8, lr=0.001, momentum=0.9, weight_decay=0.0005, training_window_size=100,
+                  generator_batch_size=1, sequence_length=2, repeat_factor=4):
 
     random.seed(seed)
     torch.manual_seed(seed=seed)
@@ -445,16 +459,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     # torch.set_deterministic(True)
 
     current_batch_size = batch_size
-
-    y_pred = []
-    y_true = []
-    clf = HoeffdingTreeClassifier()
-
-    classes = np.unique(labels)
-    x = features[:training_window_size, :]
-    y = labels[:training_window_size]
-
-    drifts_detected = []
+    drifts_detected = [0]
     generator_label = 1
 
     # Create the Generator and Discriminator objects
@@ -470,20 +475,18 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     discriminator = discriminator.to(device=device)
 
     drift_indices = [(0, training_window_size)]  # Initial training window
-    drift_labels = []
+    drift_labels = [0]
+    drifts = {}
 
     temp_label = [0]
-
     initial_epochs = epochs * 2
 
-    weights = compute_class_weight('balanced', classes=classes, y=labels)
-
-    print_(
-        f'reset, fit and predict on initial training window {(0, training_window_size)} {(dates[0], dates[training_window_size])}')
-    predicted, clf = fit_and_predict(
-        clf=clf, features=x, labels=y, classes=classes, weights=weights)
-    y_pred = y_pred + predicted.tolist()
-    y_true = y_true + y
+    # print_(
+    #     f'reset, fit and predict on initial training window {(0, training_window_size)} {(dates[0], dates[training_window_size])}')
+    # predicted, clf = fit_and_predict(
+    #     clf=clf, features=x, labels=y, classes=classes, weights=weights)
+    # y_pred = y_pred + predicted.tolist()
+    # y_true = y_true + y
 
     # Create training dataset
     training_dataset = create_training_dataset(
@@ -501,7 +504,6 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     discriminator.eval()
 
     no_drifts = index
-    # t_drifts = time.perf_counter()
     max_idx_prev = np.array(['initial'])
     np.set_printoptions(suppress=True)
     np.set_printoptions(precision=2)
@@ -512,7 +514,7 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
     while index + training_window_size < len(features):
 
         data = features[index:index + test_batch_size]
-        data_labels = labels[index:index + test_batch_size]
+        # data_labels = labels[index:index + test_batch_size]
         result = discriminator(torch.Tensor(data).to(torch.float).to(device))
         prob, max_idx = torch.max(result, dim=1)
         max_idx = max_idx.cpu().detach().numpy()  # too slow?
@@ -526,20 +528,19 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
 
         # 1st condition is always false? (max_idx[1:] != ...)
         if np.all(max_idx != max_idx[0]) or max_idx[0] == 0:
-            predicted, clf = predict_and_partial_fit(clf=clf, features=data, labels=data_labels,
-                                                     classes=classes, weights=weights)  # too slow?
-            y_pred = y_pred + predicted.tolist()
-            y_true = y_true + data_labels
+            # predicted, clf = predict_and_partial_fit(clf=clf, features=data, labels=data_labels,
+            #                                          classes=classes, weights=weights)  # too slow?
+            # y_pred = y_pred + predicted.tolist()
+            # y_true = y_true + data_labels
 
             if index % 100000 == 0:
                 if no_drifts != index:
                     print_(
                         f'no drifts detected from index {no_drifts} to {index}')
-                    print_(
-                        f'predict and partial fit to features[{no_drifts}:{index}] {(dates[no_drifts], dates[index])}')
+                    # print_(
+                    #     f'predict and partial fit to features[{no_drifts}:{index}] {(dates[no_drifts], dates[index])}')
 
                     no_drifts = index
-                    # t_drifts = time.perf_counter()
 
             index += test_batch_size
             continue
@@ -547,11 +548,10 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         if no_drifts != index:
             print_(
                 f'no drifts detected from index {no_drifts} to {index}')
-            print_(
-                f'predict and partial fit to features[{no_drifts}:{index}] {(dates[no_drifts], dates[index])}')
+            # print_(
+            #     f'predict and partial fit to features[{no_drifts}:{index}] {(dates[no_drifts], dates[index])}')
 
             no_drifts = index
-            # t_drifts = time.perf_counter()
 
         print_('========== START ==========')
 
@@ -615,104 +615,166 @@ def process_data(features, labels, dates, device, epochs=100, steps_generator=10
         discriminator.eval()
 
         # Set the indices for the training window
-        training_idx_start = index
-        training_idx_end = training_idx_start + training_window_size
+        # training_idx_start = index
+        # training_idx_end = training_idx_start + training_window_size
 
         # If a previous drift has occurred use those for training the classifier but not predict on them
-        if temp_label[0] != 0:
-            print_(f'reset classifier')
-            clf.reset()  # don't reset?
+        # if temp_label[0] != 0:
+        #     print_(f'reset classifier')
+        #     clf.reset()  # don't reset?
 
-            # t1 = time.perf_counter()
-            for indices, label in zip(drift_indices[:-1], drift_labels):
-                if label == temp_label[0]:
-                    rows = features[indices[0]:indices[1], :]
-                    targets = labels[indices[0]:indices[1]]
+        #     for indices, label in zip(drift_indices[:-1], drift_labels):
+        #         if label == temp_label[0]:
+        #             rows = features[indices[0]:indices[1], :]
+        #             targets = labels[indices[0]:indices[1]]
 
-                    # # Randomly sample .1 of the data
-                    # len_indices = list(range(0, rows.shape[0]))
-                    # chosen_indices = random.sample(
-                    #     len_indices, int(rows.shape[0] / repeat_factor))
+        #             # # Randomly sample .1 of the data
+        #             # len_indices = list(range(0, rows.shape[0]))
+        #             # chosen_indices = random.sample(
+        #             #     len_indices, int(rows.shape[0] / repeat_factor))
 
-                    # # Append rows and targets. Do random.sample and then split the matrix
-                    # rows = rows[chosen_indices]
-                    # targets = [targets[x] for x in chosen_indices]
-                    ut = np.unique(targets)
-                    sample_weights = compute_sample_weight(
-                        dict(zip(ut, weights[ut])), y=targets)
+        #             # # Append rows and targets. Do random.sample and then split the matrix
+        #             # rows = rows[chosen_indices]
+        #             # targets = [targets[x] for x in chosen_indices]
+        #             ut = np.unique(targets)
+        #             sample_weights = compute_sample_weight(
+        #                 dict(zip(ut, weights[ut])), y=targets)
 
-                    print_(
-                        f'partial fit to features[{indices[0]}:{indices[1]}] {(dates[indices[0]], dates[indices[1]])}')
-                    # print_(ut)
-                    clf.partial_fit(X=rows, y=targets,
-                                    classes=classes, sample_weight=sample_weights)
-            # print_(f'^ {time.perf_counter() - t1:.2f} sec')
+        #             print_(
+        #                 f'partial fit to features[{indices[0]}:{indices[1]}] {(dates[indices[0]], dates[indices[1]])}')
+        #             # print_(ut)
+        #             clf.partial_fit(X=rows, y=targets,
+        #                             classes=classes, sample_weight=sample_weights)
 
-            print_(
-                f'predict and partial fit to features[{training_idx_start}:{training_idx_end}] {(dates[training_idx_start], dates[training_idx_end])}')
-            # t1 = time.perf_counter()
-            predicted, clf = predict_and_partial_fit(clf=clf, features=features[training_idx_start:training_idx_end, :],
-                                                     labels=labels[training_idx_start:training_idx_end],
-                                                     classes=classes, weights=weights)
-            # print_(f'^ {time.perf_counter() - t1:.2f} sec')
+        #     print_(
+        #         f'predict and partial fit to features[{training_idx_start}:{training_idx_end}] {(dates[training_idx_start], dates[training_idx_end])}')
+        #     predicted, clf = predict_and_partial_fit(clf=clf, features=features[training_idx_start:training_idx_end, :],
+        #                                              labels=labels[training_idx_start:training_idx_end],
+        #                                              classes=classes, weights=weights)
 
-        else:
-            print_(
-                f'reset, fit and predict on features[{training_idx_start}:{training_idx_end}] {(dates[training_idx_start], dates[training_idx_end])}')
-            # t1 = time.perf_counter()
-            predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
-                                             labels=labels[training_idx_start:training_idx_end],
-                                             classes=classes, weights=weights)
-            # print_(f'^ {time.perf_counter() - t1:.2f} sec')
+        # else:
+        #     print_(
+        #         f'reset, fit and predict on features[{training_idx_start}:{training_idx_end}] {(dates[training_idx_start], dates[training_idx_end])}')
+        #     predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
+        #                                      labels=labels[training_idx_start:training_idx_end],
+        #                                      classes=classes, weights=weights)
 
-        """
-        predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
-                                         labels=labels[training_idx_start:training_idx_end],
-                                         classes=classes)
-        """
+        # """
+        # predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
+        #                                  labels=labels[training_idx_start:training_idx_end],
+        #                                  classes=classes)
+        # """
 
-        # Add the predicted and true values to the list
-        y_pred = y_pred + predicted.tolist()
-        y_true = y_true + labels[training_idx_start:training_idx_end]
+        # # Add the predicted and true values to the list
+        # y_pred = y_pred + predicted.tolist()
+        # y_true = y_true + labels[training_idx_start:training_idx_end]
 
         print_(
             f'add index = {index} ({dates[index]}) to drifts detected')
         drifts_detected.append(index)
+
         index += training_window_size
         no_drifts = index
 
         print_(f'continuing drift detection from {index} ({dates[index]})')
         print_('==========  END  ==========')
 
-        # t_drifts = time.perf_counter()
-
     print_(
         f'stopping drift detection, {index} + {training_window_size} >= {len(features)}')
+    drifts_detected.append(len(features))
+
+    for i, d in enumerate(drift_labels):
+        if d in drifts:
+            drifts[d].append((drifts_detected[i], drifts_detected[i+1]))
+        else:
+            drifts[d] = [(drifts_detected[i], drifts_detected[i+1])]
+
+    for d in drifts:
+        print_(f'{d}: {drifts[d]}')
 
     print_(generator)
     print_(discriminator)
 
     # Test on the remaining features
-    print_(
-        f'predict and partial fit to remaining features[{index}:{len(features)-1}] {(dates[index], dates[len(features)-1])}')
-    predicted, clf = predict_and_partial_fit(
-        clf, features=features[index:, :], labels=labels[index:], classes=classes, weights=weights)
-    y_pred = y_pred + predicted.tolist()
-    y_true = y_true + labels[index:]
+    # print_(
+    #     f'predict and partial fit to remaining features[{index}:{len(features)-1}] {(dates[index], dates[len(features)-1])}')
+    # predicted, clf = predict_and_partial_fit(
+    #     clf, features=features[index:, :], labels=labels[index:], classes=classes, weights=weights)
+    # y_pred = y_pred + predicted.tolist()
+    # y_true = y_true + labels[index:]
 
     # save model
     # torch.save(clf, f'../logs/model.pth')
 
-    print_(f'drift_indices = {drift_indices}')
-    print_(f'drift_labels = {drift_labels}')
+    # print_(f'drift_indices = {drift_indices}')
+    # print_(f'drift_labels = {drift_labels}')
 
-    return y_pred, y_true, drifts_detected, clf
+    return drifts
+
+
+def train_clfs(features, labels, drifts):
+
+    clfs = {}
+    for d in drifts:
+        clfs[d] = HoeffdingTreeClassifier()
+
+    classes = np.unique(labels)
+    weights = compute_class_weight(
+        'balanced', classes=classes, y=labels)
+    print_(f'weights = {weights}')
+
+    for d in drifts:
+
+        print_(f'training classifier for drift {d}...')
+
+        for indices in drifts[d]:
+
+            if indices[0] < len(features):
+
+                print_(f'{indices}')
+                bound = indices[1]
+
+                if bound > len(features):
+                    bound = len(features)
+                    print_(f'index out of bounds, set to {len(features)}')
+
+                if not d in clfs:
+                    clfs[d] = HoeffdingTreeClassifier()
+
+                clfs[d] = fit(clf=clfs[d], features=features[indices[0]:bound, :],
+                              labels=labels[indices[0]:bound], classes=classes, weights=weights)
+
+    return clfs
+
+
+def test_clfs(features, drifts, clfs):
+
+    labels = list(range(len(features)))
+
+    for d in drifts:
+
+        if d in clfs:
+            drift = d
+            print_(f'testing classifier for drift {d}...')
+        else:
+            drift = min(clfs.keys(), key=lambda x: abs(x-d))
+            print_(
+                f'no classifier for drift {d}, testing one for drift {drift}...')
+
+        for indices in drifts[d]:
+
+            print_(f'{indices}')
+            labels[indices[0]:indices[1]] = predict(
+                clfs[drift], features[indices[0]:indices[1]])
+
+    return labels
 
 
 def load_data(path):
 
     files = glob.glob(path)
-    random.shuffle(files)
+    random.shuffle(files)  # shuffle or not?
+    print_(files)
     li = []
     breaks = []
 
@@ -906,37 +968,30 @@ feats = ['X_MSO', 'Y_MSO', 'Z_MSO', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'DBX_MSO', 'DB
 
 with open('../data/features.txt', 'r') as f:
     feats = [line.strip() for line in f]
+print_(f'selected features: {feats}')
 
 df_train = select_features(df_train, feats)
 df_test = select_features(df_test, feats)
-print_(f'selected features: {feats}')
+df_all = pd.concat([df_train, df_test])
+
+dates = df_all.iloc[:, 0].values.tolist()
+labels_train_true = df_train.iloc[:, -1].values.tolist()
+labels_test_true = df_test.iloc[:, -1].values.tolist()
 
 # standardization
-features_train = df_train.iloc[:, 1:-1].values
-dates = df_train.iloc[:, 0].values.tolist()
-labels_train = df_train.iloc[:, -1].values.tolist()
+features_all = df_all.iloc[:, 1:-1].values
+mean = np.mean(features_all, axis=1).reshape(features_all.shape[0], 1)
+std = np.std(features_all, axis=1).reshape(features_all.shape[0], 1)
+features_all = (features_all - mean) / (std + 0.000001)
+features_train = features_all[0:len(labels_train_true)]
+features_test = features_all[-len(labels_test_true):]
 
-mean = np.mean(features_train, axis=1).reshape(features_train.shape[0], 1)
-std = np.std(features_train, axis=1).reshape(features_train.shape[0], 1)
-features_train = (features_train - mean) / (std + 0.000001)
-
-u, c = np.unique(labels_train, return_counts=True)
-print_(dict(zip(u, c)))
-print_(f'features_train: {len(features_train)}')
-
-features_test = df_test.iloc[:, 1:-1].values
-labels_test = df_test.iloc[:, -1].values.tolist()
-
-mean = np.mean(features_test, axis=1).reshape(features_test.shape[0], 1)
-std = np.std(features_test, axis=1).reshape(features_test.shape[0], 1)
-features_test = (features_test - mean) / (std + 0.000001)
-
-u, c = np.unique(labels_test, return_counts=True)
-print_(dict(zip(u, c)))
-print_(f'features_test: {len(features_test)}')
+print_(f'total size = {len(features_all)}')
+print_(f'training set size = {len(features_train)}')
+print_(f'testing set size = {len(features_test)}')
 
 
-# %% training
+# %% training GAN
 
 """
 # Min max scaling
@@ -948,23 +1003,35 @@ features = features / max_features
 """
 
 t1 = time.perf_counter()
-train_pred, train_true, drifts_detected, clf = process_data(features=features_train, labels=labels_train, dates=dates, device=device,
-                                                            epochs=epochs, steps_generator=steps_generator, seed=seed,
-                                                            batch_size=batch_size, lr=lr, momentum=0.9,
-                                                            weight_decay=weight_decay, test_batch_size=test_batch_size,
-                                                            training_window_size=training_window_size,
-                                                            generator_batch_size=generator_batch_size, equalize=equalize,
-                                                            sequence_length=sequence_length, repeat_factor=repeat_factor)
+drifts = detect_drifts(features=features_all, dates=dates, device=device,
+                       epochs=epochs, steps_generator=steps_generator, seed=seed,
+                       batch_size=batch_size, lr=lr, momentum=0.9,
+                       weight_decay=weight_decay, test_batch_size=test_batch_size,
+                       training_window_size=training_window_size,
+                       generator_batch_size=generator_batch_size, equalize=equalize,
+                       sequence_length=sequence_length, repeat_factor=repeat_factor)
 t2 = time.perf_counter()
-test_true = labels_test
+print_(f'drift detection time is {t2 - t1:.2f} seconds')
 
 
-# %% testing
+# %% training classifiers
 
-# Predict without fitting
-test_pred = np.empty(shape=len(features_test))
-for idx in range(0, len(features_test)):
-    test_pred[idx] = clf.predict([features_test[idx]])
+t1 = time.perf_counter()
+clfs = train_clfs(features=features_train,
+                  labels=labels_train_true, drifts=drifts)
+t2 = time.perf_counter()
+print_(f'training time is {t2 - t1:.2f} seconds')
+
+
+# %% testing classifiers
+
+t1 = time.perf_counter()
+all_pred = test_clfs(features_all, drifts, clfs)
+t2 = time.perf_counter()
+print_(f'testing time is {t2 - t1:.2f} seconds')
+
+labels_train_pred = all_pred[:len(features_train)]
+labels_test_pred = all_pred[-len(features_test):]
 
 # Fit to already predicted features
 # test_pred, clf = predict_and_partial_fit(
@@ -972,42 +1039,43 @@ for idx in range(0, len(features_test)):
 
 # %% pad missing labels
 
-if len(train_true) < len(df_train.index):
+if len(labels_train_true) < len(df_train.index):
     print_(
-        f'padding training set true values with [{train_true[-1]}] * {len(df_train.index) - len(train_true)}')
-    train_true += [train_true[-1]] * (len(df_train.index) - len(train_true))
-if len(train_pred) < len(df_train.index):
+        f'padding training set true values with [{labels_train_true[-1]}] * {len(df_train.index) - len(labels_train_true)}')
+    labels_train_true += [labels_train_true[-1]] * \
+        (len(df_train.index) - len(labels_train_true))
+if len(labels_train_pred) < len(df_train.index):
     print_(
-        f'padding training set predictions with [{train_pred[-1]}] * {len(df_train.index) - len(train_pred)}')
-    train_pred += [train_pred[-1]] * (len(df_train.index) - len(train_pred))
+        f'padding training set predictions with [{labels_train_pred[-1]}] * {len(df_train.index) - len(labels_train_pred)}')
+    labels_train_pred += [labels_train_pred[-1]] * \
+        (len(df_train.index) - len(labels_train_pred))
 
-print_(f'training set size: {len(train_true)}')
-print_(f'testing set size: {len(test_true)}')
+print_(f'training set size: {len(labels_train_true)}')
+print_(f'testing set size: {len(labels_test_true)}')
 
 # %% evaluation
 
-auc_value = accuracy_score(y_true=train_true, y_pred=train_pred)
+auc_value = accuracy_score(y_true=labels_train_true, y_pred=labels_train_pred)
 print_(f'accuracy value is {auc_value} for training dataset {dataset}')
 prf = precision_recall_fscore_support(
-    train_true, train_pred, average=None, labels=np.unique(train_true))
+    labels_train_true, labels_train_pred, average=None, labels=np.unique(labels_train_true))
 print_(f'precision: {prf[0]}')
 print_(f'recall: {prf[1]}')
 print_(f'f-score: {prf[2]}')
 print_(f'support: {prf[3]}')
-print_(f'confusion matrix:\n{confusion_matrix(train_true, train_pred)}')
+print_(
+    f'confusion matrix:\n{confusion_matrix(labels_train_true, labels_train_pred)}')
 
-auc_value = accuracy_score(y_true=test_true, y_pred=test_pred)
+auc_value = accuracy_score(y_true=labels_test_true, y_pred=labels_test_pred)
 print_(f'accuracy value is {auc_value} for testing dataset {dataset}')
 prf = precision_recall_fscore_support(
-    test_true, test_pred, average=None, labels=np.unique(test_true))
+    labels_test_true, labels_test_pred, average=None, labels=np.unique(labels_test_true))
 print_(f'precision: {prf[0]}')
 print_(f'recall: {prf[1]}')
 print_(f'f-score: {prf[2]}')
 print_(f'support: {prf[3]}')
-print_(f'confusion matrix:\n{confusion_matrix(test_true, test_pred)}')
-
-print_(f'execution time is {t2 - t1:.2f} seconds')
-print_(f'drifts: {drifts_detected}')
+print_(
+    f'confusion matrix:\n{confusion_matrix(labels_test_true, labels_test_pred)}')
 
 
 # %% plots
@@ -1017,11 +1085,12 @@ if plots != '':
     if '0' in plots:
         plot_orbit(df_train, breaks_train, 'train-true')
     if '1' in plots:
-        plot_orbit(df_train, breaks_train, 'train-pred', labels=train_pred)
+        plot_orbit(df_train, breaks_train, 'train-pred',
+                   labels=labels_train_pred)
     if '2' in plots:
         plot_orbit(df_test, breaks_test, 'test-true')
     if '3' in plots:
-        plot_orbit(df_test, breaks_test, 'test-pred', labels=test_pred)
+        plot_orbit(df_test, breaks_test, 'test-pred', labels=labels_test_pred)
     print_('plotting finished')
 
 
