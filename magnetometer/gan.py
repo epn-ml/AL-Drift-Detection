@@ -535,7 +535,7 @@ def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equa
             # y_pred = y_pred + predicted.tolist()
             # y_true = y_true + data_labels
 
-            if index % 100000 == 0:
+            if index - no_drifts >= 100000:
                 if no_drifts != index:
                     print_(
                         f'no drifts detected from index {no_drifts} to {index}')
