@@ -781,7 +781,7 @@ def test_clfs(features, drifts, clfs):
 def load_data(path):
 
     files = glob.glob(path)
-    files.sort()
+    files.sort(key=lambda x: (-len(x), x))
     # random.shuffle(files)  # shuffle or not?
     print_(list(map(lambda x: x.split('_')[-1], files)))
     li = []
