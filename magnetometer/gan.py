@@ -489,6 +489,8 @@ def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equa
     # y_true = y_true + y
 
     # Create training dataset
+    print_(f'training dataset indices = {drift_indices}')
+    print_(f'training dataset labels  = {[0]}')
     training_dataset = create_training_dataset(
         dataset=features, indices=drift_indices, drift_labels=[0])
 
@@ -522,8 +524,8 @@ def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equa
         if not np.array_equal(max_idx, max_idx_prev):
             print_(
                 f'max_idx {max_idx_prev} -> {max_idx} [{index}] ({dates[index]})')
-            print_(f'prob = {prob.cpu().detach().numpy()}')
-            print_(f'discriminator output:\n{result.cpu().detach().numpy()}')
+            # print_(f'prob = {prob.cpu().detach().numpy()}')
+            # print_(f'discriminator output:\n{result.cpu().detach().numpy()}')
             max_idx_prev = max_idx
 
         # 1st condition is always false? (max_idx[1:] != ...)
@@ -737,13 +739,18 @@ def train_clfs(features, labels, drifts):
 
                 if bound > len(features):
                     bound = len(features)
-                    print_(f'index out of bounds, set to {len(features)}')
+                    print_(
+                        f'index {indices[1]} out of bounds, set to {len(features)}')
 
                 if not d in clfs:
                     clfs[d] = HoeffdingTreeClassifier()
+                    print_(f'create new classifier for drift {d}')
 
                 clfs[d] = fit(clf=clfs[d], features=features[indices[0]:bound, :],
                               labels=labels[indices[0]:bound], classes=classes, weights=weights)
+            else:
+
+                print_(f'{indices} out of bounds, ignoring')
 
     return clfs
 
@@ -774,7 +781,8 @@ def test_clfs(features, drifts, clfs):
 def load_data(path):
 
     files = glob.glob(path)
-    random.shuffle(files)  # shuffle or not?
+    files.sort()
+    # random.shuffle(files)  # shuffle or not?
     print_(list(map(lambda x: x.split('_')[-1], files)))
     li = []
     breaks = []
@@ -990,6 +998,8 @@ features_test = features_all[-len(labels_test_true):]
 print_(f'total size = {len(features_all)}')
 print_(f'training set size = {len(features_train)}')
 print_(f'testing set size = {len(features_test)}')
+print_(f'training indices = [0:{len(features_train)}]')
+print_(f'testing indices = [{len(features_train)}:{len(features_all)}]')
 
 
 # %% training GAN
@@ -1038,6 +1048,7 @@ labels_test_pred = all_pred[-len(features_test):]
 # test_pred, clf = predict_and_partial_fit(
 #     clf, features=features_test, labels=test_true, classes=np.unique(test_true))
 
+
 # %% pad missing labels
 
 if len(labels_train_true) < len(df_train.index):
@@ -1045,14 +1056,13 @@ if len(labels_train_true) < len(df_train.index):
         f'padding training set true values with [{labels_train_true[-1]}] * {len(df_train.index) - len(labels_train_true)}')
     labels_train_true += [labels_train_true[-1]] * \
         (len(df_train.index) - len(labels_train_true))
+
 if len(labels_train_pred) < len(df_train.index):
     print_(
         f'padding training set predictions with [{labels_train_pred[-1]}] * {len(df_train.index) - len(labels_train_pred)}')
     labels_train_pred += [labels_train_pred[-1]] * \
         (len(df_train.index) - len(labels_train_pred))
 
-print_(f'training set size: {len(labels_train_true)}')
-print_(f'testing set size: {len(labels_test_true)}')
 
 # %% evaluation
 
