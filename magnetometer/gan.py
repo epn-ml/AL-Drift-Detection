@@ -890,10 +890,10 @@ def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
 
         if 'png' in plot_format:
             fig.write_image(
-                f'../logs/{folder}/fig_{df_orbit.iloc[0]["DATE"][:16].replace(" ", "_").replace(":", "-")}_{title}.png')
+                f'../logs/{folder}/{title}/fig_{df_orbit.iloc[0]["DATE"][:16].replace(" ", "_").replace(":", "-")}.png')
         if 'html' in plot_format:
             fig.write_html(
-                f'../logs/{folder}/fig_{df_orbit.iloc[0]["DATE"][:16].replace(" ", "_").replace(":", "-")}_{title}.html')
+                f'../logs/{folder}/{title}/fig_{df_orbit.iloc[0]["DATE"][:16].replace(" ", "_").replace(":", "-")}.html')
 
 
 # %% setup
