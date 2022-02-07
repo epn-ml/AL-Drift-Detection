@@ -475,7 +475,7 @@ def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equa
     discriminator = discriminator.to(device=device)
 
     drift_indices = [(0, training_window_size)]  # Initial training window
-    drift_labels = [0]
+    drift_labels = []
     drifts = {}
 
     temp_label = [0]
@@ -682,6 +682,7 @@ def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equa
     print_(
         f'stopping drift detection, {index} + {training_window_size} >= {len(features)}')
     drifts_detected.append(len(features))
+    drift_labels = [0] + drift_labels
 
     for i, d in enumerate(drift_labels):
         if d in drifts:
@@ -774,7 +775,7 @@ def load_data(path):
 
     files = glob.glob(path)
     random.shuffle(files)  # shuffle or not?
-    print_(files)
+    print_(list(map(lambda x: x.split('_')[-1], files)))
     li = []
     breaks = []
 
