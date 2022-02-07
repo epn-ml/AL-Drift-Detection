@@ -1094,13 +1094,17 @@ print_(
 if plots != '':
     print_('plotting...')
     if '0' in plots:
+        os.makedirs(f'../logs/{folder}/train-true')
         plot_orbit(df_train, breaks_train, 'train-true')
     if '1' in plots:
+        os.makedirs(f'../logs/{folder}/train-pred')
         plot_orbit(df_train, breaks_train, 'train-pred',
                    labels=labels_train_pred)
     if '2' in plots:
+        os.makedirs(f'../logs/{folder}/test-true')
         plot_orbit(df_test, breaks_test, 'test-true')
     if '3' in plots:
+        os.makedirs(f'../logs/{folder}/test-pred')
         plot_orbit(df_test, breaks_test, 'test-pred', labels=labels_test_pred)
     print_('plotting finished')
 
