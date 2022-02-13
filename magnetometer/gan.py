@@ -778,14 +778,19 @@ def test_clfs(features, drifts, clfs):
     return labels
 
 
-def load_data(path):
+def load_data(path, prev_len=0):
+
+    split = 'training'
+    if 'test' in path:
+        split = 'testing'
 
     files = glob.glob(path)
     files.sort(key=lambda x: (len(x), x))
     # random.shuffle(files)  # shuffle or not?
-    print_(list(map(lambda x: x.split('_')[-1], files)))
     li = []
     breaks = []
+    orbits = {}
+    df_len = prev_len
 
     print_(f'loading {len(files)} orbits...')
 
@@ -793,10 +798,14 @@ def load_data(path):
         df = pd.read_csv(filename, index_col=None, header=0)
         breaks.append((df.iloc[0]['DATE'], df.iloc[-1]['DATE']))
         li.append(df)
+        n = filename.split('_')[-1].split('.')[0]
+        orbits[n] = (df_len, df_len + len(df.index))
+        df_len = df_len + len(df.index)
+        print_(f'loaded {split} orbit {n} - {orbits[n]}')
 
     df = pd.concat(li, axis=0, ignore_index=True)
 
-    return df.dropna(), breaks
+    return df.dropna(), breaks, orbits
 
 
 def calc_stats(cm):
@@ -966,8 +975,8 @@ print_(
 
 # %% load data
 
-df_train, breaks_train = load_data('../data/orbits/train/*.csv')
-df_test, breaks_test = load_data('../data/orbits/test/*.csv')
+df_train, breaks_train, orbits_train = load_data('../data/orbits/train/*.csv')
+df_test, breaks_test, orbits_test = load_data('../data/orbits/test/*.csv', prev_len=len(df_train.index))
 
 
 # %% select data
