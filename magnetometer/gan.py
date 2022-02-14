@@ -609,6 +609,7 @@ def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equa
             i_start = i*training_window_size
             i_end = i_start + training_window_size
             drift = np.unique(training_dataset[i_start:i_end, -1]).tolist()
+            drift = [int(d) for d in drift]
             created_drifts += drift
             print_(
                 f'training_dataset[{i_start}:{i_end}] = drift {drift}; features[{indices[0]}:{indices[1]}] = {np.array_equal(features[indices[0]:indices[1]], training_dataset[i_start:i_end, :-1])}')
