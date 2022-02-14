@@ -920,7 +920,7 @@ def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
 
 fptr = None
 dataset = 'messenger'
-folder = f'{str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))}_{30000}'
+folder = f'{str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))}_{sys.argv[1:]}'
 
 plots = ''
 if len(sys.argv) > 2:
@@ -933,7 +933,7 @@ if len(sys.argv) > 3:
 # Set the number of training instances
 training_window_size = 10000
 if len(sys.argv) > 1:
-    training_window_size = int(30000)
+    training_window_size = int(sys.argv[1])
 print_(f'training_window_size: {training_window_size}')
 
 # Set the number of epochs the GAN should be trained
