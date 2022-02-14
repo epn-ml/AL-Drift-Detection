@@ -599,19 +599,21 @@ def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equa
         discriminator.train()
 
         print_(f'training dataset indices = {drift_indices}')
-        print_(f'training dataset labels  = {drift_labels} + {temp_label}')
         training_dataset = create_training_dataset(dataset=features,
                                                    indices=drift_indices,
                                                    drift_labels=drift_labels+temp_label)
         print_(f'len(training_dataset) = {len(training_dataset)}')
 
+        created_drifts = []
         for i, indices in enumerate(drift_indices):
             i_start = i*training_window_size
             i_end = i_start + training_window_size
+            drift = np.unique(training_dataset[i_start:i_end, -1])
+            created_drifts += drift
             print_(
-                f'drift in training_dataset[{i_start}:{i_end}] = {np.unique(training_dataset[i_start:i_end, -1])}')
-            print_(
-                f'equal to features[{indices[0]}:{indices[1]}] = {np.array_equal(features[indices[0]:indices[1]], training_dataset[i_start:i_end, :-1])}')
+                f'training_dataset[{i_start}:{i_end}] = drift {drift}; features[{indices[0]}:{indices[1]}] = {np.array_equal(features[indices[0]:indices[1]], training_dataset[i_start:i_end, :-1])}')
+        print_(f'training dataset labels = {drift_labels} + {temp_label}')
+        print_(f'created dataset labels  = {created_drifts}')
 
         generator, discriminator = train_gan(features=training_dataset, device=device,
                                              discriminator=discriminator,
