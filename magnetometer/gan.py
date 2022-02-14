@@ -315,7 +315,7 @@ def create_training_dataset(dataset, indices, drift_labels):
             else:
                 modified_drift_labels.append(label)
 
-    print_(f'modified dataset labels = ')
+    print_(f'modified dataset labels = {modified_drift_labels}')
 
     training_dataset = np.hstack((dataset[indices[0][0]:indices[0][1]],
                                   np.ones((indices[0][1]-indices[0][0], 1)) * modified_drift_labels[0]))
