@@ -608,7 +608,7 @@ def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equa
         for i, indices in enumerate(drift_indices):
             i_start = i*training_window_size
             i_end = i_start + training_window_size
-            drift = np.unique(training_dataset[i_start:i_end, -1])
+            drift = np.unique(training_dataset[i_start:i_end, -1]).tolist()
             created_drifts += drift
             print_(
                 f'training_dataset[{i_start}:{i_end}] = drift {drift}; features[{indices[0]}:{indices[1]}] = {np.array_equal(features[indices[0]:indices[1]], training_dataset[i_start:i_end, :-1])}')
@@ -920,7 +920,7 @@ def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
 
 fptr = None
 dataset = 'messenger'
-folder = f'{str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))}_{sys.argv[1:]}'
+folder = f'{str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))}_{30000}'
 
 plots = ''
 if len(sys.argv) > 2:
@@ -933,7 +933,7 @@ if len(sys.argv) > 3:
 # Set the number of training instances
 training_window_size = 10000
 if len(sys.argv) > 1:
-    training_window_size = int(sys.argv[1])
+    training_window_size = int(30000)
 print_(f'training_window_size: {training_window_size}')
 
 # Set the number of epochs the GAN should be trained
