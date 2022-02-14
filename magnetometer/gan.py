@@ -611,7 +611,7 @@ def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equa
             print_(
                 f'drift in training_dataset[{i_start}:{i_end}] = {np.unique(training_dataset[i_start:i_end, -1])}')
             print_(
-                f'equal to features[{indices[0]}:{indices[1]}] = {np.array_equal(features[indices[0]:indices[1]], training_dataset[i_start:i_end, -1])}')
+                f'equal to features[{indices[0]}:{indices[1]}] = {np.array_equal(features[indices[0]:indices[1]], training_dataset[i_start:i_end, :-1])}')
 
         generator, discriminator = train_gan(features=training_dataset, device=device,
                                              discriminator=discriminator,
@@ -801,7 +801,7 @@ def load_data(path, prev_len=0):
     orbits = {}
     df_len = prev_len
 
-    print_(f'loading {len(files)} orbits...')
+    print_(f'loading {len(files)} {split} orbits...')
 
     for filename in files:
         df = pd.read_csv(filename, index_col=None, header=0)
@@ -810,7 +810,7 @@ def load_data(path, prev_len=0):
         n = filename.split('_')[-1].split('.')[0]
         orbits[n] = (df_len, df_len + len(df.index))
         df_len = df_len + len(df.index)
-        print_(f'loaded {split} orbit {n} - {orbits[n]}')
+        print_(f'loaded {split} orbit {n} - {orbits[n]} - {breaks[-1]}')
 
     df = pd.concat(li, axis=0, ignore_index=True)
 
