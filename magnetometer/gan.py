@@ -323,9 +323,6 @@ def create_training_dataset(dataset, indices, drift_labels):
         training_dataset = np.vstack((training_dataset, np.hstack((dataset[indices[idx][0]:indices[idx][1]],
                                       np.ones((indices[idx][1]-indices[idx][0], 1)) * modified_drift_labels[idx]))))
 
-    # print_(
-    #     f'^ length = {len(training_dataset)}')
-
     return training_dataset
 
 
@@ -697,6 +694,8 @@ def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equa
 
     print_(
         f'stopping drift detection, {index} + {training_window_size} >= {len(features)}')
+    print_(drifts_detected)
+    print_(drift_labels)
     drifts_detected.append(len(features))
     drift_labels = [0] + drift_labels
 
