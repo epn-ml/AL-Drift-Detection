@@ -444,7 +444,7 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     return generator, discriminator
 
 
-def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equalize=True, test_batch_size=4,
+def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=100, equalize=True, test_batch_size=4,
                   seed=0, batch_size=8, lr=0.001, momentum=0.9, weight_decay=0.0005, training_window_size=100,
                   generator_batch_size=1, sequence_length=2, repeat_factor=4):
 
@@ -473,7 +473,10 @@ def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equa
     generator = generator.to(device=device)
     discriminator = discriminator.to(device=device)
 
-    drift_indices = [(0, training_window_size)]  # Initial training window
+    # drift_indices = [(0, training_window_size)]  # Initial training window
+    orbits_idx = list(orbits.values())
+    drift_indices = [orbits_idx[0]]
+    cur_orbit = 1
     drift_labels = []
     drifts = {}
 
@@ -499,7 +502,7 @@ def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equa
                                          max_label=generator_label, generator_batch_size=generator_batch_size,
                                          weight_decay=weight_decay, sequence_length=sequence_length)
 
-    index = training_window_size
+    index = orbits_idx[cur_orbit][0]
 
     generator.eval()
     discriminator.eval()
@@ -512,10 +515,10 @@ def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equa
     print_(f'starting drift detection from index = {index} ({dates[index]})')
     print_('===========================')
 
-    while index + training_window_size < len(features):
+    # while index + training_window_size < len(features):
+    while index < orbits_idx[-1][-1]:
 
         data = features[index:index + test_batch_size]
-        # data_labels = labels[index:index + test_batch_size]
         result = discriminator(torch.Tensor(data).to(torch.float).to(device))
         prob, max_idx = torch.max(result, dim=1)
         max_idx = max_idx.cpu().detach().numpy()  # too slow?
@@ -544,6 +547,9 @@ def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equa
                     no_drifts = index
 
             index += test_batch_size
+            if index > orbits_idx[cur_orbit][1]:
+                cur_orbit += 1
+
             continue
 
         if no_drifts != index:
@@ -558,9 +564,12 @@ def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equa
 
         max_idx = max_idx[0]
         # Drift detected
+        # print_(
+        #     f'add {(index, index+training_window_size)} to drift indices')
+        # drift_indices.append((index, index+training_window_size))
         print_(
-            f'add {(index, index+training_window_size)} to drift indices')
-        drift_indices.append((index, index+training_window_size))
+            f'add {(index, orbits_idx[cur_orbit][1])} to drift indices')
+        drift_indices.append((index, orbits_idx[cur_orbit][1]))
 
         if temp_label[0] != 0:
             # add the index of the previous drift if it was a recurring drift
@@ -598,22 +607,11 @@ def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equa
         discriminator.train()
 
         print_(f'training dataset indices = {drift_indices}')
+        print_(f'training dataset labels  = {drift_labels} + {temp_label}')
         training_dataset = create_training_dataset(dataset=features,
                                                    indices=drift_indices,
                                                    drift_labels=drift_labels+temp_label)
         print_(f'len(training_dataset) = {len(training_dataset)}')
-
-        created_drifts = []
-        for i, indices in enumerate(drift_indices):
-            i_start = i*training_window_size
-            i_end = i_start + training_window_size
-            drift = np.unique(training_dataset[i_start:i_end, -1]).tolist()
-            drift = [int(d) for d in drift]
-            created_drifts += drift
-            print_(
-                f'training_dataset[{i_start}:{i_end}] = drift {drift}; features[{indices[0]}:{indices[1]}] = {np.array_equal(features[indices[0]:indices[1]], training_dataset[i_start:i_end, :-1])}')
-        print_(f'training dataset labels = {drift_labels} + {temp_label}')
-        print_(f'created dataset labels  = {created_drifts}')
 
         generator, discriminator = train_gan(features=training_dataset, device=device,
                                              discriminator=discriminator,
@@ -686,14 +684,19 @@ def detect_drifts(features, dates, device, epochs=100, steps_generator=100, equa
             f'add index = {index} ({dates[index]}) to drifts detected')
         drifts_detected.append(index)
 
-        index += training_window_size
+        # index += training_window_size
+        index = orbits_idx[cur_orbit][1]
+        cur_orbit += 1
+
         no_drifts = index
 
         print_(f'continuing drift detection from {index} ({dates[index]})')
         print_('==========  END  ==========')
 
+    # print_(
+    #     f'stopping drift detection, {index} + {training_window_size} >= {len(features)}')
     print_(
-        f'stopping drift detection, {index} + {training_window_size} >= {len(features)}')
+        f'stopping drift detection, {index} >= {orbits_idx[-1][-1]}')
     print_(drifts_detected)
     print_(drift_labels)
     drifts_detected.append(len(features))
@@ -811,7 +814,7 @@ def load_data(path, prev_len=0):
         df = pd.read_csv(filename, index_col=None, header=0)
         breaks.append((df.iloc[0]['DATE'], df.iloc[-1]['DATE']))
         li.append(df)
-        n = filename.split('_')[-1].split('.')[0]
+        n = int(filename.split('_')[-1].split('.')[0])
         orbits[n] = (df_len, df_len + len(df.index))
         df_len = df_len + len(df.index)
         print_(f'loaded {split} orbit {n} - {orbits[n]} - {breaks[-1]}')
@@ -1037,8 +1040,9 @@ features = features / max_features
 """
 
 t1 = time.perf_counter()
-drifts = detect_drifts(features=features_all, dates=dates, device=device,
-                       epochs=epochs, steps_generator=steps_generator, seed=seed,
+drifts = detect_drifts(features=features_all, orbits={**orbits_train, **orbits_test},
+                       dates=dates, device=device, epochs=epochs,
+                       steps_generator=steps_generator, seed=seed,
                        batch_size=batch_size, lr=lr, momentum=0.9,
                        weight_decay=weight_decay, test_batch_size=test_batch_size,
                        training_window_size=training_window_size,
