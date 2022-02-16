@@ -690,7 +690,6 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         no_drifts = index
 
-        print_(f'continuing drift detection from {index} ({dates[index]})')
         print_('==========  END  ==========')
 
     # print_(
