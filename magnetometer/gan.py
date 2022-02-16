@@ -315,7 +315,7 @@ def create_training_dataset(dataset, indices, drift_labels):
             else:
                 modified_drift_labels.append(label)
 
-    print_(f'modified dataset labels = {modified_drift_labels}')
+    # print_(f'modified dataset labels = {modified_drift_labels}')
 
     training_dataset = np.hstack((dataset[indices[0][0]:indices[0][1]],
                                   np.ones((indices[0][1]-indices[0][0], 1)) * modified_drift_labels[0]))
@@ -326,7 +326,7 @@ def create_training_dataset(dataset, indices, drift_labels):
     return training_dataset
 
 
-def equalize_classes(features, max_count=100):
+def equalize_classes(features, max_count=300):
     modified_dataset = None
 
     labels = features[:, -1]
@@ -355,7 +355,7 @@ def concat_feature(data, idx, sequence_len=2):
     return np.hstack((data[idx:idx + sequence_len, :].flatten(), data[sequence_length - 1]))
 
 
-def equalize_and_concatenate(features, max_count=100, sequence_len=2):
+def equalize_and_concatenate(features, max_count=300, sequence_len=2):
     modified_features = features[:, :-1]
     modified_features = np.vstack(
         (np.zeros((sequence_len - 1, len(modified_features[sequence_len]))), modified_features))
@@ -560,24 +560,24 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
             no_drifts = index
 
-        print_('========== START ==========')
+        # print_('========== START ==========')
 
         max_idx = max_idx[0]
         # Drift detected
         # print_(
         #     f'add {(index, index+training_window_size)} to drift indices')
         # drift_indices.append((index, index+training_window_size))
-        print_(
-            f'add {(index, orbits_idx[cur_orbit][1])} to drift indices')
+        # print_(
+        #     f'add {(index, orbits_idx[cur_orbit][1])} to drift indices')
         drift_indices.append((index, orbits_idx[cur_orbit][1]))
 
         if temp_label[0] != 0:
             # add the index of the previous drift if it was a recurring drift
-            print_(f'add {temp_label[0]} to drift labels')
+            # print_(f'add {temp_label[0]} to drift labels')
             drift_labels.append(temp_label[0])
 
         else:
-            print_(f'add {generator_label} to drift labels')
+            # print_(f'add {generator_label} to drift labels')
             drift_labels.append(generator_label)
 
         if max_idx != generator_label:
@@ -606,12 +606,12 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         generator.train()
         discriminator.train()
 
-        print_(f'training dataset indices = {drift_indices}')
-        print_(f'training dataset labels  = {drift_labels} + {temp_label}')
+        # print_(f'training dataset indices = {drift_indices}')
+        # print_(f'training dataset labels  = {drift_labels} + {temp_label}')
         training_dataset = create_training_dataset(dataset=features,
                                                    indices=drift_indices,
                                                    drift_labels=drift_labels+temp_label)
-        print_(f'len(training_dataset) = {len(training_dataset)}')
+        # print_(f'len(training_dataset) = {len(training_dataset)}')
 
         generator, discriminator = train_gan(features=training_dataset, device=device,
                                              discriminator=discriminator,
@@ -680,8 +680,8 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         # y_pred = y_pred + predicted.tolist()
         # y_true = y_true + labels[training_idx_start:training_idx_end]
 
-        print_(
-            f'add index = {index} ({dates[index]}) to drifts detected')
+        # print_(
+        #     f'add index = {index} ({dates[index]}) to drifts detected')
         drifts_detected.append(index)
 
         # index += training_window_size
@@ -690,7 +690,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         no_drifts = index
 
-        print_('==========  END  ==========')
+        # print_('==========  END  ==========')
 
     # print_(
     #     f'stopping drift detection, {index} + {training_window_size} >= {len(features)}')
