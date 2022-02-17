@@ -537,7 +537,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
             # y_pred = y_pred + predicted.tolist()
             # y_true = y_true + data_labels
 
-            if index - no_drifts >= 100000:
+            if index - no_drifts >= 500000:
                 if no_drifts != index:
                     print_(
                         f'no drifts detected from index {no_drifts} to {index}')
@@ -545,6 +545,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
                     #     f'predict and partial fit to features[{no_drifts}:{index}] {(dates[no_drifts], dates[index])}')
 
                     no_drifts = index
+                    sys.exit()
 
             index += test_batch_size
             if index > orbits_idx[cur_orbit][1]:
