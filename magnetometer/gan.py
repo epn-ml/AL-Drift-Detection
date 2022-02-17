@@ -13,8 +13,7 @@ import plotly.graph_objects as go
 import torch
 from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support)
-from sklearn.utils.class_weight import (compute_class_weight,
-                                        compute_sample_weight)
+from sklearn.utils.class_weight import compute_class_weight
 from skmultiflow.trees import HoeffdingTreeClassifier
 from torch import nn
 from torch.autograd import Variable
@@ -41,7 +40,7 @@ def print_(print_str):
         fptr = open(name, "w")
 
     fptr.write(str(datetime.now()) + ": " + str(print_str) + "\n")
-    print(str(datetime.now()) + ": " + str(print_str))
+    # print(str(datetime.now()) + ": " + str(print_str))
     fptr.flush()
     os.fsync(fptr.fileno())
 
@@ -326,7 +325,7 @@ def create_training_dataset(dataset, indices, drift_labels):
     return training_dataset
 
 
-def equalize_classes(features, max_count=200):
+def equalize_classes(features, max_count=100):
     modified_dataset = None
 
     labels = features[:, -1]
@@ -355,7 +354,7 @@ def concat_feature(data, idx, sequence_len=2):
     return np.hstack((data[idx:idx + sequence_len, :].flatten(), data[sequence_length - 1]))
 
 
-def equalize_and_concatenate(features, max_count=200, sequence_len=2):
+def equalize_and_concatenate(features, max_count=100, sequence_len=2):
     modified_features = features[:, :-1]
     modified_features = np.vstack(
         (np.zeros((sequence_len - 1, len(modified_features[sequence_len]))), modified_features))
@@ -538,7 +537,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
             # y_pred = y_pred + predicted.tolist()
             # y_true = y_true + data_labels
 
-            if index - no_drifts >= 500000:
+            if index - no_drifts >= 500000: # TODO: limit by orbit and retrain GAN
                 if no_drifts != index:
                     print_(
                         f'no drifts detected from index {no_drifts} to {index}')
@@ -1118,8 +1117,7 @@ print_(
 
 for n in orbits_all:
     f1 = precision_recall_fscore_support(labels_all_true[orbits_all[n][0]:orbits_all[n][1]],
-                                         all_pred[orbits_all[n][0]
-                                             :orbits_all[n][1]],
+                                         all_pred[orbits_all[n][0]:orbits_all[n][1]],
                                          average=None,
                                          labels=np.unique(labels_all_true[orbits_all[n][0]:orbits_all[n][1]]))[2]
     print_(f'orbit {n} {orbits_all[n]} f-score - {f1}')
