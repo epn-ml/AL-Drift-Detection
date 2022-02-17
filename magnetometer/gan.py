@@ -1114,11 +1114,10 @@ print_(
     f'confusion matrix:\n{confusion_matrix(labels_test_true, labels_test_pred)}')
 
 for n in orbits_all:
-    f1 = precision_recall_fscore_support(labels_test_true[orbits_all[n][0]:orbits_all[n][1]],
-                                         labels_test_pred[orbits_all[n]
-                                                          [0]:orbits_all[n][1]],
+    f1 = precision_recall_fscore_support(all_pred[orbits_all[n][0]:orbits_all[n][1]],
+                                         all_pred[orbits_all[n][0]:orbits_all[n][1]],
                                          average=None,
-                                         labels=np.unique(labels_test_true[orbits_all[n][0]:orbits_all[n][1]]))[2]
+                                         labels=np.unique(all_pred[orbits_all[n][0]:orbits_all[n][1]]))[2]
     print_(f'orbit {n} {orbits_all[n]} f-score - {f1}')
 
 
