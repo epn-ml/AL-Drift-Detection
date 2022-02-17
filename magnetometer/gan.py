@@ -512,7 +512,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     np.set_printoptions(suppress=True)
     np.set_printoptions(precision=2)
 
-    print_(f'starting drift detection from index = {index} ({dates[index]})')
+    print_(f'starting drift detection from index = {index} (orbit {cur_orbit}, {dates[index]})')
     print_('===========================')
 
     # while index + training_window_size < len(features):
@@ -525,7 +525,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         if not np.array_equal(max_idx, max_idx_prev):
             print_(
-                f'max_idx {max_idx_prev} -> {max_idx} [{index}] ({dates[index]})')
+                f'max_idx {max_idx_prev} -> {max_idx} [{index}] (orbit {cur_orbit}, {dates[index]})')
             # print_(f'prob = {prob.cpu().detach().numpy()}')
             # print_(f'discriminator output:\n{result.cpu().detach().numpy()}')
             max_idx_prev = max_idx
@@ -568,7 +568,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         #     f'add {(index, index+training_window_size)} to drift indices')
         # drift_indices.append((index, index+training_window_size))
         print_(
-            f'add {(index, orbits_idx[cur_orbit][1])} to drift indices')
+            f'add orbit {cur_orbit}, {(index, orbits_idx[cur_orbit][1])} to drift indices')
         drift_indices.append((index, orbits_idx[cur_orbit][1]))
 
         if temp_label[0] != 0:
