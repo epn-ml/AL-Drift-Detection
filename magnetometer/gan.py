@@ -553,8 +553,8 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
             continue
 
         if no_drifts != index:
-            print_(
-                f'no drifts detected from index {no_drifts} to {index}')
+            # print_(
+            #     f'no drifts detected from index {no_drifts} to {index}')
             # print_(
             #     f'predict and partial fit to features[{no_drifts}:{index}] {(dates[no_drifts], dates[index])}')
 
@@ -567,17 +567,17 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         # print_(
         #     f'add {(index, index+training_window_size)} to drift indices')
         # drift_indices.append((index, index+training_window_size))
-        # print_(
-        #     f'add {(index, orbits_idx[cur_orbit][1])} to drift indices')
+        print_(
+            f'add {(index, orbits_idx[cur_orbit][1])} to drift indices')
         drift_indices.append((index, orbits_idx[cur_orbit][1]))
 
         if temp_label[0] != 0:
             # add the index of the previous drift if it was a recurring drift
-            # print_(f'add {temp_label[0]} to drift labels')
+            print_(f'add {temp_label[0]} to drift labels')
             drift_labels.append(temp_label[0])
 
         else:
-            # print_(f'add {generator_label} to drift labels')
+            print_(f'add {generator_label} to drift labels')
             drift_labels.append(generator_label)
 
         if max_idx != generator_label:
@@ -803,24 +803,23 @@ def load_data(path, prev_len=0):
     files.sort(key=lambda x: (len(x), x))
     # random.shuffle(files)  # shuffle or not?
     li = []
-    breaks = []
     orbits = {}
     df_len = prev_len
 
     print_(f'loading {len(files)} {split} orbits...')
 
     for filename in files:
-        df = pd.read_csv(filename, index_col=None, header=0)
-        breaks.append((df.iloc[0]['DATE'], df.iloc[-1]['DATE']))
+        df = pd.read_csv(filename, index_col=None, header=0).dropna()
         li.append(df)
         n = int(filename.split('_')[-1].split('.')[0])
         orbits[n] = (df_len, df_len + len(df.index))
         df_len = df_len + len(df.index)
-        print_(f'loaded {split} orbit {n} - {orbits[n]} - {breaks[-1]}')
+        print_(
+            f'loaded {split} orbit {n} - {orbits[n]} - {(df.iloc[0]["DATE"], df.iloc[-1]["DATE"])}')
 
     df = pd.concat(li, axis=0, ignore_index=True)
 
-    return df.dropna(), breaks, orbits
+    return df, orbits
 
 
 def calc_stats(cm):
@@ -881,7 +880,7 @@ def plot_field(df):
     return fig
 
 
-def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
+def plot_orbit(df, orbits, title, draw=[1, 3], labels=None):
 
     global plot_format
 
@@ -893,10 +892,9 @@ def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
         df['LABEL_PRED'] = labels
         label_col = 'LABEL_PRED'
 
-    for date_range in breaks:
+    for n in orbits:
 
-        df_orbit = df[(df['DATE'] >= date_range[0]) &
-                      (df['DATE'] <= date_range[1])]
+        df_orbit = df.iloc[orbits[n][0]:orbits[n][1]]
         fig = plot_field(df_orbit)
 
         for i in draw:
@@ -910,14 +908,14 @@ def plot_orbit(df, breaks, title, draw=[1, 3], labels=None):
                     showlegend=False
                 ))
 
-        fig.update_layout({'title': title})
+        fig.update_layout({'title': f'{title}_orbit{n}'})
 
         if 'png' in plot_format:
             fig.write_image(
-                f'../logs/{folder}/{title}/fig_{df_orbit.iloc[0]["DATE"][:16].replace(" ", "_").replace(":", "-")}.png')
+                f'../logs/{folder}/{title}/fig_{n}.png')
         if 'html' in plot_format:
             fig.write_html(
-                f'../logs/{folder}/{title}/fig_{df_orbit.iloc[0]["DATE"][:16].replace(" ", "_").replace(":", "-")}.html')
+                f'../logs/{folder}/{title}/fig_{n}.html')
 
 
 # %% setup
@@ -990,8 +988,8 @@ print_(
 
 # %% load data
 
-df_train, breaks_train, orbits_train = load_data('../data/orbits/train/*.csv')
-df_test, breaks_test, orbits_test = load_data(
+df_train, orbits_train = load_data('../data/orbits/train/*.csv')
+df_test, orbits_test = load_data(
     '../data/orbits/test/*.csv', prev_len=len(df_train.index))
 
 
@@ -1007,6 +1005,7 @@ print_(f'selected features: {feats}')
 df_train = select_features(df_train, feats)
 df_test = select_features(df_test, feats)
 df_all = pd.concat([df_train, df_test])
+orbits_all = {**orbits_train, **orbits_test}
 
 dates = df_all.iloc[:, 0].values.tolist()
 labels_train_true = df_train.iloc[:, -1].values.tolist()
@@ -1114,6 +1113,14 @@ print_(f'support: {prf[3]}')
 print_(
     f'confusion matrix:\n{confusion_matrix(labels_test_true, labels_test_pred)}')
 
+for n in orbits_all:
+    f1 = precision_recall_fscore_support(labels_test_true[orbits_all[n][0]:orbits_all[n][1]],
+                                         labels_test_pred[orbits_all[n]
+                                                          [0]:orbits_all[n][1]],
+                                         average=None,
+                                         labels=np.unique(labels_test_true[orbits_all[n][0]:orbits_all[n][1]]))[2]
+    print_(f'orbit {n} {orbits_all[n]} f-score - {f1}')
+
 
 # %% plots
 
@@ -1121,17 +1128,18 @@ if plots != '':
     print_('plotting...')
     if '0' in plots:
         os.makedirs(f'../logs/{folder}/train-true')
-        plot_orbit(df_train, breaks_train, 'train-true')
+        plot_orbit(df_train, orbits_train, 'train-true')
     if '1' in plots:
         os.makedirs(f'../logs/{folder}/train-pred')
-        plot_orbit(df_train, breaks_train, 'train-pred',
+        plot_orbit(df_train, orbits_train, 'train-pred',
                    labels=labels_train_pred)
     if '2' in plots:
         os.makedirs(f'../logs/{folder}/test-true')
-        plot_orbit(df_test, breaks_test, 'test-true')
+        plot_orbit(df_test, orbits_test, 'test-true')
     if '3' in plots:
         os.makedirs(f'../logs/{folder}/test-pred')
-        plot_orbit(df_test, breaks_test, 'test-pred', labels=labels_test_pred)
+        plot_orbit(df_test, orbits_test, 'test-pred',
+                   labels=labels_test_pred)
     print_('plotting finished')
 
 

@@ -1,0 +1,1 @@
+n=0; while [[ $n -lt $1 ]]; do python gan.py $2 $3 $4; n=$((n+1)); done;
