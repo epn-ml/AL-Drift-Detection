@@ -326,7 +326,7 @@ def create_training_dataset(dataset, indices, drift_labels):
     return training_dataset
 
 
-def equalize_classes(features, max_count=300):
+def equalize_classes(features, max_count=200):
     modified_dataset = None
 
     labels = features[:, -1]
@@ -355,7 +355,7 @@ def concat_feature(data, idx, sequence_len=2):
     return np.hstack((data[idx:idx + sequence_len, :].flatten(), data[sequence_length - 1]))
 
 
-def equalize_and_concatenate(features, max_count=300, sequence_len=2):
+def equalize_and_concatenate(features, max_count=200, sequence_len=2):
     modified_features = features[:, :-1]
     modified_features = np.vstack(
         (np.zeros((sequence_len - 1, len(modified_features[sequence_len]))), modified_features))
@@ -512,7 +512,8 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     np.set_printoptions(suppress=True)
     np.set_printoptions(precision=2)
 
-    print_(f'starting drift detection from index = {index} (orbit {cur_orbit}, {dates[index]})')
+    print_(
+        f'starting drift detection from index = {index} (orbit {cur_orbit}, {dates[index]})')
     print_('===========================')
 
     # while index + training_window_size < len(features):
@@ -1011,6 +1012,7 @@ orbits_all = {**orbits_train, **orbits_test}
 dates = df_all.iloc[:, 0].values.tolist()
 labels_train_true = df_train.iloc[:, -1].values.tolist()
 labels_test_true = df_test.iloc[:, -1].values.tolist()
+labels_all_true = df_all.iloc[:, -1].values.tolist()
 
 # standardization
 features_all = df_all.iloc[:, 1:-1].values
@@ -1115,10 +1117,11 @@ print_(
     f'confusion matrix:\n{confusion_matrix(labels_test_true, labels_test_pred)}')
 
 for n in orbits_all:
-    f1 = precision_recall_fscore_support(all_pred[orbits_all[n][0]:orbits_all[n][1]],
-                                         all_pred[orbits_all[n][0]:orbits_all[n][1]],
+    f1 = precision_recall_fscore_support(labels_all_true[orbits_all[n][0]:orbits_all[n][1]],
+                                         all_pred[orbits_all[n][0]
+                                             :orbits_all[n][1]],
                                          average=None,
-                                         labels=np.unique(all_pred[orbits_all[n][0]:orbits_all[n][1]]))[2]
+                                         labels=np.unique(labels_all_true[orbits_all[n][0]:orbits_all[n][1]]))[2]
     print_(f'orbit {n} {orbits_all[n]} f-score - {f1}')
 
 
