@@ -537,7 +537,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
             # y_pred = y_pred + predicted.tolist()
             # y_true = y_true + data_labels
 
-            if index - no_drifts >= 500000: # TODO: limit by orbit and retrain GAN
+            if index - no_drifts >= 500000: # TODO: limit by orbit and retrain GAN, run on different datasets
                 if no_drifts != index:
                     print_(
                         f'no drifts detected from index {no_drifts} to {index}')
@@ -1093,6 +1093,13 @@ if len(labels_train_pred) < len(df_train.index):
 
 # %% evaluation
 
+for n in orbits_all:
+    f1 = precision_recall_fscore_support(labels_all_true[orbits_all[n][0]:orbits_all[n][1]],
+                                         all_pred[orbits_all[n][0]:orbits_all[n][1]],
+                                         average=None,
+                                         labels=np.unique(labels_all_true[orbits_all[n][0]:orbits_all[n][1]]))[2]
+    print_(f'orbit {n} {orbits_all[n]} f-score - {f1}')
+
 auc_value = accuracy_score(y_true=labels_train_true, y_pred=labels_train_pred)
 print_(f'accuracy value is {auc_value} for training dataset {dataset}')
 prf = precision_recall_fscore_support(
@@ -1114,13 +1121,6 @@ print_(f'f-score: {prf[2]}')
 print_(f'support: {prf[3]}')
 print_(
     f'confusion matrix:\n{confusion_matrix(labels_test_true, labels_test_pred)}')
-
-for n in orbits_all:
-    f1 = precision_recall_fscore_support(labels_all_true[orbits_all[n][0]:orbits_all[n][1]],
-                                         all_pred[orbits_all[n][0]:orbits_all[n][1]],
-                                         average=None,
-                                         labels=np.unique(labels_all_true[orbits_all[n][0]:orbits_all[n][1]]))[2]
-    print_(f'orbit {n} {orbits_all[n]} f-score - {f1}')
 
 
 # %% plots
