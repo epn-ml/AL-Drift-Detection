@@ -881,7 +881,7 @@ def plot_field(df):
     return fig
 
 
-def plot_orbit(df, orbits, title, draw=[1, 3], labels=None):
+def plot_orbit(df, orbits, title, draw=[1, 3]):
 
     global plot_format
 
@@ -889,8 +889,7 @@ def plot_orbit(df, orbits, title, draw=[1, 3], labels=None):
     colors = {0: 'red', 1: 'green', 2: 'yellow', 3: 'blue', 4: 'purple'}
 
     label_col = 'LABEL'
-    if labels is not None:
-        df['LABEL_PRED'] = labels
+    if 'pred' in title:
         label_col = 'LABEL_PRED'
 
     for n in orbits:
@@ -933,7 +932,7 @@ plot_format = 'png'
 if len(sys.argv) > 3:
     plot_format = sys.argv[3]
 
-# Set the number of training instances
+# Select dataset split
 set_number = 1
 if len(sys.argv) > 1:
     set_number = int(sys.argv[1])
@@ -1067,6 +1066,7 @@ all_pred = test_clfs(features_all, drifts, clfs)
 t2 = time.perf_counter()
 print_(f'testing time is {t2 - t1:.2f} seconds')
 
+df_all['LABEL_PRED'] = all_pred
 labels_train_pred = all_pred[:len(features_train)]
 labels_test_pred = all_pred[-len(features_test):]
 
@@ -1131,15 +1131,13 @@ if plots != '':
         plot_orbit(df_all, orbits_train, 'train-true')
     if '1' in plots:
         os.makedirs(f'../logs/{folder}/train-pred')
-        plot_orbit(df_all, orbits_train, 'train-pred',
-                   labels=labels_train_pred)
+        plot_orbit(df_all, orbits_train, 'train-pred')
     if '2' in plots:
         os.makedirs(f'../logs/{folder}/test-true')
         plot_orbit(df_all, orbits_test, 'test-true')
     if '3' in plots:
         os.makedirs(f'../logs/{folder}/test-pred')
-        plot_orbit(df_all, orbits_test, 'test-pred',
-                   labels=labels_test_pred)
+        plot_orbit(df_all, orbits_test, 'test-pred')
     print_('plotting finished')
 
 
