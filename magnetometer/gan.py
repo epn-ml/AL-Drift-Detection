@@ -444,7 +444,7 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
 
 
 def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=100, equalize=True, test_batch_size=4,
-                  seed=0, batch_size=8, lr=0.001, momentum=0.9, weight_decay=0.0005, training_window_size=100,
+                  seed=0, batch_size=8, lr=0.001, momentum=0.9, weight_decay=0.0005,
                   generator_batch_size=1, sequence_length=2, repeat_factor=4):
 
     random.seed(seed)
@@ -934,10 +934,10 @@ if len(sys.argv) > 3:
     plot_format = sys.argv[3]
 
 # Set the number of training instances
-training_window_size = 10000
+set_number = 1
 if len(sys.argv) > 1:
-    training_window_size = int(sys.argv[1])
-print_(f'training_window_size: {training_window_size}')
+    set_number = int(sys.argv[1])
+print_(f'set_number: {set_number}')
 
 # Set the number of epochs the GAN should be trained
 epochs = 20  # 50
@@ -989,9 +989,9 @@ print_(
 
 # %% load data
 
-df_train, orbits_train = load_data('../data/orbits/train/*.csv')
+df_train, orbits_train = load_data(f'../data/orbits{set_number}/train/*.csv')
 df_test, orbits_test = load_data(
-    '../data/orbits/test/*.csv', prev_len=len(df_train.index))
+    f'../data/orbits{set_number}/test/*.csv', prev_len=len(df_train.index))
 
 
 # %% select data
@@ -1045,7 +1045,6 @@ drifts = detect_drifts(features=features_all, orbits={**orbits_train, **orbits_t
                        steps_generator=steps_generator, seed=seed,
                        batch_size=batch_size, lr=lr, momentum=0.9,
                        weight_decay=weight_decay, test_batch_size=test_batch_size,
-                       training_window_size=training_window_size,
                        generator_batch_size=generator_batch_size, equalize=equalize,
                        sequence_length=sequence_length, repeat_factor=repeat_factor)
 t2 = time.perf_counter()
@@ -1129,17 +1128,17 @@ if plots != '':
     print_('plotting...')
     if '0' in plots:
         os.makedirs(f'../logs/{folder}/train-true')
-        plot_orbit(df_train, orbits_train, 'train-true')
+        plot_orbit(df_all, orbits_train, 'train-true')
     if '1' in plots:
         os.makedirs(f'../logs/{folder}/train-pred')
-        plot_orbit(df_train, orbits_train, 'train-pred',
+        plot_orbit(df_all, orbits_train, 'train-pred',
                    labels=labels_train_pred)
     if '2' in plots:
         os.makedirs(f'../logs/{folder}/test-true')
-        plot_orbit(df_test, orbits_test, 'test-true')
+        plot_orbit(df_all, orbits_test, 'test-true')
     if '3' in plots:
         os.makedirs(f'../logs/{folder}/test-pred')
-        plot_orbit(df_test, orbits_test, 'test-pred',
+        plot_orbit(df_all, orbits_test, 'test-pred',
                    labels=labels_test_pred)
     print_('plotting finished')
 
