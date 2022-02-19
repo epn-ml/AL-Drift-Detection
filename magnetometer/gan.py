@@ -1106,12 +1106,14 @@ if len(labels_train_pred) < len(df_train.index):
 # %% evaluation
 
 for n in orbits_all:
+    split = 'train'
+    if n in orbits_test:
+        split = 'test'
     f1 = precision_recall_fscore_support(labels_all_true[orbits_all[n][0]:orbits_all[n][1]],
-                                         all_pred[orbits_all[n][0]
-                                             :orbits_all[n][1]],
+                                         all_pred[orbits_all[n][0]:orbits_all[n][1]],
                                          average=None,
                                          labels=np.unique(labels_all_true[orbits_all[n][0]:orbits_all[n][1]]))[2]
-    print_(f'orbit {n} {orbits_all[n]} f-score - {f1}')
+    print_(f'{split} orbit {n} {orbits_all[n]} f-score - {f1}')
 
 auc_value = accuracy_score(y_true=labels_train_true, y_pred=labels_train_pred)
 print_(f'accuracy value is {auc_value} for training dataset {dataset}')
