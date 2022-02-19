@@ -811,8 +811,11 @@ def load_data(path, prev_len=0):
         split = 'testing'
 
     files = glob.glob(path)
-    files.sort(key=lambda x: (len(x), x))
-    # random.shuffle(files)  # shuffle or not?
+
+    if 'orbits3' in path:
+        random.shuffle(files)
+    else:
+        files.sort(key=lambda x: (len(x), x))
     li = []
     orbits = {}
     df_len = prev_len
