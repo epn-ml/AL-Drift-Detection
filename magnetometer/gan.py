@@ -478,6 +478,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     cur_orbit = 1
     drift_labels = []
     drifts = {}
+    orbit_drifts = {0: 0}
 
     temp_label = [0]
     initial_epochs = epochs * 2
@@ -537,7 +538,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
             # y_pred = y_pred + predicted.tolist()
             # y_true = y_true + data_labels
 
-            if index - no_drifts >= 500000: # TODO: limit by orbit and retrain GAN, run on different datasets
+            if index - no_drifts >= 500000:  # TODO: limit by orbit and retrain GAN, run on different datasets
                 if no_drifts != index:
                     print_(
                         f'no drifts detected from index {no_drifts} to {index}')
@@ -580,6 +581,11 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         else:
             print_(f'add {generator_label} to drift labels')
             drift_labels.append(generator_label)
+
+        if cur_orbit in orbit_drifts:
+            orbit_drifts[cur_orbit].append(drift_labels[-1])
+        else:
+            orbit_drifts[cur_orbit] = [drift_labels[-1]]
 
         if max_idx != generator_label:
             # Increase the max_idx by 1 if it is above the previous drift
@@ -697,8 +703,12 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     #     f'stopping drift detection, {index} + {training_window_size} >= {len(features)}')
     print_(
         f'stopping drift detection, {index} >= {orbits_idx[-1][-1]}')
-    print_(drifts_detected)
-    print_(drift_labels)
+    print_(f'drifts_detected = {drifts_detected}')
+    print_(f'drift_labels = {drift_labels}')
+    print_(f'orbit_drifts = {orbit_drifts}')
+    if len(orbits) == len(orbit_drifts):
+        print_(
+            f'orbit_drifts2 = {dict(zip(list(orbits.keys()), list(orbit_drifts.values())))}')
     drifts_detected.append(len(features))
     drift_labels = [0] + drift_labels
 
@@ -1039,7 +1049,7 @@ features = features / max_features
 """
 
 t1 = time.perf_counter()
-drifts = detect_drifts(features=features_all, orbits={**orbits_train, **orbits_test},
+drifts = detect_drifts(features=features_all, orbits=orbits_all,
                        dates=dates, device=device, epochs=epochs,
                        steps_generator=steps_generator, seed=seed,
                        batch_size=batch_size, lr=lr, momentum=0.9,
@@ -1094,7 +1104,8 @@ if len(labels_train_pred) < len(df_train.index):
 
 for n in orbits_all:
     f1 = precision_recall_fscore_support(labels_all_true[orbits_all[n][0]:orbits_all[n][1]],
-                                         all_pred[orbits_all[n][0]:orbits_all[n][1]],
+                                         all_pred[orbits_all[n][0]
+                                             :orbits_all[n][1]],
                                          average=None,
                                          labels=np.unique(labels_all_true[orbits_all[n][0]:orbits_all[n][1]]))[2]
     print_(f'orbit {n} {orbits_all[n]} f-score - {f1}')
