@@ -538,7 +538,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
             # y_pred = y_pred + predicted.tolist()
             # y_true = y_true + data_labels
 
-            if index - no_drifts >= 500000:  # TODO: limit by orbit and retrain GAN, run on different datasets
+            if index - no_drifts >= 500000:  # TODO: limit by orbit and retrain GAN
                 if no_drifts != index:
                     print_(
                         f'no drifts detected from index {no_drifts} to {index}')
