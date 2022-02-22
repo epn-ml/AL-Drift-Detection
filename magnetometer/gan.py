@@ -812,7 +812,7 @@ def load_data(path, prev_len=0):
 
     files = glob.glob(path)
 
-    if 'orbits3' in path:
+    if 'orbits3' in path or 'orbits4' in path:
         random.shuffle(files)
     else:
         files.sort(key=lambda x: (len(x), x))
