@@ -473,6 +473,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     discriminator = discriminator.to(device=device)
 
     # drift_indices = [(0, training_window_size)]  # Initial training window
+    orbit_numbers = list(orbits.keys())
     orbits_idx = list(orbits.values())
     drift_indices = [orbits_idx[0]]
     cur_orbit = 1
@@ -513,7 +514,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     np.set_printoptions(precision=2)
 
     print_(
-        f'starting drift detection from index = {index} (orbit {cur_orbit}, {dates[index]})')
+        f'starting drift detection from index = {index} (orbit {orbit_numbers[cur_orbit]}, {dates[index]})')
     print_('===========================')
 
     # while index + training_window_size < len(features):
@@ -526,7 +527,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         if not np.array_equal(max_idx, max_idx_prev):
             print_(
-                f'max_idx {max_idx_prev} -> {max_idx} [{index}] (orbit {cur_orbit}, {dates[index]})')
+                f'max_idx {max_idx_prev} -> {max_idx} [{index}] (orbit {orbit_numbers[cur_orbit]}, {dates[index]})')
             # print_(f'prob = {prob.cpu().detach().numpy()}')
             # print_(f'discriminator output:\n{result.cpu().detach().numpy()}')
             max_idx_prev = max_idx
@@ -549,7 +550,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
                     sys.exit()
 
             index += test_batch_size
-            if index > orbits_idx[cur_orbit][1]:
+            if index >= orbits_idx[cur_orbit][1]:
                 cur_orbit += 1
 
             continue
@@ -564,13 +565,52 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         # print_('========== START ==========')
 
+        if index > orbits_idx[cur_orbit][0] and not drift_labels:
+
+            print_(f'retraining GAN on larger window')
+
+            generator.train()
+            discriminator.train()
+
+            print_(f'training dataset indices = {drift_indices}')
+            print_(f'training dataset labels  = {[0]}')
+
+            training_dataset = create_training_dataset(
+                dataset=features, indices=drift_indices, drift_labels=[0])
+
+            generator, discriminator = train_gan(features=training_dataset, device=device, discriminator=discriminator,
+                                                 generator=generator, epochs=initial_epochs, steps_generator=steps_generator,
+                                                 seed=seed, batch_size=batch_size, lr=lr, momentum=momentum, equalize=equalize,
+                                                 max_label=generator_label, generator_batch_size=generator_batch_size,
+                                                 weight_decay=weight_decay, sequence_length=sequence_length)
+
+            generator.eval()
+            discriminator.eval()
+
+            index += test_batch_size
+            if index >= orbits_idx[cur_orbit][1]:
+                cur_orbit += 1
+
+            continue
+
+        elif index > orbits_idx[cur_orbit][0]:
+
+            print_(f'detected drift in the middle of an orbit')
+
+            print_(
+                f'add {(orbits_idx[cur_orbit][0], index)} (orbit {orbit_numbers[cur_orbit]}) to drift indices')
+            drift_indices.append((orbits_idx[cur_orbit][0], index))
+
+            print_(f'add {drift_labels[-1]} to drift labels')
+            drift_labels.append(drift_labels[-1])
+
         max_idx = max_idx[0]
         # Drift detected
         # print_(
         #     f'add {(index, index+training_window_size)} to drift indices')
         # drift_indices.append((index, index+training_window_size))
         print_(
-            f'add orbit {cur_orbit}, {(index, orbits_idx[cur_orbit][1])} to drift indices')
+            f'add {(index, orbits_idx[cur_orbit][1])} (orbit {orbit_numbers[cur_orbit]}) to drift indices')
         drift_indices.append((index, orbits_idx[cur_orbit][1]))
 
         if temp_label[0] != 0:
@@ -708,7 +748,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     print_(f'orbit_drifts = {orbit_drifts}')
     if len(orbits) == len(orbit_drifts):
         print_(
-            f'orbit_drifts2 = {dict(zip(list(orbits.keys()), list(orbit_drifts.values())))}')
+            f'orbit_drifts2 = {dict(zip(orbit_numbers, list(orbit_drifts.values())))}')
     drifts_detected.append(len(features))
     drift_labels = [0] + drift_labels
 
@@ -1110,7 +1150,8 @@ for n in orbits_all:
     if n in orbits_test:
         split = 'test'
     f1 = precision_recall_fscore_support(labels_all_true[orbits_all[n][0]:orbits_all[n][1]],
-                                         all_pred[orbits_all[n][0]:orbits_all[n][1]],
+                                         all_pred[orbits_all[n][0]
+                                             :orbits_all[n][1]],
                                          average=None,
                                          labels=np.unique(labels_all_true[orbits_all[n][0]:orbits_all[n][1]]))[2]
     print_(f'{split} orbit {n} {orbits_all[n]} f-score - {f1}')
