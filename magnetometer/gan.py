@@ -568,6 +568,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         if index > orbits_idx[cur_orbit][0] and not drift_labels:
 
             print_(f'retraining GAN on larger window')
+            drift_indices = [(orbits_idx[0][0], index)]
 
             generator.train()
             discriminator.train()
@@ -749,6 +750,10 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     if len(orbits) == len(orbit_drifts):
         print_(
             f'orbit_drifts2 = {dict(zip(orbit_numbers, list(orbit_drifts.values())))}')
+    print_(f'len(drifts_detected) = {len(drifts_detected)}')
+    print_(f'len(drift_labels) = {len(drift_labels)}')
+    print_(f'len(drift_indices) = {len(drift_indices)}')
+    print_(f'len(orbit_drifts) = {len(orbit_drifts)}')
     drifts_detected.append(len(features))
     drift_labels = [0] + drift_labels
 
