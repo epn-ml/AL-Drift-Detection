@@ -565,7 +565,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
             if drift_labels:
                 drift_labels.append(drift_labels[-1])
             else:
-                drift_labels.append([0])
+                drift_labels.append(0)
             print_(f'add {drift_labels[-1]} to drift labels')
 
             no_drifts = index
