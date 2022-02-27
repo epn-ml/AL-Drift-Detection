@@ -513,7 +513,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     np.set_printoptions(precision=2)
 
     print_(
-        f'starting drift detection from index = {index} (orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]}, {dates[index]})')
+        f'starting drift detection from index = {index} (orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]})')
     print_('===========================')
 
     # while index + training_window_size < len(features):
@@ -526,7 +526,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         if not np.array_equal(max_idx, max_idx_prev):
             print_(
-                f'max_idx {max_idx_prev} -> {max_idx} [{index}] (orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]}, {dates[index]})')
+                f'max_idx {max_idx_prev} -> {max_idx} [{index}] (orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]})')
             # print_(f'prob = {prob.cpu().detach().numpy()}')
             # print_(f'discriminator output:\n{result.cpu().detach().numpy()}')
             max_idx_prev = max_idx
@@ -555,7 +555,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         if no_drifts != index:
             print_(f'no drifts detected from index {no_drifts} to {index}')
-            print_(f'detected drift in the middle of an orbit')
+            print_(f'detected drift in the middle of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]}')
             # print_(
             #     f'predict and partial fit to features[{no_drifts}:{index}] {(dates[no_drifts], dates[index])}')
 
@@ -571,7 +571,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
             no_drifts = index
 
         else:
-            print_(f'detected drift at the start of an orbit')
+            print_(f'detected drift at the start of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]}')
 
         # print_('========== START ==========')
 
@@ -597,6 +597,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
             # Increase the max_idx by 1 if it is above the previous drift
             if temp_label[0] <= max_idx and temp_label[0] != 0:
                 max_idx += 1
+            print_(f'temp_label {temp_label} -> {[max_idx]}')
             temp_label = [max_idx]
             # We reset the top layer predictions because the drift order has changed and the network should be retrained
             print_(f'discriminator.reset_top_layer()')
@@ -606,6 +607,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         else:
             # If this is a new drift, label for the previous drift training dataset is the previous highest label
             # which is the generator label
+            print_(f'temp_label {temp_label} -> {[0]}')
             temp_label = [0]
             print_(f'discriminator.update()')
             discriminator.update()
@@ -700,12 +702,12 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         # index += training_window_size
         index = orbits_idx[cur_orbit][1]
         print_(
-            f'continuing drift detection from {index} (end of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]}, {dates[index]})')
+            f'continuing drift detection from {index} (end of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]})')
         cur_orbit += 1
 
         no_drifts = index
 
-        # print_('==========  END  ==========')
+        print_('===========================')
 
     # print_(
     #     f'stopping drift detection, {index} + {training_window_size} >= {len(features)}')
@@ -838,7 +840,8 @@ def load_data(path, prev_len=0):
     for filename in files:
         df = pd.read_csv(filename, index_col=None, header=0).dropna()
         li.append(df)
-        n = int(filename.split('_')[-1].split('.')[0])
+        # n = int(filename.split('_')[-1].split('.')[0])
+        n = df.iloc[0]['ORBIT']
         orbits[n] = (df_len, df_len + len(df.index))
         df_len = df_len + len(df.index)
         print_(
