@@ -478,7 +478,6 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     drift_indices = [orbits_idx[0]]
     cur_orbit = 1
     drift_labels = []
-    drifts = {}
 
     temp_label = [0]
     initial_epochs = epochs * 2
@@ -555,7 +554,8 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         if no_drifts != index:
             print_(f'no drifts detected from index {no_drifts} to {index}')
-            print_(f'detected drift in the middle of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]}')
+            print_(
+                f'detected drift in the middle of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]}')
             # print_(
             #     f'predict and partial fit to features[{no_drifts}:{index}] {(dates[no_drifts], dates[index])}')
 
@@ -571,7 +571,8 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
             no_drifts = index
 
         else:
-            print_(f'detected drift at the start of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]}')
+            print_(
+                f'detected drift at the start of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]}')
 
         # print_('========== START ==========')
 
@@ -585,10 +586,14 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         if temp_label[0] != 0:
             # add the index of the previous drift if it was a recurring drift
+            print_(
+                f'add temp_label {temp_label[0]} (!= 0) to drift labels, not generator_label {generator_label}')
             drift_labels.append(temp_label[0])
         else:
+            print_(
+                f'add generator_label {generator_label} to drift labels, not temp_label {temp_label[0]}')
             drift_labels.append(generator_label)
-        print_(f'add {drift_labels[-1]} to drift labels')
+        # print_(f'add {drift_labels[-1]} to drift labels')
 
         if len(drift_labels) > 1:
             print_(f'drift from {drift_labels[-2]} to {drift_labels[-1]}')
@@ -612,6 +617,8 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
             print_(f'discriminator.update()')
             discriminator.update()
             discriminator = discriminator.to(device)
+            print_(
+                f'generator_label {generator_label} -> {generator_label + 1}')
             generator_label += 1
 
         generator = Generator(
@@ -621,8 +628,8 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         generator.train()
         discriminator.train()
 
-        print_(f'training dataset indices = {drift_indices}')
-        print_(f'training dataset labels  = {drift_labels} + {temp_label}')
+        # print_(f'training dataset indices = {drift_indices}')
+        # print_(f'training dataset labels  = {drift_labels} + {temp_label}')
         training_dataset = create_training_dataset(dataset=features,
                                                    indices=drift_indices,
                                                    drift_labels=drift_labels+temp_label)
@@ -721,20 +728,10 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     print_(f'len(drift_indices) = {len(drift_indices)}')
     drifts_detected.append(len(features))
     drift_labels = [0] + drift_labels
-
-    for i, idx in enumerate(drift_indices):
-        if idx != drift_indices[-1]:
-            if idx[1] != drift_indices[i+1][0]:
-                print_(f'gap between {idx} and {drift_indices[i+1]} ({i} and {i+1})')
-
-    for i, d in enumerate(drift_labels):
-        if d in drifts:
-            drifts[d].append((drifts_detected[i], drifts_detected[i+1]))
-        else:
-            drifts[d] = [(drifts_detected[i], drifts_detected[i+1])]
+    drifts = list(zip(drift_labels, drift_indices))
 
     for d in drifts:
-        print_(f'{d}: {drifts[d]}')
+        print_(f'{d[0]}: {d[1]}')
 
     print_(generator)
     print_(discriminator)
@@ -756,12 +753,49 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     return drifts
 
 
+# def train_clfs(features, labels, drifts):
+
+#     clfs = {}
+#     for d in drifts:
+#         clfs[d] = HoeffdingTreeClassifier()
+
+#     classes = np.unique(labels)
+#     weights = compute_class_weight(
+#         'balanced', classes=classes, y=labels)
+#     print_(f'weights = {weights}')
+
+#     for d in drifts:
+
+#         print_(f'training classifier for drift {d}...')
+
+#         for indices in drifts[d]:
+
+#             if indices[0] < len(features):
+
+#                 print_(f'{indices}')
+#                 bound = indices[1]
+
+#                 if bound > len(features):
+#                     bound = len(features)
+#                     print_(
+#                         f'index {indices[1]} out of bounds, set to {len(features)}')
+
+#                 if not d in clfs:
+#                     clfs[d] = HoeffdingTreeClassifier()
+#                     print_(f'create new classifier for drift {d}')
+
+#                 clfs[d] = fit(clf=clfs[d], features=features[indices[0]:bound, :],
+#                               labels=labels[indices[0]:bound], classes=classes, weights=weights)
+#             else:
+
+#                 print_(f'{indices} out of bounds, ignoring')
+
+#     return clfs
+
+
 def train_clfs(features, labels, drifts):
 
     clfs = {}
-    for d in drifts:
-        clfs[d] = HoeffdingTreeClassifier()
-
     classes = np.unique(labels)
     weights = compute_class_weight(
         'balanced', classes=classes, y=labels)
@@ -769,31 +803,51 @@ def train_clfs(features, labels, drifts):
 
     for d in drifts:
 
-        print_(f'training classifier for drift {d}...')
+        if d[1][0] < len(features):
 
-        for indices in drifts[d]:
+            bound = d[1][1]
 
-            if indices[0] < len(features):
+            if bound > len(features):
+                bound = len(features)
+                print_(
+                    f'index {d[1][1]} is outside of training orbits, set to {len(features)}')
 
-                print_(f'{indices}')
-                bound = indices[1]
+            if not d[0] in clfs:
+                clfs[d] = HoeffdingTreeClassifier()
+                print_(f'create new classifier for drift {d}')
 
-                if bound > len(features):
-                    bound = len(features)
-                    print_(
-                        f'index {indices[1]} out of bounds, set to {len(features)}')
+            print_(
+                f'training classifier for drift {d[0]} - {(d[1][0], bound)}...')
+            clfs[d] = fit(clf=clfs[d], features=features[d[1][0]:bound, :],
+                          labels=labels[d[1][0]:bound], classes=classes, weights=weights)
 
-                if not d in clfs:
-                    clfs[d] = HoeffdingTreeClassifier()
-                    print_(f'create new classifier for drift {d}')
-
-                clfs[d] = fit(clf=clfs[d], features=features[indices[0]:bound, :],
-                              labels=labels[indices[0]:bound], classes=classes, weights=weights)
-            else:
-
-                print_(f'{indices} out of bounds, ignoring')
+        else:
+            print_(f'{d[1]} is outside of training orbits, ignoring')
 
     return clfs
+
+
+# def test_clfs(features, drifts, clfs):
+
+#     labels = list(range(len(features)))
+
+#     for d in drifts:
+
+#         if d in clfs:
+#             drift = d
+#             print_(f'testing classifier for drift {d}...')
+#         else:
+#             drift = min(clfs.keys(), key=lambda x: abs(x-d))
+#             print_(
+#                 f'no classifier for drift {d}, testing one for drift {drift}...')
+
+#         for indices in drifts[d]:
+
+#             print_(f'{indices}')
+#             labels[indices[0]:indices[1]] = predict(
+#                 clfs[drift], features[indices[0]:indices[1]])
+
+#     return labels
 
 
 def test_clfs(features, drifts, clfs):
@@ -802,19 +856,16 @@ def test_clfs(features, drifts, clfs):
 
     for d in drifts:
 
-        if d in clfs:
-            drift = d
-            print_(f'testing classifier for drift {d}...')
+        if d[0] in clfs:
+            drift = d[0]
         else:
-            drift = min(clfs.keys(), key=lambda x: abs(x-d))
+            drift = min(clfs.keys(), key=lambda x: abs(x-d[0]))
             print_(
-                f'no classifier for drift {d}, testing one for drift {drift}...')
+                f'no classifier for drift {d[0]}, switching to {drift}')
 
-        for indices in drifts[d]:
-
-            print_(f'{indices}')
-            labels[indices[0]:indices[1]] = predict(
-                clfs[drift], features[indices[0]:indices[1]])
+        print_(f'testing classifier for drift {drift} - {d[1]}...')
+        labels[d[1][0]:d[1][1]] = predict(
+            clfs[drift], features[d[1][0]:d[1][1]])
 
     return labels
 
