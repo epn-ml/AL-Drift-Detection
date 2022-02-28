@@ -813,8 +813,8 @@ def train_clfs(features, labels, drifts):
                     f'index {d[1][1]} is outside of training orbits, set to {len(features)}')
 
             if not d[0] in clfs:
-                clfs[d] = HoeffdingTreeClassifier()
-                print_(f'create new classifier for drift {d}')
+                clfs[d[0]] = HoeffdingTreeClassifier()
+                print_(f'create new classifier for drift {d[0]}')
 
             print_(
                 f'training classifier for drift {d[0]} - {(d[1][0], bound)}...')
