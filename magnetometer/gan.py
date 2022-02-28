@@ -628,8 +628,10 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         generator.train()
         discriminator.train()
 
-        print_(f'training dataset indices = {(drift_indices[0][0], drift_indices[-1][-1])}')
-        print_(f'training dataset labels len = {len(drift_labels)}, min = {min(drift_labels)}, max = {max(drift_labels)}')
+        print_(
+            f'training dataset indices = {(drift_indices[0][0], drift_indices[-1][-1])}')
+        print_(
+            f'training dataset labels len = {len(drift_labels)}, min = {min(drift_labels)}, max = {max(drift_labels)}')
         t0 = time.perf_counter()
         training_dataset = create_training_dataset(dataset=features,
                                                    indices=drift_indices,
@@ -820,8 +822,8 @@ def train_clfs(features, labels, drifts):
 
             print_(
                 f'training classifier for drift {d[0]} - {(d[1][0], bound)}...')
-            clfs[d[0]] = fit(clf=clfs[d], features=features[d[1][0]:bound, :],
-                          labels=labels[d[1][0]:bound], classes=classes, weights=weights)
+            clfs[d[0]] = fit(clf=clfs[d[0]], features=features[d[1][0]:bound, :],
+                             labels=labels[d[1][0]:bound], classes=classes, weights=weights)
 
         else:
             print_(f'{d[1]} is outside of training orbits, ignoring')
@@ -1179,7 +1181,8 @@ for n in orbits_all:
     if n in orbits_test:
         split = 'test'
     f1 = precision_recall_fscore_support(labels_all_true[orbits_all[n][0]:orbits_all[n][1]],
-                                         all_pred[orbits_all[n][0]:orbits_all[n][1]],
+                                         all_pred[orbits_all[n][0]
+                                             :orbits_all[n][1]],
                                          average=None,
                                          labels=np.unique(labels_all_true[orbits_all[n][0]:orbits_all[n][1]]))[2]
     print_(f'{split} orbit {n} {orbits_all[n]} f-score - {f1}')
