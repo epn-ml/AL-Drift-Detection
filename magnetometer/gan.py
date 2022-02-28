@@ -820,7 +820,7 @@ def train_clfs(features, labels, drifts):
 
             print_(
                 f'training classifier for drift {d[0]} - {(d[1][0], bound)}...')
-            clfs[d] = fit(clf=clfs[d], features=features[d[1][0]:bound, :],
+            clfs[d[0]] = fit(clf=clfs[d], features=features[d[1][0]:bound, :],
                           labels=labels[d[1][0]:bound], classes=classes, weights=weights)
 
         else:
