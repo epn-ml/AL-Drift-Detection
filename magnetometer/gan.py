@@ -559,14 +559,14 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
             # print_(
             #     f'predict and partial fit to features[{no_drifts}:{index}] {(dates[no_drifts], dates[index])}')
 
-            drift_indices.append((no_drifts, index))
-            print_(f'add {drift_indices[-1]} to drift indices')
+            # drift_indices.append((no_drifts, index))
+            # print_(f'add {drift_indices[-1]} to drift indices')
 
-            if drift_labels:
-                drift_labels.append(drift_labels[-1])
-            else:
-                drift_labels.append(0)
-            print_(f'add {drift_labels[-1]} to drift labels')
+            # if drift_labels:
+            #     drift_labels.append(drift_labels[-1])
+            # else:
+            #     drift_labels.append(0)
+            # print_(f'add {drift_labels[-1]} to drift labels')
 
             no_drifts = index
 
@@ -586,14 +586,10 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         if temp_label[0] != 0:
             # add the index of the previous drift if it was a recurring drift
-            print_(
-                f'add temp_label {temp_label[0]} (!= 0) to drift labels, not generator_label {generator_label}')
             drift_labels.append(temp_label[0])
         else:
-            print_(
-                f'add generator_label {generator_label} to drift labels, not temp_label {temp_label[0]}')
             drift_labels.append(generator_label)
-        # print_(f'add {drift_labels[-1]} to drift labels')
+        print_(f'add {drift_labels[-1]} to drift labels')
 
         if len(drift_labels) > 1:
             print_(f'drift from {drift_labels[-2]} to {drift_labels[-1]}')
@@ -602,7 +598,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
             # Increase the max_idx by 1 if it is above the previous drift
             if temp_label[0] <= max_idx and temp_label[0] != 0:
                 max_idx += 1
-            print_(f'temp_label {temp_label} -> {[max_idx]}')
+            # print_(f'temp_label {temp_label} -> {[max_idx]}')
             temp_label = [max_idx]
             # We reset the top layer predictions because the drift order has changed and the network should be retrained
             print_(f'discriminator.reset_top_layer()')
@@ -612,13 +608,13 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         else:
             # If this is a new drift, label for the previous drift training dataset is the previous highest label
             # which is the generator label
-            print_(f'temp_label {temp_label} -> {[0]}')
+            # print_(f'temp_label {temp_label} -> {[0]}')
             temp_label = [0]
             print_(f'discriminator.update()')
             discriminator.update()
             discriminator = discriminator.to(device)
-            print_(
-                f'generator_label {generator_label} -> {generator_label + 1}')
+            # print_(
+            #     f'generator_label {generator_label} -> {generator_label + 1}')
             generator_label += 1
 
         generator = Generator(
@@ -636,7 +632,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         training_dataset = create_training_dataset(dataset=features,
                                                    indices=drift_indices,
                                                    drift_labels=drift_labels+temp_label)
-        print_(f'created training dataset {time.perf_counter() - t0}')
+        print_(f'created training dataset in {time.perf_counter() - t0:.2f} seconds')
         # print_(f'len(training_dataset) = {len(training_dataset)}')
 
         generator, discriminator = train_gan(features=training_dataset, device=device,
