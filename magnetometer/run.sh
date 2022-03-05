@@ -1,7 +1,6 @@
 #!/bin/bash
-n=3
-for i in {1..$n}; do
+for i in {1..3}; do
     echo $(date +"%T")
-    echo "$i/$n"
+    echo "$i/3"
     python gan.py $2 png
 done
