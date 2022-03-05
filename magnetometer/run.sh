@@ -1,6 +1,7 @@
 #!/bin/bash
-for n in {1..$1}; do
+n=$1
+for i in {1..$n}; do
     echo $(date +"%T")
-    echo "$n/$1"
-    python gan.py $n $2 png
+    echo "$i/$n"
+    python gan.py $i $2 png
 done
