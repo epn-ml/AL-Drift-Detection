@@ -2,5 +2,5 @@
 for i in {1..3}; do
     echo $(date +"%T")
     echo "$i/3"
-    python gan.py $2 png
+    python gan.py $1 png
 done
