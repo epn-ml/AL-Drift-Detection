@@ -1,6 +1,6 @@
 #!/bin/bash
-for i in {1..3}; do
+for i in {1..4}; do
     echo $(date +"%T")
-    echo "$i/3"
+    echo "$i/4"
     python gan.py $i $1 png
 done
