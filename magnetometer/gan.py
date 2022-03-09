@@ -15,6 +15,8 @@ from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support)
 from sklearn.utils.class_weight import compute_class_weight
 from skmultiflow.trees import HoeffdingTreeClassifier
+from tensorflow import keras
+from tensorflow.keras import layers
 from torch import nn
 from torch.autograd import Variable
 from torch.nn import Linear, Module, ReLU, Sequential
@@ -111,6 +113,20 @@ class Discriminator(Module):
             nn.Sigmoid())
 
         return net
+
+
+def cnn(shape):
+    model = keras.Sequential()
+    model.add(layers.Conv1D(64, 3, activation='relu', input_shape=shape))
+    model.add(layers.Dense(16, activation='relu'))
+    model.add(layers.MaxPooling1D())
+    model.add(layers.Flatten())
+    model.add(layers.Dense(5, activation='softmax'))
+
+    model.compile(loss=keras.losses.SparseCategoricalCrossentropy(),
+                  optimizer='adam', metrics=['accuracy'])
+
+    return model
 
 
 def fit_and_predict(clf, features, labels, classes, weights):
@@ -472,7 +488,6 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     generator = generator.to(device=device)
     discriminator = discriminator.to(device=device)
 
-    # drift_indices = [(0, training_window_size)]  # Initial training window
     orbit_numbers = list(orbits.keys())
     orbits_idx = list(orbits.values())
     drift_indices = [orbits_idx[0]]
@@ -481,13 +496,6 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
     temp_label = [0]
     initial_epochs = epochs * 2
-
-    # print_(
-    #     f'reset, fit and predict on initial training window {(0, training_window_size)} {(dates[0], dates[training_window_size])}')
-    # predicted, clf = fit_and_predict(
-    #     clf=clf, features=x, labels=y, classes=classes, weights=weights)
-    # y_pred = y_pred + predicted.tolist()
-    # y_true = y_true + y
 
     # Create training dataset
     print_(f'training dataset indices = {drift_indices}')
@@ -532,15 +540,9 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         # 1st condition is always false? (max_idx[1:] != ...)
         if np.all(max_idx != max_idx[0]) or max_idx[0] == 0:
-            # predicted, clf = predict_and_partial_fit(clf=clf, features=data, labels=data_labels,
-            #                                          classes=classes, weights=weights)
-            # y_pred = y_pred + predicted.tolist()
-            # y_true = y_true + data_labels
 
             if index - no_drifts >= 500000:
                 print_(f'no drifts detected from index {no_drifts} to {index}')
-                # print_(
-                #     f'predict and partial fit to features[{no_drifts}:{index}] {(dates[no_drifts], dates[index])}')
 
                 sys.exit()
 
@@ -556,8 +558,6 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
             print_(f'no drifts detected from index {no_drifts} to {index}')
             print_(
                 f'detected drift in the middle of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]}')
-            # print_(
-            #     f'predict and partial fit to features[{no_drifts}:{index}] {(dates[no_drifts], dates[index])}')
 
             drift_indices.append((no_drifts, index))
 
@@ -565,7 +565,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
                 drift_labels.append(drift_labels[-1])
             else:
                 drift_labels.append(0)
-            
+
             print_(f'add drift {drift_labels[-1]} {drift_indices[-1]}')
 
             no_drifts = index
@@ -578,9 +578,6 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         max_idx = max_idx[0]
         # Drift detected
-        # print_(
-        #     f'add {(index, index+training_window_size)} to drift indices')
-        # drift_indices.append((index, index+training_window_size))
         drift_indices.append((index, orbits_idx[cur_orbit][1]))
 
         if temp_label[0] != 0:
@@ -641,66 +638,8 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         generator.eval()
         discriminator.eval()
 
-        # Set the indices for the training window
-        # training_idx_start = index
-        # training_idx_end = training_idx_start + training_window_size
-
-        # If a previous drift has occurred use those for training the classifier but not predict on them
-        # if temp_label[0] != 0:
-        #     print_(f'reset classifier')
-        #     clf.reset()  # don't reset?
-
-        #     for indices, label in zip(drift_indices[:-1], drift_labels):
-        #         if label == temp_label[0]:
-        #             rows = features[indices[0]:indices[1], :]
-        #             targets = labels[indices[0]:indices[1]]
-
-        #             # # Randomly sample .1 of the data
-        #             # len_indices = list(range(0, rows.shape[0]))
-        #             # chosen_indices = random.sample(
-        #             #     len_indices, int(rows.shape[0] / repeat_factor))
-
-        #             # # Append rows and targets. Do random.sample and then split the matrix
-        #             # rows = rows[chosen_indices]
-        #             # targets = [targets[x] for x in chosen_indices]
-        #             ut = np.unique(targets)
-        #             sample_weights = compute_sample_weight(
-        #                 dict(zip(ut, weights[ut])), y=targets)
-
-        #             print_(
-        #                 f'partial fit to features[{indices[0]}:{indices[1]}] {(dates[indices[0]], dates[indices[1]])}')
-        #             # print_(ut)
-        #             clf.partial_fit(X=rows, y=targets,
-        #                             classes=classes, sample_weight=sample_weights)
-
-        #     print_(
-        #         f'predict and partial fit to features[{training_idx_start}:{training_idx_end}] {(dates[training_idx_start], dates[training_idx_end])}')
-        #     predicted, clf = predict_and_partial_fit(clf=clf, features=features[training_idx_start:training_idx_end, :],
-        #                                              labels=labels[training_idx_start:training_idx_end],
-        #                                              classes=classes, weights=weights)
-
-        # else:
-        #     print_(
-        #         f'reset, fit and predict on features[{training_idx_start}:{training_idx_end}] {(dates[training_idx_start], dates[training_idx_end])}')
-        #     predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
-        #                                      labels=labels[training_idx_start:training_idx_end],
-        #                                      classes=classes, weights=weights)
-
-        # """
-        # predicted, clf = fit_and_predict(clf=clf, features=features[training_idx_start:training_idx_end, :],
-        #                                  labels=labels[training_idx_start:training_idx_end],
-        #                                  classes=classes)
-        # """
-
-        # # Add the predicted and true values to the list
-        # y_pred = y_pred + predicted.tolist()
-        # y_true = y_true + labels[training_idx_start:training_idx_end]
-
-        # print_(
-        #     f'add index = {index} ({dates[index]}) to drifts detected')
         drifts_detected.append(index)
 
-        # index += training_window_size
         index = orbits_idx[cur_orbit][1]
         print_(
             f'continuing drift detection from {index} (end of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]})')
@@ -730,61 +669,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     print_(generator)
     print_(discriminator)
 
-    # Test on the remaining features
-    # print_(
-    #     f'predict and partial fit to remaining features[{index}:{len(features)-1}] {(dates[index], dates[len(features)-1])}')
-    # predicted, clf = predict_and_partial_fit(
-    #     clf, features=features[index:, :], labels=labels[index:], classes=classes, weights=weights)
-    # y_pred = y_pred + predicted.tolist()
-    # y_true = y_true + labels[index:]
-
-    # save model
-    # torch.save(clf, f'../logs/model.pth')
-
-    # print_(f'drift_indices = {drift_indices}')
-    # print_(f'drift_labels = {drift_labels}')
-
     return drifts
-
-
-# def train_clfs(features, labels, drifts):
-
-#     clfs = {}
-#     for d in drifts:
-#         clfs[d] = HoeffdingTreeClassifier()
-
-#     classes = np.unique(labels)
-#     weights = compute_class_weight(
-#         'balanced', classes=classes, y=labels)
-#     print_(f'weights = {weights}')
-
-#     for d in drifts:
-
-#         print_(f'training classifier for drift {d}...')
-
-#         for indices in drifts[d]:
-
-#             if indices[0] < len(features):
-
-#                 print_(f'{indices}')
-#                 bound = indices[1]
-
-#                 if bound > len(features):
-#                     bound = len(features)
-#                     print_(
-#                         f'index {indices[1]} out of bounds, set to {len(features)}')
-
-#                 if not d in clfs:
-#                     clfs[d] = HoeffdingTreeClassifier()
-#                     print_(f'create new classifier for drift {d}')
-
-#                 clfs[d] = fit(clf=clfs[d], features=features[indices[0]:bound, :],
-#                               labels=labels[indices[0]:bound], classes=classes, weights=weights)
-#             else:
-
-#                 print_(f'{indices} out of bounds, ignoring')
-
-#     return clfs
 
 
 def train_clfs(features, labels, drifts):
@@ -807,13 +692,13 @@ def train_clfs(features, labels, drifts):
                     f'index {d[1][1]} is outside of training orbits, set to {len(features)}')
 
             if not d[0] in clfs:
-                clfs[d[0]] = HoeffdingTreeClassifier()
+                clfs[d[0]] = cnn(features[d[1][0]:bound, :].shape[1:])
                 print_(f'create new classifier for drift {d[0]}')
 
             print_(
                 f'training classifier for drift {d[0]} - {(d[1][0], bound)}...')
-            clfs[d[0]] = fit(clf=clfs[d[0]], features=features[d[1][0]:bound, :],
-                             labels=labels[d[1][0]:bound], classes=classes, weights=weights)
+            clfs[d[0]].fit(x=features[d[1][0]:bound, :], y=labels[d[1][0]:bound],
+                           batch_size=16, epochs=20, class_weight=weights)
 
         else:
             print_(f'{d[1]} is outside of training orbits, ignoring')
@@ -821,29 +706,6 @@ def train_clfs(features, labels, drifts):
     print_(f'trained classifiers for drifts - {clfs.keys()}')
 
     return clfs
-
-
-# def test_clfs(features, drifts, clfs):
-
-#     labels = list(range(len(features)))
-
-#     for d in drifts:
-
-#         if d in clfs:
-#             drift = d
-#             print_(f'testing classifier for drift {d}...')
-#         else:
-#             drift = min(clfs.keys(), key=lambda x: abs(x-d))
-#             print_(
-#                 f'no classifier for drift {d}, testing one for drift {drift}...')
-
-#         for indices in drifts[d]:
-
-#             print_(f'{indices}')
-#             labels[indices[0]:indices[1]] = predict(
-#                 clfs[drift], features[indices[0]:indices[1]])
-
-#     return labels
 
 
 def test_clfs(features, drifts, clfs):
@@ -862,6 +724,8 @@ def test_clfs(features, drifts, clfs):
         print_(f'testing classifier for drift {drift} - {d[1]}...')
         labels[d[1][0]:d[1][1]] = predict(
             clfs[drift], features[d[1][0]:d[1][1]])
+        pred = clfs[drift].predict(features[d[1][0]:d[1][1]])
+        labels[d[1][0]:d[1][1]] = pred.argmax(axis=-1)
 
     return labels
 
