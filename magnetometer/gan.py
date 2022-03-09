@@ -17,7 +17,7 @@ from sklearn.utils.class_weight import compute_class_weight
 from skmultiflow.trees import HoeffdingTreeClassifier
 from torch import nn
 from torch.autograd import Variable
-from torch.nn import Dropout, Linear, Module, ReLU, Sequential
+from torch.nn import Linear, Module, ReLU, Sequential
 from torch.optim import Adadelta
 from torch.utils.data import DataLoader
 
@@ -817,6 +817,8 @@ def train_clfs(features, labels, drifts):
 
         else:
             print_(f'{d[1]} is outside of training orbits, ignoring')
+
+    print_(f'trained classifiers for drifts - {clfs.keys()}')
 
     return clfs
 
