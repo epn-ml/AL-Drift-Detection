@@ -691,16 +691,16 @@ def train_clfs(features, labels, drifts):
                 print_(
                     f'index {d[1][1]} is outside of training orbits, set to {len(features)}')
 
-            if not d[0] in clfs:
-                clfs[d[0]] = cnn(features[d[1][0]:bound, :].shape[1:])
-                print_(f'create new classifier for drift {d[0]}')
-
             x = np.array(features[d[1][0]:bound, :], copy=True)
             x = x.reshape(-1, 10, 1)
 
+            if not d[0] in clfs:
+                print_(f'{x}')
+                clfs[d[0]] = cnn(x.shape[1:])
+                print_(f'create new classifier for drift {d[0]}')
+
             print_(
                 f'training classifier for drift {d[0]} - {(d[1][0], bound)}...')
-            print_(f'{x}')
             clfs[d[0]].fit(x=x, y=labels[d[1][0]:bound],
                            batch_size=16, epochs=20, class_weight=weights)
 
