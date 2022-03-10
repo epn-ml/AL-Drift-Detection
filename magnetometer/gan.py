@@ -695,9 +695,12 @@ def train_clfs(features, labels, drifts):
                 clfs[d[0]] = cnn(features[d[1][0]:bound, :].shape[1:])
                 print_(f'create new classifier for drift {d[0]}')
 
+            x = np.array(features[d[1][0]:bound, :], copy=True)
+            x = x.reshape(-1, 10, 1)
+
             print_(
                 f'training classifier for drift {d[0]} - {(d[1][0], bound)}...')
-            clfs[d[0]].fit(x=features[d[1][0]:bound, :], y=labels[d[1][0]:bound],
+            clfs[d[0]].fit(x=x, y=labels[d[1][0]:bound],
                            batch_size=16, epochs=20, class_weight=weights)
 
         else:
@@ -721,10 +724,12 @@ def test_clfs(features, drifts, clfs):
             print_(
                 f'no classifier for drift {d[0]}, switching to {drift}')
 
+        x = np.array(features[d[1][0]:d[1][1]], copy=True)
+        x = x.reshape(-1, 10, 1)
+
         print_(f'testing classifier for drift {drift} - {d[1]}...')
-        labels[d[1][0]:d[1][1]] = predict(
-            clfs[drift], features[d[1][0]:d[1][1]])
-        pred = clfs[drift].predict(features[d[1][0]:d[1][1]])
+        labels[d[1][0]:d[1][1]] = predict(clfs[drift], x)
+        pred = clfs[drift].predict(x)
         labels[d[1][0]:d[1][1]] = pred.argmax(axis=-1)
 
     return labels
@@ -1037,7 +1042,8 @@ for n in orbits_all:
     if n in orbits_test:
         split = 'test'
     f1 = precision_recall_fscore_support(labels_all_true[orbits_all[n][0]:orbits_all[n][1]],
-                                         all_pred[orbits_all[n][0]:orbits_all[n][1]],
+                                         all_pred[orbits_all[n][0]
+                                             :orbits_all[n][1]],
                                          average=None,
                                          labels=np.unique(labels_all_true[orbits_all[n][0]:orbits_all[n][1]]))[2]
     print_(f'{split} orbit {n} {orbits_all[n]} f-score - {f1}')
