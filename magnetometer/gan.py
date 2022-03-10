@@ -700,6 +700,7 @@ def train_clfs(features, labels, drifts):
 
             print_(
                 f'training classifier for drift {d[0]} - {(d[1][0], bound)}...')
+            print_(f'{x}')
             clfs[d[0]].fit(x=x, y=labels[d[1][0]:bound],
                            batch_size=16, epochs=20, class_weight=weights)
 
