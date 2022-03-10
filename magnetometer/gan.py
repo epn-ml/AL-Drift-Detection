@@ -692,7 +692,7 @@ def train_clfs(features, labels, drifts):
                     f'index {d[1][1]} is outside of training orbits, set to {len(features)}')
 
             x = np.array(features[d[1][0]:bound, :], copy=True)
-            x = x.reshape(-1, 10, 1)
+            x = x.reshape(1, 1, -1)
 
             if not d[0] in clfs:
                 print_(f'{x}')
