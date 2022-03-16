@@ -695,7 +695,7 @@ def train_clfs(features, labels, drifts):
             x = x.reshape(1, 1, -1)
 
             if not d[0] in clfs:
-                print_(f'{x}')
+                print_(f'input shape - {x.shape}')
                 clfs[d[0]] = cnn(x.shape[1:])
                 print_(f'create new classifier for drift {d[0]}')
 
