@@ -926,7 +926,7 @@ print_(f'weight_decay: {weight_decay}')
 seed = np.random.randint(65536)
 
 # Get the device the experiment will run on
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
 
 print_(
     f'the seed for the current execution is {seed} for dataset {dataset} with device {device}')
