@@ -28,8 +28,8 @@ def load_data(path):
     return df.dropna()
 
 
-df_train = load_data('../data/orbits/train/*.csv')
-df_test = load_data('../data/orbits/test/*.csv')
+df_train = load_data('../data/orbits1/train/*.csv')
+df_test = load_data('../data/orbits1/test/*.csv')
 
 
 # %% select features
