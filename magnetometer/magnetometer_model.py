@@ -97,6 +97,8 @@ weights = class_weight.compute_class_weight(
     'balanced', classes=np.unique(y_train), y=y_train)
 
 print(weights)
+print(x_train.shape)
+print(y_train.shape)
 
 history = model.fit(x=x_train,
                     y=y_train,
