@@ -693,7 +693,7 @@ def train_clfs(features, labels, drifts):
 
             x = np.array(features[d[1][0]:bound, :], copy=True)
             print_(f'old shape - {x.shape}')
-            x = x.reshape(-1, len(x.shape[1]), 1)
+            x = x.reshape(-1, x.shape[1], 1)
             print_(f'new shape - {x.shape}')
 
             if not d[0] in clfs:
