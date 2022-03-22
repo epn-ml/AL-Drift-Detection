@@ -695,6 +695,7 @@ def train_clfs(features, labels, drifts):
             print_(f'old shape - {x.shape}')
             x = x.reshape(-1, x.shape[1], 1)
             print_(f'new shape - {x.shape}')
+            y = np.asarray(labels[d[1][0]:bound])
 
             if not d[0] in clfs:
                 clfs[d[0]] = cnn(x.shape[1:])
@@ -702,8 +703,8 @@ def train_clfs(features, labels, drifts):
 
             print_(
                 f'training classifier for drift {d[0]} - {(d[1][0], bound)}...')
-            clfs[d[0]].fit(x=x, y=labels[d[1][0]:bound],
-                           batch_size=16, epochs=20, class_weight=weights)
+            clfs[d[0]].fit(x=x, y=y, batch_size=16,
+                           epochs=20, class_weight=weights)
 
         else:
             print_(f'{d[1]} is outside of training orbits, ignoring')
@@ -1044,8 +1045,7 @@ for n in orbits_all:
     if n in orbits_test:
         split = 'test'
     f1 = precision_recall_fscore_support(labels_all_true[orbits_all[n][0]:orbits_all[n][1]],
-                                         all_pred[orbits_all[n][0]
-                                             :orbits_all[n][1]],
+                                         all_pred[orbits_all[n][0]                                                  :orbits_all[n][1]],
                                          average=None,
                                          labels=np.unique(labels_all_true[orbits_all[n][0]:orbits_all[n][1]]))[2]
     print_(f'{split} orbit {n} {orbits_all[n]} f-score - {f1}')
