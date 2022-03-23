@@ -710,7 +710,7 @@ def train_clfs(features, labels, drifts):
             print(type(x))
             print(type(y))
             clfs[drift_num].fit(x=x, y=y, batch_size=16,
-                                epochs=20, class_weight=weights)
+                                epochs=20, class_weight={k: v for k, v in enumerate(weights)})
 
         else:
             print_(f'{drift_idx} is outside of training orbits, ignoring')
@@ -997,7 +997,7 @@ features = features / max_features
 """
 
 if skip:
-    drifts = [(0, (0, len(orbits_all)))]
+    drifts = [(0, (0, len(features_all)))]
 else:
     t1 = time.perf_counter()
     drifts = detect_drifts(features=features_all, orbits=orbits_all,
