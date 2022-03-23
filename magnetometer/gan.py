@@ -543,8 +543,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
             if index - no_drifts >= 500000:
                 print_(f'no drifts detected from index {no_drifts} to {index}')
-
-                sys.exit()
+                return [(0, (0, len(features)))]
 
             index += test_batch_size
             if index >= orbits_idx[cur_orbit][1]:
@@ -682,32 +681,39 @@ def train_clfs(features, labels, drifts):
 
     for d in drifts:
 
-        if d[1][0] < len(features):
+        drift_num = d[0]
+        drift_idx = d[1]
 
-            bound = d[1][1]
+        if drift_idx[0] < len(features):
+
+            bound = drift_idx[1]
 
             if bound > len(features):
                 bound = len(features)
                 print_(
-                    f'index {d[1][1]} is outside of training orbits, set to {len(features)}')
+                    f'index {drift_idx[1]} is outside of training orbits, set to {len(features)}')
 
-            x = np.array(features[d[1][0]:bound, :], copy=True)
+            x = np.array(features[drift_idx[0]:bound, :], copy=True)
             print_(f'old shape - {x.shape}')
             x = x.reshape(-1, x.shape[1], 1)
             print_(f'new shape - {x.shape}')
-            y = np.asarray(labels[d[1][0]:bound])
+            y = np.asarray(labels[drift_idx[0]:bound])
 
-            if not d[0] in clfs:
-                clfs[d[0]] = cnn(x.shape[1:])
-                print_(f'create new classifier for drift {d[0]}')
+            if not drift_num in clfs:
+                clfs[drift_num] = cnn(x.shape[1:])
+                print_(f'create new classifier for drift {drift_num}')
 
             print_(
-                f'training classifier for drift {d[0]} - {(d[1][0], bound)}...')
-            clfs[d[0]].fit(x=x, y=y, batch_size=16,
-                           epochs=20, class_weight=weights)
+                f'training classifier for drift {drift_num} - {(drift_idx[0], bound)}...')
+            print(x.shape)
+            print(y.shape)
+            print(type(x))
+            print(type(y))
+            clfs[drift_num].fit(x=x, y=y, batch_size=16,
+                                epochs=20, class_weight=weights)
 
         else:
-            print_(f'{d[1]} is outside of training orbits, ignoring')
+            print_(f'{drift_idx} is outside of training orbits, ignoring')
 
     print_(f'trained classifiers for drifts - {clfs.keys()}')
 
@@ -880,6 +886,10 @@ plot_format = 'png'
 if len(sys.argv) > 3:
     plot_format = sys.argv[3]
 
+skip = False
+if len(sys.argv) > 4:
+    skip = bool(sys.argv[4])
+
 # Select dataset split
 set_number = 1
 if len(sys.argv) > 1:
@@ -986,16 +996,19 @@ max_features = np.reshape(max_features, newshape=(max_features.shape[0], 1)) + 0
 features = features / max_features
 """
 
-t1 = time.perf_counter()
-drifts = detect_drifts(features=features_all, orbits=orbits_all,
-                       dates=dates, device=device, epochs=epochs,
-                       steps_generator=steps_generator, seed=seed,
-                       batch_size=batch_size, lr=lr, momentum=0.9,
-                       weight_decay=weight_decay, test_batch_size=test_batch_size,
-                       generator_batch_size=generator_batch_size, equalize=equalize,
-                       sequence_length=sequence_length, repeat_factor=repeat_factor)
-t2 = time.perf_counter()
-print_(f'drift detection time is {t2 - t1:.2f} seconds')
+if skip:
+    drifts = [(0, (0, len(orbits_all)))]
+else:
+    t1 = time.perf_counter()
+    drifts = detect_drifts(features=features_all, orbits=orbits_all,
+                           dates=dates, device=device, epochs=epochs,
+                           steps_generator=steps_generator, seed=seed,
+                           batch_size=batch_size, lr=lr, momentum=0.9,
+                           weight_decay=weight_decay, test_batch_size=test_batch_size,
+                           generator_batch_size=generator_batch_size, equalize=equalize,
+                           sequence_length=sequence_length, repeat_factor=repeat_factor)
+    t2 = time.perf_counter()
+    print_(f'drift detection time is {t2 - t1:.2f} seconds')
 
 
 # %% training classifiers
@@ -1045,7 +1058,8 @@ for n in orbits_all:
     if n in orbits_test:
         split = 'test'
     f1 = precision_recall_fscore_support(labels_all_true[orbits_all[n][0]:orbits_all[n][1]],
-                                         all_pred[orbits_all[n][0]                                                  :orbits_all[n][1]],
+                                         all_pred[orbits_all[n][0]
+                                             :orbits_all[n][1]],
                                          average=None,
                                          labels=np.unique(labels_all_true[orbits_all[n][0]:orbits_all[n][1]]))[2]
     print_(f'{split} orbit {n} {orbits_all[n]} f-score - {f1}')

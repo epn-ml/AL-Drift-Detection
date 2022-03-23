@@ -99,6 +99,8 @@ weights = class_weight.compute_class_weight(
 print(weights)
 print(x_train.shape)
 print(y_train.shape)
+print(type(x_train))
+print(type(y_train))
 
 history = model.fit(x=x_train,
                     y=y_train,
