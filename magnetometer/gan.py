@@ -709,8 +709,12 @@ def train_clfs(features, labels, drifts):
             print(y.shape)
             print(type(x))
             print(type(y))
-            clfs[drift_num].fit(x=x, y=y, batch_size=16,
-                                epochs=20, class_weight={k: v for k, v in enumerate(weights)})
+            clfs[drift_num].fit(x=x, y=y,
+                                batch_size=16,
+                                epochs=20,
+                                class_weight={k: v for k,
+                                              v in enumerate(weights)},
+                                verbose=0)
 
         else:
             print_(f'{drift_idx} is outside of training orbits, ignoring')
@@ -1058,8 +1062,7 @@ for n in orbits_all:
     if n in orbits_test:
         split = 'test'
     f1 = precision_recall_fscore_support(labels_all_true[orbits_all[n][0]:orbits_all[n][1]],
-                                         all_pred[orbits_all[n][0]
-                                             :orbits_all[n][1]],
+                                         all_pred[orbits_all[n][0]                                                  :orbits_all[n][1]],
                                          average=None,
                                          labels=np.unique(labels_all_true[orbits_all[n][0]:orbits_all[n][1]]))[2]
     print_(f'{split} orbit {n} {orbits_all[n]} f-score - {f1}')
