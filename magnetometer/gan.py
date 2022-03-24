@@ -694,9 +694,7 @@ def train_clfs(features, labels, drifts):
                     f'index {drift_idx[1]} is outside of training orbits, set to {len(features)}')
 
             x = np.array(features[drift_idx[0]:bound, :], copy=True)
-            print_(f'old shape - {x.shape}')
             x = x.reshape(-1, x.shape[1], 1)
-            print_(f'new shape - {x.shape}')
             y = np.asarray(labels[drift_idx[0]:bound])
 
             if not drift_num in clfs:
@@ -705,10 +703,6 @@ def train_clfs(features, labels, drifts):
 
             print_(
                 f'training classifier for drift {drift_num} - {(drift_idx[0], bound)}...')
-            print(x.shape)
-            print(y.shape)
-            print(type(x))
-            print(type(y))
             clfs[drift_num].fit(x=x, y=y,
                                 batch_size=16,
                                 epochs=20,
@@ -730,20 +724,22 @@ def test_clfs(features, drifts, clfs):
 
     for d in drifts:
 
-        if d[0] in clfs:
-            drift = d[0]
+        drift_num = d[0]
+        drift_idx = d[1]
+
+        if drift_num in clfs:
+            drift = drift_num
         else:
-            drift = min(clfs.keys(), key=lambda x: abs(x-d[0]))
+            drift = min(clfs.keys(), key=lambda x: abs(x-drift_num))
             print_(
-                f'no classifier for drift {d[0]}, switching to {drift}')
+                f'no classifier for drift {drift_num}, switching to {drift}')
 
-        x = np.array(features[d[1][0]:d[1][1]], copy=True)
-        x = x.reshape(-1, 10, 1)
+        x = np.array(features[drift_idx[0]:drift_idx[1]], copy=True)
+        x = x.reshape(-1, x.shape[1], 1)
 
-        print_(f'testing classifier for drift {drift} - {d[1]}...')
-        labels[d[1][0]:d[1][1]] = predict(clfs[drift], x)
+        print_(f'testing classifier for drift {drift} - {drift_idx}...')
         pred = clfs[drift].predict(x)
-        labels[d[1][0]:d[1][1]] = pred.argmax(axis=-1)
+        labels[drift_idx[0]:drift_idx[1]] = pred.argmax(axis=-1)
 
     return labels
 
