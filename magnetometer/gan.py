@@ -888,7 +888,7 @@ if len(sys.argv) > 3:
 
 skip = False
 if len(sys.argv) > 4:
-    skip = bool(sys.argv[4])
+    skip = bool(int(sys.argv[4]))
 
 # Select dataset split
 set_number = 1
