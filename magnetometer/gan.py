@@ -553,23 +553,31 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
             continue
 
+        next_label = generator_label
+
         if no_drifts != index:
             print_(f'no drifts detected from index {no_drifts} to {index}')
             print_(
                 f'detected drift in the middle of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]}')
 
-            drift_indices.append((no_drifts, index))
+            if len(np.unique(features[orbits_idx[cur_orbit][0]:index]) == 1):
+                if temp_label[0] != 0:
+                    # add the index of the previous drift if it was a recurring drift
+                    next_label = temp_label[0]
 
-            if drift_labels:
-                drift_labels.append(drift_labels[-1])
             else:
-                drift_labels.append(0)
-
-            print_(f'add drift {drift_labels[-1]} {drift_indices[-1]}')
+                if drift_labels:
+                    next_label = drift_labels[-1]
+                else:
+                    next_label = 0
 
             no_drifts = index
 
         else:
+            if temp_label[0] != 0:
+                # add the index of the previous drift if it was a recurring drift
+                next_label = temp_label[0]
+
             print_(
                 f'detected drift at the start of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]}')
 
@@ -577,13 +585,10 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         max_idx = max_idx[0]
         # Drift detected
-        drift_indices.append((index, orbits_idx[cur_orbit][1]))
-
-        if temp_label[0] != 0:
-            # add the index of the previous drift if it was a recurring drift
-            drift_labels.append(temp_label[0])
-        else:
-            drift_labels.append(generator_label)
+        drift_indices.append(
+            (orbits_idx[cur_orbit][0], orbits_idx[cur_orbit][1]))
+        drift_labels.append(next_label)
+        print_(f'add drift {drift_labels[-1]} {drift_indices[-1]}')
 
         if len(drift_labels) > 1:
             print_(f'drift from {drift_labels[-2]} to {drift_labels[-1]}')
@@ -1056,7 +1061,7 @@ for n in orbits_all:
     if n in orbits_test:
         split = 'test'
     f1 = precision_recall_fscore_support(labels_all_true[orbits_all[n][0]:orbits_all[n][1]],
-                                         all_pred[orbits_all[n][0]                                                  :orbits_all[n][1]],
+                                         all_pred[orbits_all[n][0]:orbits_all[n][1]],
                                          average=None,
                                          labels=np.unique(labels_all_true[orbits_all[n][0]:orbits_all[n][1]]))[2]
     print_(f'{split} orbit {n} {orbits_all[n]} f-score - {f1}')
