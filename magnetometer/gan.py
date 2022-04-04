@@ -746,7 +746,7 @@ def train_clfs(features, labels, drifts):
         else:
             print_(f'{drift_idx} is outside of training orbits, ignoring')
 
-    print_(f'trained classifiers for drifts - {clfs.keys()}')
+    print_(f'trained classifiers for drifts - {list(clfs.keys())}')
 
     return clfs
 
@@ -1123,20 +1123,23 @@ print_(
 # %% plots
 
 if plots != '':
-    print_('plotting...')
+    print_(f'plotting...')
     if '0' in plots:
         os.makedirs(f'../logs/{folder}/train-true')
         plot_orbit(df_all, orbits_train, 'train-true')
+        print_(f'plotted train-true')
     if '1' in plots:
         os.makedirs(f'../logs/{folder}/train-pred')
         plot_orbit(df_all, orbits_train, 'train-pred')
+        print_(f'plotted train-pred')
     if '2' in plots:
         os.makedirs(f'../logs/{folder}/test-true')
         plot_orbit(df_all, orbits_test, 'test-true')
+        print_(f'plotted test-true')
     if '3' in plots:
         os.makedirs(f'../logs/{folder}/test-pred')
         plot_orbit(df_all, orbits_test, 'test-pred')
-    print_('plotting finished')
+        print_(f'plotted test-pred')
 
 
 # %% close log file
