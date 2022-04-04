@@ -535,19 +535,20 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         # 1st condition is always false? (max_idx[1:] != ...)
         # if np.all(max_idx != max_idx[0]) or max_idx[0] == 0:
+        # If max_idx didn't change or max_idx has more than 1 unique number, keep looking for drifts
         if np.array_equal(max_idx, max_idx_prev) or len(np.unique(max_idx)) != 1:
 
+            # Unreachable for now
             if index - no_drifts >= 500000:
                 print_(f'no drifts detected from index {no_drifts} to {index}')
                 return [(0, (0, len(features)))]
 
             index += test_batch_size
+            # If index reached the end of an orbit, give this orbit a previous drift label
             if index >= orbits_idx[cur_orbit][1]:
                 index = orbits_idx[cur_orbit][1]
                 drift_found = True
-                print_(
-                    f'orbit {orbit_numbers[cur_orbit-1]} -> {orbit_numbers[cur_orbit]}')
-            else:
+            else: # else keep looking for drifts
                 drift_found = False
         else:
             drift_found = True
@@ -555,12 +556,15 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         if not drift_found:
             continue
 
+        # End of orbit scenario
         if index == orbits_idx[cur_orbit][1]:
 
             print_(
-                f'no drift detected drift during orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]}')
+                f'no drifts detected drift during orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]}')
+            print_(f'labelling orbit with previous drift label')
             next_label = drift_labels[-1]
 
+        # Found drift scenario
         else:
 
             print_(
@@ -570,24 +574,27 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
             max_idx_prev = max_idx
             next_label = generator_label
 
+            # Drift in the middle
             if no_drifts != index:
                 print_(f'no drifts detected from index {no_drifts} to {index}')
                 print_(
                     f'detected drift in the middle of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]}')
 
-                if len(np.unique(features[orbits_idx[cur_orbit][0]:index]) == 1):
+                # If index didn't reach the crossings (approximately), give orbit a new drift label
+                if (index - orbits_idx[cur_orbit][0]) / (orbits_idx[cur_orbit][1] - orbits_idx[cur_orbit][0]) < 0.5:
+                    print_(f'index is below the threshold, give orbit a new label')
                     if temp_label[0] != 0:
                         # add the index of the previous drift if it was a recurring drift
                         next_label = temp_label[0]
 
-                else:
+                else: # else give it a previous drift label
+                    print_(f'index is above the threshold, give orbit a previous label')
                     if drift_labels:
                         next_label = drift_labels[-1]
                     else:
                         next_label = 0
 
-                no_drifts = index
-
+            # Drift at the start
             else:
                 if temp_label[0] != 0:
                     # add the index of the previous drift if it was a recurring drift
@@ -607,7 +614,6 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         if len(drift_labels) > 1:
             print_(f'drift from {drift_labels[-2]} to {drift_labels[-1]}')
-        print_(f'add drift {drift_labels[-1]} {drift_indices[-1]}')
 
         if max_idx != generator_label:
             # Increase the max_idx by 1 if it is above the previous drift
@@ -658,8 +664,9 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         drifts_detected.append(index)
 
         index = orbits_idx[cur_orbit][1]
-        print(
-            f'orbit change {orbit_numbers[cur_orbit]} -> {orbit_numbers[cur_orbit+1]}')
+        if cur_orbit < len(orbit_numbers) - 1:
+            print_(
+                f'orbit change {orbit_numbers[cur_orbit]} -> {orbit_numbers[cur_orbit+1]}')
         print_(
             f'continuing drift detection from {index} (end of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]})')
         cur_orbit += 1
