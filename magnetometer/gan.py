@@ -586,6 +586,9 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
                     if temp_label[0] != 0:
                         # add the index of the previous drift if it was a recurring drift
                         next_label = temp_label[0]
+                        print_(f'recurring drift {next_label}')
+                    else:
+                        print_(f'new drift {next_label}')
 
                 else: # else give it a previous drift label
                     print_(f'index is above the threshold, give orbit a previous label')
@@ -599,6 +602,9 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
                 if temp_label[0] != 0:
                     # add the index of the previous drift if it was a recurring drift
                     next_label = temp_label[0]
+                    print_(f'recurring drift {next_label}')
+                else:
+                    print_(f'new drift {next_label}')
 
                 print_(
                     f'detected drift at the start of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]}')
