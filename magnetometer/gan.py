@@ -784,11 +784,8 @@ def load_data(path, prev_len=0):
         split = 'testing'
 
     files = glob.glob(path)
+    random.shuffle(files)
 
-    if 'orbits3' in path or 'orbits4' in path:
-        random.shuffle(files)
-    else:
-        files.sort(key=lambda x: (len(x), x))
     li = []
     orbits = {}
     df_len = prev_len
@@ -1123,7 +1120,7 @@ print_(
 # %% plots
 
 if plots != '':
-    print_(f'plotting...')
+    print_(f'plotting {plots}...')
     if '0' in plots:
         os.makedirs(f'../logs/{folder}/train-true')
         plot_orbit(df_all, orbits_train, 'train-true')
