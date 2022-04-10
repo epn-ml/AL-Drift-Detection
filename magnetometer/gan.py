@@ -771,7 +771,7 @@ def test_clfs(features, drifts, clfs):
         x = x.reshape(-1, x.shape[1], 1)
 
         print_(f'testing classifier for drift {drift} - {drift_idx}...')
-        pred = clfs[drift].predict(x)
+        pred = clfs[drift].predict(x)  # window vs step
         labels[drift_idx[0]:drift_idx[1]] = pred.argmax(axis=-1)
 
     return labels
@@ -795,8 +795,8 @@ def load_data(path, prev_len=0):
     for filename in files:
         df = pd.read_csv(filename, index_col=None, header=0).dropna()
         li.append(df)
-        # n = int(filename.split('_')[-1].split('.')[0])
-        n = df.iloc[0]['ORBIT']
+        n = int(filename.split('-')[-1].split('.')[0])
+        # n = df.iloc[0]['ORBIT']
         orbits[n] = (df_len, df_len + len(df.index))
         df_len = df_len + len(df.index)
         print_(
