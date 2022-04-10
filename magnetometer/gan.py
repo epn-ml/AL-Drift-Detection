@@ -795,8 +795,8 @@ def load_data(path, prev_len=0):
     for filename in files:
         df = pd.read_csv(filename, index_col=None, header=0).dropna()
         li.append(df)
-        n = int(filename.split('-')[-1].split('.')[0])
-        # n = df.iloc[0]['ORBIT']
+        # n = int(filename.split('_')[-1].split('.')[0])
+        n = df.iloc[0]['ORBIT']
         orbits[n] = (df_len, df_len + len(df.index))
         df_len = df_len + len(df.index)
         print_(
