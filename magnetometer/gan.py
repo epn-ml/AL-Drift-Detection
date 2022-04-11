@@ -492,16 +492,16 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     orbits_idx = list(orbits.values())
     drift_indices = [orbits_idx[0]]
     cur_orbit = 1
-    drift_labels = [1]
+    drift_labels = []
 
     temp_label = [0]
     initial_epochs = epochs * 2
 
     # Create training dataset
     print_(f'training dataset indices = {drift_indices}')
-    print_(f'training dataset labels  = {drift_labels}')
+    print_(f'training dataset labels  = {[1]}')
     training_dataset = create_training_dataset(
-        dataset=features, indices=drift_indices, drift_labels=drift_labels)
+        dataset=features, indices=drift_indices, drift_labels=[1])
 
     generator, discriminator = train_gan(features=training_dataset, device=device, discriminator=discriminator,
                                          generator=generator, epochs=initial_epochs, steps_generator=steps_generator,
