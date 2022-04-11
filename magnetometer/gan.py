@@ -967,7 +967,7 @@ np.set_printoptions(suppress=True)
 np.set_printoptions(precision=2)
 
 # Get the device the experiment will run on
-device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 print_(
     f'the seed for the current execution is {seed} for dataset {dataset} with device {device}')
