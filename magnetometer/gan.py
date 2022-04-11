@@ -516,8 +516,6 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
     no_drifts = index
     max_idx_prev = np.array(['initial'])
-    np.set_printoptions(suppress=True)
-    np.set_printoptions(precision=2)
 
     print_(
         f'starting drift detection from index = {index} (orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]})')
@@ -966,6 +964,9 @@ print_(f'weight_decay: {weight_decay}')
 
 # Set a random seed for the experiment
 seed = np.random.randint(65536)
+
+np.set_printoptions(suppress=True)
+np.set_printoptions(precision=2)
 
 # Get the device the experiment will run on
 device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
