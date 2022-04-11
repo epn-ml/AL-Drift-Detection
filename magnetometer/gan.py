@@ -515,7 +515,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     discriminator.eval()
 
     no_drifts = index
-    max_idx_prev = np.array(['initial'])
+    max_idx_prev = np.array([0, 0, 0, 0])
 
     print_(
         f'starting drift detection from index = {index} (orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]})')
@@ -532,11 +532,11 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         drift_found = False
 
         # 1st condition is always false? (max_idx[1:] != ...)
-        # if np.all(max_idx != max_idx[0]) or max_idx[0] == 0:
+        if np.all(max_idx[1:] != max_idx[0]) or max_idx[0] == 0:
         # If max_idx didn't change or max_idx has more than 1 unique number, keep looking for drifts
-        if np.array_equal(max_idx, max_idx_prev) or len(np.unique(max_idx)) != 1:
+        # if np.array_equal(max_idx, max_idx_prev) or len(np.unique(max_idx)) != 1:
 
-            # Unreachable for now
+            # Should not be reached
             if index - no_drifts >= 500000:
                 print_(f'no drifts detected from index {no_drifts} to {index}')
                 return [(0, (0, len(features)))]
@@ -546,7 +546,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
             if index >= orbits_idx[cur_orbit][1]:
                 index = orbits_idx[cur_orbit][1]
                 drift_found = True
-            else: # else keep looking for drifts
+            else:  # else keep looking for drifts
                 drift_found = False
         else:
             drift_found = True
@@ -588,8 +588,9 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
                     else:
                         print_(f'new drift {next_label}')
 
-                else: # else give it a previous drift label
-                    print_(f'index is above the threshold, give orbit a previous label')
+                else:  # else give it a previous drift label
+                    print_(
+                        f'index is above the threshold, give orbit a previous label')
                     if drift_labels:
                         next_label = drift_labels[-1]
                     else:
@@ -648,7 +649,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         print_(
             f'training dataset indices = {(drift_indices[0][0], drift_indices[-1][-1])}')
         print_(
-            f'training dataset labels len = {len(drift_labels)}, min = {min(drift_labels)}, max = {max(drift_labels)}')
+            f'training dataset labels len = {len(drift_labels)}, unique = {np.unique(drift_labels)}')
         training_dataset = create_training_dataset(dataset=features,
                                                    indices=drift_indices,
                                                    drift_labels=drift_labels+temp_label)
@@ -681,11 +682,9 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
     # print_(
     #     f'stopping drift detection, {index} + {training_window_size} >= {len(features)}')
+    drift_labels = [1] + drift_labels
     print_(
         f'stopping drift detection, {index} >= {orbits_idx[-1][-1]}')
-    print_(f'drifts_detected = {drifts_detected}')
-    print_(f'drift_labels = {drift_labels}')
-    print_(f'drift_indices = {drift_indices}')
     print_(f'len(drifts_detected) = {len(drifts_detected)}')
     print_(f'len(drift_labels) = {len(drift_labels)}')
     print_(f'len(drift_indices) = {len(drift_indices)}')
@@ -693,7 +692,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     drifts = list(zip(drift_labels, drift_indices))
 
     for d in drifts:
-        print_(f'{d[0]}: {d[1]}')
+        print_(f'{d[0]}: {d[1]} - orbit {orbit_numbers[orbits_idx.index(d[1])]}')
 
     print_(generator)
     print_(discriminator)
@@ -1088,8 +1087,7 @@ for n in orbits_all:
     if n in orbits_test:
         split = 'test'
     f1 = precision_recall_fscore_support(labels_all_true[orbits_all[n][0]:orbits_all[n][1]],
-                                         all_pred[orbits_all[n][0]
-                                             :orbits_all[n][1]],
+                                         all_pred[orbits_all[n][0]:orbits_all[n][1]],
                                          average=None,
                                          labels=np.unique(labels_all_true[orbits_all[n][0]:orbits_all[n][1]]))[2]
     print_(f'{split} orbit {n} {orbits_all[n]} f-score - {f1}')
