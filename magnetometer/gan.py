@@ -559,7 +559,10 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
             print_(
                 f'no drifts detected drift during orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]}')
             print_(f'labelling orbit with previous drift label')
-            next_label = drift_labels[-1]
+            if len(drift_labels) > 0:
+                next_label = drift_labels[-1]
+            else:
+                next_label = [1]  # initial drift label
 
         # Found drift scenario
         else:
