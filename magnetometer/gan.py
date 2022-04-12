@@ -10,6 +10,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import tensorflow as tf
 import torch
 from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support)
@@ -479,8 +480,10 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     # Create the Generator and Discriminator objects
     generator = Generator(
         inp=features.shape[1], out=features.shape[1], sequence_length=sequence_length)
+    generator = nn.DataParallel(generator)
     discriminator = Discriminator(
         inp=features.shape[1], final_layer_incoming_connections=512)
+    discriminator = nn.DataParallel(discriminator)
 
     generator.move(device=device)
 
@@ -533,8 +536,8 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         # 1st condition is always false? (max_idx[1:] != ...)
         if np.all(max_idx[1:] != max_idx[0]) or max_idx[0] == 0:
-        # If max_idx didn't change or max_idx has more than 1 unique number, keep looking for drifts
-        # if np.array_equal(max_idx, max_idx_prev) or len(np.unique(max_idx)) != 1:
+            # If max_idx didn't change or max_idx has more than 1 unique number, keep looking for drifts
+            # if np.array_equal(max_idx, max_idx_prev) or len(np.unique(max_idx)) != 1:
 
             # Should not be reached
             if index - no_drifts >= 500000:
@@ -641,6 +644,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         generator = Generator(
             inp=features.shape[1], out=features.shape[1], sequence_length=sequence_length)
+        generator = nn.DataParallel(generator)
         generator = generator.to(device=device)
 
         generator.train()
@@ -707,6 +711,8 @@ def train_clfs(features, labels, drifts):
     weights = compute_class_weight(
         'balanced', classes=classes, y=labels)
     print_(f'weights = {weights}')
+    strategy = tf.distribute.MirroredStrategy()
+    print_(f'number of devices: {strategy.num_replicas_in_sync}')
 
     for d in drifts:
 
@@ -727,8 +733,9 @@ def train_clfs(features, labels, drifts):
             y = np.asarray(labels[drift_idx[0]:bound])
 
             if not drift_num in clfs:
-                clfs[drift_num] = cnn(x.shape[1:])
-                print_(f'create new classifier for drift {drift_num}')
+                with strategy.scope():
+                    clfs[drift_num] = cnn(x.shape[1:])
+                    print_(f'create new classifier for drift {drift_num}')
 
             print_(
                 f'training classifier for drift {drift_num} - {(drift_idx[0], bound)}...')
@@ -1113,6 +1120,8 @@ print_(f'f-score: {prf[2]}')
 print_(f'support: {prf[3]}')
 print_(
     f'confusion matrix:\n{confusion_matrix(labels_test_true, labels_test_pred)}')
+print_(f'unique test true: {np.unique(labels_test_true)}')
+print_(f'unique test pred: {np.unique(labels_test_pred)}')
 
 
 # %% plots
