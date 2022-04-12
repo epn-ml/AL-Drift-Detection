@@ -10,12 +10,10 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-import tensorflow as tf
 import torch
 from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support)
 from sklearn.utils.class_weight import compute_class_weight
-from skmultiflow.trees import HoeffdingTreeClassifier
 from tensorflow import keras
 from tensorflow.keras import layers
 from torch import nn
@@ -480,10 +478,8 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
     # Create the Generator and Discriminator objects
     generator = Generator(
         inp=features.shape[1], out=features.shape[1], sequence_length=sequence_length)
-    generator = nn.DataParallel(generator)
     discriminator = Discriminator(
         inp=features.shape[1], final_layer_incoming_connections=512)
-    discriminator = nn.DataParallel(discriminator)
 
     generator.move(device=device)
 
@@ -644,7 +640,6 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         generator = Generator(
             inp=features.shape[1], out=features.shape[1], sequence_length=sequence_length)
-        generator = nn.DataParallel(generator)
         generator = generator.to(device=device)
 
         generator.train()
@@ -711,8 +706,6 @@ def train_clfs(features, labels, drifts):
     weights = compute_class_weight(
         'balanced', classes=classes, y=labels)
     print_(f'weights = {weights}')
-    strategy = tf.distribute.MirroredStrategy()
-    print_(f'number of devices: {strategy.num_replicas_in_sync}')
 
     for d in drifts:
 
@@ -733,9 +726,8 @@ def train_clfs(features, labels, drifts):
             y = np.asarray(labels[drift_idx[0]:bound])
 
             if not drift_num in clfs:
-                with strategy.scope():
-                    clfs[drift_num] = cnn(x.shape[1:])
-                    print_(f'create new classifier for drift {drift_num}')
+                clfs[drift_num] = cnn(x.shape[1:])
+                print_(f'create new classifier for drift {drift_num}')
 
             print_(
                 f'training classifier for drift {drift_num} - {(drift_idx[0], bound)}...')
