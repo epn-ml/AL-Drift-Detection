@@ -562,7 +562,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
             if len(drift_labels) > 0:
                 next_label = drift_labels[-1]
             else:
-                next_label = [1]  # initial drift label
+                next_label = 1  # initial drift label
 
         # Found drift scenario
         else:
