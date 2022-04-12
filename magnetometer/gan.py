@@ -706,6 +706,8 @@ def train_clfs(features, labels, drifts):
 
     clfs = {}
     classes = np.unique(labels)
+    # Get max drift label from [(1, ()), ...]
+    max_drift = max(list(map(list, zip(*drifts)))[0])
     weights = compute_class_weight(
         'balanced', classes=classes, y=labels)
     print_(f'weights = {weights}')
@@ -728,13 +730,16 @@ def train_clfs(features, labels, drifts):
             x = x.reshape(-1, x.shape[1], 1)
             y = np.asarray(labels[drift_idx[0]:bound])
 
-            if not drift_num in clfs:
-                clfs[drift_num] = cnn(x.shape[1:])
-                print_(f'create new classifier for drift {drift_num}')
+            # Train classifiers of adjacent drifts as well
+            for n in range(drift_num - 1, drift_num + 2):
+                if n >= 1 and n <= max_drift:
+                    if not n in clfs:
+                        clfs[n] = cnn(x.shape[1:])
+                        print_(f'create new classifier for drift {n}')
 
-            print_(
-                f'training classifier for drift {drift_num} - {(drift_idx[0], bound)}...')
-            clfs[drift_num].fit(x=x, y=y,
+                    print_(
+                        f'training classifier {n} on drift {drift_num} - {(drift_idx[0], bound)}...')
+                    clfs[n].fit(x=x, y=y,
                                 batch_size=16,
                                 epochs=20,
                                 class_weight={k: v for k,
