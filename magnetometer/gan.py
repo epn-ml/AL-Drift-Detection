@@ -706,8 +706,12 @@ def train_clfs(features, labels, drifts):
 
     clfs = {}
     classes = np.unique(labels)
-    # Get max drift label from [(1, ()), ...]
-    max_drift = max(list(map(list, zip(*drifts)))[0])
+    # Get drift labels from [(1, ()), ...]
+    drift_labels = list(map(list, zip(*drifts)))[0]
+    # Split drifts into 2 groups
+    drift_threshold = len(drift_labels) // 2
+    print_(
+        f'group 1 = 0..{drift_threshold}, group 2 = {drift_threshold+1}..{max(drift_labels)}')
     weights = compute_class_weight(
         'balanced', classes=classes, y=labels)
     print_(f'weights = {weights}')
@@ -716,6 +720,9 @@ def train_clfs(features, labels, drifts):
 
         drift_num = d[0]
         drift_idx = d[1]
+        group = 1
+        if drift_num > drift_threshold:
+            group = 2
 
         if drift_idx[0] < len(features):
 
@@ -730,26 +737,24 @@ def train_clfs(features, labels, drifts):
             x = x.reshape(-1, x.shape[1], 1)
             y = np.asarray(labels[drift_idx[0]:bound])
 
-            # Train classifiers of adjacent drifts as well
-            for n in range(drift_num - 1, drift_num + 2):
-                if n >= 1 and n <= max_drift:
-                    if not n in clfs:
-                        clfs[n] = cnn(x.shape[1:])
-                        print_(f'create new classifier for drift {n}')
+            # Train group classifiers on drifts of that group
+            if not group in clfs:
+                clfs[group] = cnn(x.shape[1:])
+                print_(f'create new classifier for drift group {group}')
 
-                    print_(
-                        f'training classifier {n} on drift {drift_num} - {(drift_idx[0], bound)}...')
-                    clfs[n].fit(x=x, y=y,
-                                batch_size=16,
-                                epochs=20,
-                                class_weight={k: v for k,
-                                              v in enumerate(weights)},
-                                verbose=0)
+            print_(
+                f'training classifier {group} on drift {drift_num} - {(drift_idx[0], bound)}...')
+            clfs[n].fit(x=x, y=y,
+                        batch_size=16,
+                        epochs=20,
+                        class_weight={k: v for k,
+                                      v in enumerate(weights)},
+                        verbose=0)
 
         else:
             print_(f'{drift_idx} is outside of training orbits, ignoring')
 
-    print_(f'trained classifiers for drifts - {list(clfs.keys())}')
+    print_(f'trained classifiers for drifts groups - {list(clfs.keys())}')
 
     return clfs
 
