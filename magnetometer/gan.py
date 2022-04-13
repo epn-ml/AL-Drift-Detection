@@ -709,9 +709,9 @@ def train_clfs(features, labels, drifts):
     # Get drift labels from [(1, ()), ...]
     drift_labels = list(map(list, zip(*drifts)))[0]
     # Split drifts into 2 groups
-    drift_threshold = len(drift_labels) // 2
+    drift_threshold = len(np.unique(drift_labels)) // 2
     print_(
-        f'group 1 = 0..{drift_threshold}, group 2 = {drift_threshold+1}..{max(drift_labels)}')
+        f'group 1 = 1..{drift_threshold}, group 2 = {drift_threshold+1}..{max(drift_labels)}')
     weights = compute_class_weight(
         'balanced', classes=classes, y=labels)
     print_(f'weights = {weights}')
@@ -744,7 +744,7 @@ def train_clfs(features, labels, drifts):
 
             print_(
                 f'training classifier {group} on drift {drift_num} - {(drift_idx[0], bound)}...')
-            clfs[n].fit(x=x, y=y,
+            clfs[group].fit(x=x, y=y,
                         batch_size=16,
                         epochs=20,
                         class_weight={k: v for k,
