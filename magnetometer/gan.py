@@ -594,7 +594,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
                     if drift_labels:
                         next_label = drift_labels[-1]
                     else:
-                        next_label = 0
+                        next_label = 1
                     print_(
                         f'index is above the threshold, give orbit a previous label {next_label}')
 
