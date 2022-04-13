@@ -764,24 +764,31 @@ def train_clfs(features, labels, drifts):
 def test_clfs(features, drifts, clfs):
 
     labels = list(range(len(features)))
+    drift_labels = list(map(list, zip(*drifts)))[0]
+    drift_threshold = len(np.unique(drift_labels)) // 2
 
     for d in drifts:
 
         drift_num = d[0]
         drift_idx = d[1]
 
-        if drift_num in clfs:
-            drift = drift_num
+        group = 1
+        if drift_num > drift_threshold:
+            group = 2
+
+        if group in clfs:
+            g = group
         else:
-            drift = min(clfs.keys(), key=lambda x: abs(x-drift_num))
+            g = min(clfs.keys(), key=lambda x: abs(x-group))
             print_(
-                f'no classifier for drift {drift_num}, switching to {drift}')
+                f'no classifier for drift group {group}, switching to {g}')
 
         x = np.array(features[drift_idx[0]:drift_idx[1]], copy=True)
         x = x.reshape(-1, x.shape[1], 1)
 
-        print_(f'testing classifier for drift {drift} - {drift_idx}...')
-        pred = clfs[drift].predict(x)  # window vs step
+        print_(
+            f'testing classifier for drift group {g}, drift {drift_num} - {drift_idx}...')
+        pred = clfs[g].predict(x)  # window vs step
         labels[drift_idx[0]:drift_idx[1]] = pred.argmax(axis=-1)
 
     return labels
@@ -1097,14 +1104,19 @@ if len(labels_train_pred) < len(df_train.index):
 # %% evaluation
 
 for n in orbits_all:
+    idx = orbits_all[n]
     split = 'train'
     if n in orbits_test:
         split = 'test'
-    f1 = precision_recall_fscore_support(labels_all_true[orbits_all[n][0]:orbits_all[n][1]],
-                                         all_pred[orbits_all[n][0]:orbits_all[n][1]],
+    f1 = precision_recall_fscore_support(labels_all_true[idx[0]:idx[1]],
+                                         all_pred[idx[0]:idx[1]],
                                          average=None,
-                                         labels=np.unique(labels_all_true[orbits_all[n][0]:orbits_all[n][1]]))[2]
-    print_(f'{split} orbit {n} {orbits_all[n]} f-score - {f1}')
+                                         labels=np.unique(labels_all_true[idx[0]:idx[1]]))[2]
+    for d, d_idx in drifts:
+        if d_idx == idx:
+            print_(
+                f'{split} orbit {n} {idx} drift {d} f-score - {f1}')
+            break
 
 auc_value = accuracy_score(y_true=labels_train_true, y_pred=labels_train_pred)
 print_(f'accuracy value is {auc_value} for training dataset {dataset}')
