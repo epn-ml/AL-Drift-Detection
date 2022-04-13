@@ -586,31 +586,29 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
                     if temp_label[0] != 0:
                         # add the index of the previous drift if it was a recurring drift
                         next_label = temp_label[0]
-                        print_(f'recurring drift {next_label}')
+                        print_(f'recurring drift {next_label} (temp_label[0])')
                     else:
-                        print_(f'new drift {next_label}')
+                        print_(f'new drift {next_label} (generator_label)')
 
                 else:  # else give it a previous drift label
-                    print_(
-                        f'index is above the threshold, give orbit a previous label')
                     if drift_labels:
                         next_label = drift_labels[-1]
                     else:
                         next_label = 0
+                    print_(
+                        f'index is above the threshold, give orbit a previous label {next_label}')
 
             # Drift at the start
             else:
                 if temp_label[0] != 0:
                     # add the index of the previous drift if it was a recurring drift
                     next_label = temp_label[0]
-                    print_(f'recurring drift {next_label}')
+                    print_(f'recurring drift {next_label} (temp_label[0])')
                 else:
-                    print_(f'new drift {next_label}')
+                    print_(f'new drift {next_label} (generator_label)')
 
                 print_(
                     f'detected drift at the start of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]}')
-
-        # print_('========== START ==========')
 
         max_idx = max_idx[0]
         # Drift detected
@@ -625,18 +623,22 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         if max_idx != generator_label:
             # Increase the max_idx by 1 if it is above the previous drift
             if temp_label[0] <= max_idx and temp_label[0] != 0:
+                print_(
+                    f'temp_label[0] {temp_label[0]} <= max_idx {max_idx}, max_idx += 1')
                 max_idx += 1
-            temp_label = [max_idx]
             # We reset the top layer predictions because the drift order has changed and the network should be retrained
-            print_(f'discriminator.reset_top_layer()')
+            print_(
+                f'discriminator.reset_top_layer(), temp_label[0] {temp_label[0]} -> max_idx {max_idx}')
+            temp_label = [max_idx]
             discriminator.reset_top_layer()
             discriminator = discriminator.to(device)
 
         else:
             # If this is a new drift, label for the previous drift training dataset is the previous highest label
             # which is the generator label
+            print_(
+                f'discriminator.update(), temp_label[0] {temp_label[0]} -> [0], generator_label {generator_label} += 1')
             temp_label = [0]
-            print_(f'discriminator.update()')
             discriminator.update()
             discriminator = discriminator.to(device)
             generator_label += 1
@@ -745,11 +747,11 @@ def train_clfs(features, labels, drifts):
             print_(
                 f'training classifier {group} on drift {drift_num} - {(drift_idx[0], bound)}...')
             clfs[group].fit(x=x, y=y,
-                        batch_size=16,
-                        epochs=20,
-                        class_weight={k: v for k,
-                                      v in enumerate(weights)},
-                        verbose=0)
+                            batch_size=16,
+                            epochs=20,
+                            class_weight={k: v for k,
+                                          v in enumerate(weights)},
+                            verbose=0)
 
         else:
             print_(f'{drift_idx} is outside of training orbits, ignoring')
