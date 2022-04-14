@@ -10,6 +10,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import tensorflow as tf
 import torch
 from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support)
@@ -531,9 +532,9 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         drift_found = False
 
         # 1st condition is always false? (max_idx[1:] != ...)
+        # If max_idx didn't change or max_idx has more than 1 unique number, keep looking for drifts
+        # if np.array_equal(max_idx, max_idx_prev) or len(np.unique(max_idx)) != 1:
         if np.all(max_idx[1:] != max_idx[0]) or max_idx[0] == 0:
-            # If max_idx didn't change or max_idx has more than 1 unique number, keep looking for drifts
-            # if np.array_equal(max_idx, max_idx_prev) or len(np.unique(max_idx)) != 1:
 
             # Should not be reached
             if index - no_drifts >= 500000:
@@ -684,8 +685,6 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         print_('===========================')
 
-    # print_(
-    #     f'stopping drift detection, {index} + {training_window_size} >= {len(features)}')
     drift_labels = [1] + drift_labels
     print_(
         f'stopping drift detection, {index} >= {orbits_idx[-1][-1]}')
@@ -920,6 +919,12 @@ def plot_orbit(df, orbits, title, draw=[1, 3]):
 
 
 # %% setup
+
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.9
+keras.backend.tensorflow_backend.set_session(tf.Session(config=config))
+
+os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 fptr = None
 dataset = 'messenger'
