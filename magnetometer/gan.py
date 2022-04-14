@@ -920,9 +920,10 @@ def plot_orbit(df, orbits, title, draw=[1, 3]):
 
 # %% setup
 
-config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.9
-keras.backend.tensorflow_backend.set_session(tf.Session(config=config))
+cfg = tf.compat.v1.ConfigProto()
+cfg.gpu_options.per_process_gpu_memory_fraction = 0.9
+cfg.gpu_options.allow_growth = True
+sess = tf.compat.v1.InteractiveSession(config=cfg)
 
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
