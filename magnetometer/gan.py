@@ -313,9 +313,22 @@ def concatenate_features(data, sequence_len=2, has_label=True):
 
 
 # Select features according to drift indices and append drift labeles
-def create_training_dataset(dataset, indices, drift_labels):
+def create_training_dataset(dataset, indices, drift_labels, max_orbits=3):
 
-    # print_(f'creating training dataset...')
+    truncated_indices = []
+    truncated_labels = []
+    for idx, label in zip(indices[::-1], drift_labels[::-1]):
+        if truncated_labels.count(label) <= max_orbits:
+            truncated_labels.append(label)
+            truncated_indices.append(idx)
+
+    truncated_indices = truncated_indices[::-1]
+    truncated_labels = truncated_labels[::-1]
+
+    print_(
+        f'training dataset indices = {(truncated_indices[0][0], truncated_indices[-1][-1])}')
+    print_(
+        f'training dataset labels len = {len(drift_labels)}, unique =\n{np.array(np.unique(drift_labels, return_counts=True))}')
 
     # If there is a periodicity, we switch all previous drifts to the same label
     modified_drift_labels = [x for x in drift_labels]
@@ -329,8 +342,6 @@ def create_training_dataset(dataset, indices, drift_labels):
                 modified_drift_labels.append(label-1)
             else:
                 modified_drift_labels.append(label)
-
-    # print_(f'modified dataset labels = {modified_drift_labels}')
 
     training_dataset = np.hstack((dataset[indices[0][0]:indices[0][1]],
                                   np.ones((indices[0][1]-indices[0][0], 1)) * modified_drift_labels[0]))
@@ -499,9 +510,9 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
     # Create training dataset
     print_(f'training dataset indices = {drift_indices}')
-    print_(f'training dataset labels  = {[1]}')
+    print_(f'training dataset labels  = {[0]}')
     training_dataset = create_training_dataset(
-        dataset=features, indices=drift_indices, drift_labels=[1])
+        dataset=features, indices=drift_indices, drift_labels=[0])
 
     generator, discriminator = train_gan(features=training_dataset, device=device, discriminator=discriminator,
                                          generator=generator, epochs=initial_epochs, steps_generator=steps_generator,
@@ -650,10 +661,6 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
         generator.train()
         discriminator.train()
 
-        print_(
-            f'training dataset indices = {(drift_indices[0][0], drift_indices[-1][-1])}')
-        print_(
-            f'training dataset labels len = {len(drift_labels)}, unique = {np.unique(drift_labels)}')
         training_dataset = create_training_dataset(dataset=features,
                                                    indices=drift_indices,
                                                    drift_labels=drift_labels+temp_label)
