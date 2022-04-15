@@ -531,7 +531,6 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         drift_found = False
 
-        # 1st condition is always false? (max_idx[1:] != ...)
         # If max_idx didn't change or max_idx has more than 1 unique number, keep looking for drifts
         # if np.array_equal(max_idx, max_idx_prev) or len(np.unique(max_idx)) != 1:
         if np.all(max_idx[1:] != max_idx[0]) or max_idx[0] == 0:
@@ -920,12 +919,13 @@ def plot_orbit(df, orbits, title, draw=[1, 3]):
 
 # %% setup
 
-cfg = tf.compat.v1.ConfigProto()
-cfg.gpu_options.per_process_gpu_memory_fraction = 0.9
-cfg.gpu_options.allow_growth = True
-sess = tf.compat.v1.InteractiveSession(config=cfg)
-
-os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        print_(e)
 
 fptr = None
 dataset = 'messenger'
@@ -976,7 +976,7 @@ print_(f'batch_size: {batch_size}')
 generator_batch_size = 2
 print_(f'generator_batch_size: {generator_batch_size}')
 # Number of instances that should have the same label for a drift to be confirmed
-test_batch_size = 4
+test_batch_size = 16
 print_(f'test_batch_size: {test_batch_size}')
 
 # Set the learning rate
