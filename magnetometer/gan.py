@@ -746,7 +746,7 @@ def train_clfs(features, labels, drifts):
             print_(
                 f'training classifier {group} on drift {drift_num} - {(drift_idx[0], bound)}...')
             clfs[group].fit(x=x, y=y,
-                            batch_size=16,
+                            batch_size=8,
                             epochs=20,
                             class_weight={k: v for k,
                                           v in enumerate(weights)},
@@ -1053,7 +1053,7 @@ features = features / max_features
 """
 
 if skip:
-    drifts = [(0, (0, len(features_all)))]
+    drifts = [(1, (0, len(features_all)))]
 else:
     t1 = time.perf_counter()
     drifts = detect_drifts(features=features_all, orbits=orbits_all,
