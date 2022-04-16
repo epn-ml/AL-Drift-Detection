@@ -320,7 +320,6 @@ def create_training_dataset(dataset, indices, drift_labels, max_length=100):
         drift_labels = drift_labels.copy()
         u, c = np.unique(drift_labels, return_counts=True)
         i = drift_labels.index(u[np.argmax(c)])
-        print_(f'removing drift {drift_labels[i]} - {indices[i]}')
         del indices[i]
         del drift_labels[i]
 
