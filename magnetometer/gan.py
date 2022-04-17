@@ -750,7 +750,7 @@ def train_clfs(features, labels, drifts):
             print_(
                 f'training classifier {group} on drift {drift_num} - {(drift_idx[0], bound)}...')
             clfs[group].fit(x=x, y=y,
-                            batch_size=8,
+                            batch_size=64,
                             epochs=20,
                             class_weight={k: v for k,
                                           v in enumerate(weights)},
