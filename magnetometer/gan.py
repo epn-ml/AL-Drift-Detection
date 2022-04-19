@@ -827,6 +827,43 @@ def load_data(path, prev_len=0):
     return df, orbits
 
 
+def load_random_data(path, len_train=160, len_test=40):
+
+    df_len = 0
+    files = glob.glob(path)
+    files = random.sample(files, len_train+len_test)
+    files_train = files[:len_train]
+    files_test = files[-len_test:]
+    li_train = []
+    orbits_train = {}
+    li_test = []
+    orbits_test = {}
+
+    print_(f'loading {len_train} training orbits...')
+    for filename in files_train:
+        df = pd.read_csv(filename, index_col=None, header=0).dropna()
+        li_train.append(df)
+        n = df.iloc[0]['ORBIT']
+        orbits_train[n] = (df_len, df_len + len(df.index))
+        df_len += len(df.index)
+        print_(
+            f'loaded training orbit {n} - {orbits_train[n]} - {(df.iloc[0]["DATE"], df.iloc[-1]["DATE"])}')
+    df_train = pd.concat(li_train, axis=0, ignore_index=True)
+
+    print_(f'loading {len_test} testing orbits...')
+    for filename in files_test:
+        df = pd.read_csv(filename, index_col=None, header=0).dropna()
+        li_test.append(df)
+        n = df.iloc[0]['ORBIT']
+        orbits_test[n] = (df_len, df_len + len(df.index))
+        df_len += len(df.index)
+        print_(
+            f'loaded testing orbit {n} - {orbits_test[n]} - {(df.iloc[0]["DATE"], df.iloc[-1]["DATE"])}')
+    df_test = pd.concat(li_test, axis=0, ignore_index=True)
+
+    return df_train, df_test, orbits_train, orbits_test
+
+
 def calc_stats(cm):
 
     precision = []
@@ -1007,9 +1044,14 @@ print_(
 
 # %% load data
 
-df_train, orbits_train = load_data(f'../data/orbits{set_number}/train/*.csv')
-df_test, orbits_test = load_data(
-    f'../data/orbits{set_number}/test/*.csv', prev_len=len(df_train.index))
+if set_number > 2:
+    df_train, df_test, orbits_train, orbits_test = load_random_data(
+        '../data/orbits/*.csv')
+else:
+    df_train, orbits_train = load_data(
+        f'../data/orbits{set_number}/train/*.csv')
+    df_test, orbits_test = load_data(
+        f'../data/orbits{set_number}/test/*.csv', prev_len=len(df_train.index))
 
 
 # %% select data
