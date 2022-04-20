@@ -804,7 +804,7 @@ def load_data(path, prev_len=0):
         split = 'testing'
 
     files = glob.glob(path)
-    random.shuffle(files)
+    # random.shuffle(files)
 
     li = []
     orbits = {}
@@ -1018,7 +1018,7 @@ print_(f'batch_size: {batch_size}')
 generator_batch_size = 2
 print_(f'generator_batch_size: {generator_batch_size}')
 # Number of instances that should have the same label for a drift to be confirmed
-test_batch_size = 16
+test_batch_size = 1
 print_(f'test_batch_size: {test_batch_size}')
 
 # Set the learning rate
