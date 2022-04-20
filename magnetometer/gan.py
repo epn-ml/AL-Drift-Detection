@@ -1046,7 +1046,7 @@ print_(
 
 if set_number > 2:
     df_train, df_test, orbits_train, orbits_test = load_random_data(
-        '../data/orbits/*.csv')
+        '../data/orbits/*.csv', len_train=240, len_test=60)
 else:
     df_train, orbits_train = load_data(
         f'../data/orbits{set_number}/train/*.csv')
