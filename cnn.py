@@ -542,7 +542,7 @@ def detect_drifts(features, orbits, dates, device, epochs=100, steps_generator=1
 
         # If max_idx didn't change or max_idx has more than 1 unique number, keep looking for drifts
         # if np.array_equal(max_idx, max_idx_prev) or len(np.unique(max_idx)) != 1:
-        if np.all(max_idx[1:] != max_idx[0]) or max_idx[0] == 0:
+        if max_idx[0] == 0:
 
             # Should not be reached
             if index - no_drifts >= 500000:
@@ -864,32 +864,6 @@ def load_random_data(path, len_train=160, len_test=40):
     return df_train, df_test, orbits_train, orbits_test
 
 
-def calc_stats(cm):
-
-    precision = []
-    recall = []
-    f1 = []
-
-    for i, _ in enumerate(cm):
-        tp = cm[i][i]
-        fp = 0
-        fn = 0
-
-        for j, _ in enumerate(cm[i]):
-            if j != i:
-                fp += cm[j][i]
-                fn += cm[i][j]
-
-        precision.append(tp / (tp + fp) if tp + fp != 0 else 0)
-        recall.append(tp / (tp + fn) if tp + fn != 0 else 0)
-        f1.append(2 * precision[i] * recall[i] / (precision[i] +
-                  recall[i]) if precision[i] + recall[i] != 0 else 0)
-
-    print_(f'precision = {precision}')
-    print_(f'recall = {recall}')
-    print_(f'F1 score = {f1}')
-
-
 def select_features(df, features):
 
     drop_col = ['Unnamed: 0', 'X_MSO', 'Y_MSO', 'Z_MSO', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'DBX_MSO', 'DBY_MSO', 'DBZ_MSO', 'RHO_DIPOLE', 'PHI_DIPOLE', 'THETA_DIPOLE',
@@ -1086,32 +1060,6 @@ print_(f'training set size = {len(features_train)}')
 print_(f'testing set size = {len(features_test)}')
 print_(f'training indices = [0:{len(features_train)}]')
 print_(f'testing indices = [{len(features_train)}:{len(features_all)}]')
-
-
-# %% training GAN
-
-"""
-# Min max scaling
-min_features = np.min(features, axis=1)
-features = features - np.reshape(min_features, newshape=(min_features.shape[0], 1))
-max_features = np.max(features, axis=1)
-max_features = np.reshape(max_features, newshape=(max_features.shape[0], 1)) + 0.000001
-features = features / max_features
-"""
-
-if skip:
-    drifts = [(1, (0, len(features_all)))]
-else:
-    t1 = time.perf_counter()
-    drifts = detect_drifts(features=features_all, orbits=orbits_all,
-                           dates=dates, device=device, epochs=epochs,
-                           steps_generator=steps_generator, seed=seed,
-                           batch_size=batch_size, lr=lr, momentum=0.9,
-                           weight_decay=weight_decay, test_batch_size=test_batch_size,
-                           generator_batch_size=generator_batch_size, equalize=equalize,
-                           sequence_length=sequence_length, repeat_factor=repeat_factor)
-    t2 = time.perf_counter()
-    print_(f'drift detection time is {t2 - t1:.2f} seconds')
 
 
 # %% training classifiers
