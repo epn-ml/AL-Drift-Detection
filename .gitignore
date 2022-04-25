@@ -1,5 +1,3 @@
 data/*
 logs/*
-magnetometer/*.csv
-magnetometer/*.xlsx
-magnetometer/*.out
+*.out
