@@ -753,12 +753,12 @@ elif dataset == 4:
     files_test = files[-40:]
 
 select_orbits(logs, files_train, 'train')
-print_('Training orbits:')
+print_('training orbits:')
 for f in files_train:
     print_(f, with_date=False)
 
 select_orbits(logs, files_test, 'test')
-print_('Testing orbits:')
+print_('testing orbits:')
 for f in files_test:
     print_(f, with_date=False)
 
@@ -768,7 +768,7 @@ for f in files_test:
 df_train = load_data(f'{logs}/train.txt')
 df_test = load_data(f'{logs}/test.txt')
 
-with open('../data/features.txt', 'r') as f:
+with open('data/features.txt', 'r') as f:
     feats = [line.strip() for line in f]
 print_(f'selected features: {feats}')
 
