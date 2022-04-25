@@ -768,12 +768,8 @@ for f in files_test:
 df_train = load_data(f'{logs}/train.txt')
 df_test = load_data(f'{logs}/test.txt')
 
-with open('data/features.txt', 'r') as f:
-    feats = [line.strip() for line in f]
-print_(f'selected features: {feats}')
-
-df_train = select_features(df_train, feats)
-df_test = select_features(df_test, feats)
+df_train = select_features(df_train, 'data/features.txt')
+df_test = select_features(df_test, 'data/features.txt')
 df_all = pd.concat([df_train, df_test])
 
 
