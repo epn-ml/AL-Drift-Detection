@@ -253,13 +253,23 @@ def concatenate_features(data, sequence_len=2, has_label=True):
 # Select features according to drift indices and append drift labeles
 def create_training_dataset(dataset, indices, drift_labels, max_length=80):
 
+    removed = {}
     while len(drift_labels) > max_length:
         indices = indices.copy()
         drift_labels = drift_labels.copy()
         u, c = np.unique(drift_labels, return_counts=True)
         i = drift_labels.index(u[np.argmax(c)])
+
+        if drift_labels[i] in removed:
+            removed[drift_labels[i]] += 1
+        else:
+            removed[drift_labels[i]] = 1
+
         del indices[i]
         del drift_labels[i]
+
+    if len(removed) > 0:
+        print_(f'removed labels = {removed}')
 
     print_(
         f'training dataset indices = {(indices[0][0], indices[-1][-1])}')
