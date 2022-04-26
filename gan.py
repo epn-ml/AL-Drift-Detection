@@ -545,6 +545,8 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         else:
 
             print_(
+                f'{index} / {orbits_idx[-1][-1]} {index / orbits_idx[-1][-1]:.2f}%')
+            print_(
                 f'max_idx {max_idx_prev} -> {max_idx} [{index}] (orbit {orbit_numbers[cur_orbit]} - {df["DATE"].iloc[index]})')
             # print_(f'prob = {prob.cpu().detach().numpy()}')
             # print_(f'discriminator output:\n{result.cpu().detach().numpy()}')
