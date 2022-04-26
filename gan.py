@@ -431,6 +431,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     for orbit in orbit_numbers:
         idx = df.loc[(df['ORBIT'] == orbit)].index
         orbits_idx.append((idx[0], idx[-1]))
+        print_(f'{orbit} - {orbits_idx}')
 
     drift_indices = [orbits_idx[0]]
     cur_orbit = 1
@@ -490,7 +491,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     print_('===========================')
 
     # while index + training_window_size < len(features):
-    while index < orbits_idx[-1][-1]:
+    while index < len(features):
 
         data = features[index:index + test_batch_size]
         result = discriminator(torch.Tensor(data).to(torch.float).to(device))
@@ -652,7 +653,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
     drift_labels = [1] + drift_labels
     print_(
-        f'stopping drift detection, {index} >= {orbits_idx[-1][-1]}')
+        f'stopping drift detection, {index} >= {len(features)}')
     print_(f'len(drifts_detected) = {len(drifts_detected)}')
     print_(f'len(drift_labels) = {len(drift_labels)}')
     print_(f'len(drift_indices) = {len(drift_indices)}')
