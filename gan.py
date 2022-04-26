@@ -416,8 +416,6 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
                   seed=0, batch_size=8, lr=0.001, momentum=0.9, weight_decay=0.0005,
                   generator_batch_size=1, sequence_length=2):
 
-    dates = df.iloc[:, 0].values.tolist()
-
     # Standardization
     features = df.iloc[:, 1:-3].values
     mean = np.mean(features, axis=1).reshape(features.shape[0], 1)
@@ -431,7 +429,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     for orbit in orbit_numbers:
         idx = df.loc[(df['ORBIT'] == orbit)].index
         orbits_idx.append((idx[0], idx[-1]))
-        print_(f'{orbit} - {orbits_idx}')
+        print_(f'{orbit} - {orbits_idx[-1]} - ({df["DATE"].iloc[idx[0]]}, {df["DATE"].iloc[idx[-1]]})')
 
     drift_indices = [orbits_idx[0]]
     cur_orbit = 1
@@ -484,14 +482,14 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     discriminator.eval()
 
     no_drifts = index
-    max_idx_prev = np.array([0, 0, 0, 0])
+    max_idx_prev = np.array([0])
 
     print_(
-        f'starting drift detection from index = {index} (orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]})')
+        f'starting drift detection from index = {index} (orbit {orbit_numbers[cur_orbit]})')
     print_('===========================')
 
     # while index + training_window_size < len(features):
-    while index < len(features):
+    while index < orbits_idx[-1][-1]:
 
         data = features[index:index + test_batch_size]
         result = discriminator(torch.Tensor(data).to(torch.float).to(device))
@@ -526,7 +524,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         if index == orbits_idx[cur_orbit][1]:
 
             print_(
-                f'no drifts detected drift during orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]}')
+                f'no drifts detected drift during orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]}')
             print_(f'labelling orbit with previous drift label')
             if len(drift_labels) > 0:
                 next_label = drift_labels[-1]
@@ -536,9 +534,8 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         # Found drift scenario
         else:
 
-            print_(f'{index} / {orbits_idx[-1][-1]} {index / orbits_idx[-1][-1]:.2f}%')
             print_(
-                f'max_idx {max_idx_prev} -> {max_idx} [{index}] (orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]})')
+                f'max_idx {max_idx_prev} -> {max_idx} [{index}] (orbit {orbit_numbers[cur_orbit]} - {df["DATE"].iloc[index]})')
             # print_(f'prob = {prob.cpu().detach().numpy()}')
             # print_(f'discriminator output:\n{result.cpu().detach().numpy()}')
             max_idx_prev = max_idx
@@ -548,7 +545,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             if no_drifts != index:
                 print_(f'no drifts detected from index {no_drifts} to {index}')
                 print_(
-                    f'detected drift in the middle of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]}')
+                    f'detected drift in the middle of orbit {orbit_numbers[cur_orbit]} - {df["DATE"].iloc[index]}')
 
                 # If index didn't reach the crossings (approximately), give orbit a new drift label
                 if (index - orbits_idx[cur_orbit][0]) / (orbits_idx[cur_orbit][1] - orbits_idx[cur_orbit][0]) < 0.5:
@@ -578,7 +575,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
                     print_(f'new drift {next_label} (generator_label)')
 
                 print_(
-                    f'detected drift at the start of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]} - {dates[index]}')
+                    f'detected drift at the start of orbit {orbit_numbers[cur_orbit]}')
 
         max_idx = max_idx[0]
         # Drift detected
@@ -735,6 +732,8 @@ print_(
 
 files = glob.glob('data/orbits/*.csv')
 files.sort(key=lambda x: int(''.join(i for i in x if i.isdigit())))
+files_train = files[:4]
+files_test = files[-1:]
 
 if dataset == 1:
     files = files[460:760]
@@ -767,12 +766,8 @@ for f in files_test:
 
 # %% Select data
 
-df_train = load_data(f'{logs}/train.txt')
-df_test = load_data(f'{logs}/test.txt')
-
-df_train = select_features(df_train, 'data/features.txt')
-df_test = select_features(df_test, 'data/features.txt')
-df_all = pd.concat([df_train, df_test])
+df_all = load_data(f'{logs}/train.txt', f'{logs}/test.txt')
+df_all = select_features(df_all, 'data/features.txt')
 
 
 # %% Training GAN

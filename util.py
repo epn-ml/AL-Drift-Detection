@@ -28,12 +28,18 @@ def select_orbits(logs, files, split):
 
 
 # Load orbits listed in file
-def load_data(orbits_file):
+def load_data(orbits_file, orbits_file2=None):
 
     df_list = []
     with open(orbits_file, 'r') as orbits:
         files = orbits.read().splitlines()
-
+    
+    files2 = []
+    if orbits_file2:
+        with open(orbits_file2, 'r') as orbits:
+            files2 = orbits.read().splitlines()
+    
+    files += files2
     for f in files:
         df_orbit = pd.read_csv(f, index_col=None, header=0).dropna()
         df_list.append(df_orbit)
