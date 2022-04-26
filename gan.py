@@ -724,8 +724,12 @@ seed = np.random.randint(65536)
 np.set_printoptions(suppress=True)
 np.set_printoptions(precision=2)
 
+device_name = 'cuda'
+if len(sys.argv > 3):
+    device_name = 'cpu'
+
 # Get the device the experiment will run on
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device(device_name if torch.cuda.is_available() else 'cpu')
 
 print_(
     f'the seed for the current execution is {seed} for MESSENGER dataset with device {device}')
