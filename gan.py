@@ -725,7 +725,7 @@ np.set_printoptions(suppress=True)
 np.set_printoptions(precision=2)
 
 device_name = 'cuda'
-if len(sys.argv > 3):
+if len(sys.argv) > 3:
     device_name = 'cpu'
 
 # Get the device the experiment will run on
