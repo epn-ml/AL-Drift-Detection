@@ -1,4 +1,3 @@
-import glob
 import os
 from datetime import datetime
 
@@ -127,22 +126,3 @@ def plot_orbit(logs, df, pred=False, draw=[1, 3]):
             f'{logs}/{folder}/fig_{orbit}.png')
         # fig.write_html(
         #     f'{logs}/{folder}/fig_{orbit}.png')
-
-
-# logs = 'logs/123'
-# if not os.path.exists(logs):
-#     os.makedirs(logs)
-# files = glob.glob('data/orbits/*.csv')
-# files.sort(key=lambda x: int(''.join(i for i in x if i.isdigit())))
-
-# select_orbits(logs, files[:3], 'train')
-# select_orbits(logs, files[3:], 'test')
-
-# df_train = load_data(f'{logs}/train.txt')
-# df_test = load_data(f'{logs}/test.txt')
-
-# df_train1 = select_features(df_train, 'data/features.txt')
-# df_test1 = select_features(df_test, 'data/features.txt')
-
-# plot_orbit(logs, df_train)
-# plot_orbit(logs, df_test)

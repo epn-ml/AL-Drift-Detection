@@ -7,7 +7,6 @@ import sys
 import time
 
 import numpy as np
-import pandas as pd
 import torch
 from torch import nn
 from torch.autograd import Variable
@@ -429,7 +428,8 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     for orbit in orbit_numbers:
         idx = df.loc[(df['ORBIT'] == orbit)].index
         orbits_idx.append((idx[0], idx[-1]))
-        print_(f'{orbit} - {orbits_idx[-1]} - ({df["DATE"].iloc[idx[0]]}, {df["DATE"].iloc[idx[-1]]})')
+        print_(
+            f'{orbit} - {orbits_idx[-1]} - ({df["DATE"].iloc[idx[0]]}, {df["DATE"].iloc[idx[-1]]})')
 
     drift_indices = [orbits_idx[0]]
     cur_orbit = 1
@@ -548,8 +548,11 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
                     f'detected drift in the middle of orbit {orbit_numbers[cur_orbit]} - {df["DATE"].iloc[index]}')
 
                 # If index didn't reach the crossings (approximately), give orbit a new drift label
-                if (index - orbits_idx[cur_orbit][0]) / (orbits_idx[cur_orbit][1] - orbits_idx[cur_orbit][0]) < 0.5:
-                    print_(f'index is below the threshold, give orbit a new label')
+                orbit_portion = (index - orbits_idx[cur_orbit][0]) / (
+                    orbits_idx[cur_orbit][1] - orbits_idx[cur_orbit][0])
+                if orbit_portion < 0.5:
+                    print_(
+                        f'index is below the threshold ({orbit_portion:.2f}), give orbit a new label')
                     if temp_label[0] != 0:
                         # add the index of the previous drift if it was a recurring drift
                         next_label = temp_label[0]
