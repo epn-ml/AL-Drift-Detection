@@ -726,7 +726,7 @@ np.set_printoptions(precision=2)
 
 device_name = 'cuda'
 if len(sys.argv) > 3:
-    device_name = 'cpu'
+    device_name = sys.argv[3]
 
 # Get the device the experiment will run on
 device = torch.device(device_name if torch.cuda.is_available() else 'cpu')
