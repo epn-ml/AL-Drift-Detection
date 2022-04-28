@@ -492,13 +492,12 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     discriminator.eval()
 
     no_drifts = index
-    max_idx_prev = np.array([0])
+    max_idx_prev = np.zeros(test_batch_size)
 
     print_(
         f'starting drift detection from index = {index} (orbit {orbit_numbers[cur_orbit]})')
     print_('===========================')
 
-    # while index + training_window_size < len(features):
     while index < orbits_idx[-1][-1]:
 
         data = features[index:index + test_batch_size]
@@ -510,7 +509,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
         # If max_idx didn't change or max_idx has more than 1 unique number, keep looking for drifts
         # if np.array_equal(max_idx, max_idx_prev) or len(np.unique(max_idx)) != 1:
-        if max_idx[0] == 0:
+        if np.all(max_idx[1:] != max_idx[0]) or max_idx[0] == 0:
 
             # Should not be reached
             if index - no_drifts >= 500000:
@@ -545,7 +544,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         else:
 
             print_(
-                f'{index} / {orbits_idx[-1][-1]} {index / orbits_idx[-1][-1]:.2f}%')
+                f'{index} / {orbits_idx[-1][-1]} {100 * index / orbits_idx[-1][-1]:.2f}%')
             print_(
                 f'max_idx {max_idx_prev} -> {max_idx} [{index}] (orbit {orbit_numbers[cur_orbit]} - {df["DATE"].iloc[index]})')
             # print_(f'prob = {prob.cpu().detach().numpy()}')
@@ -719,7 +718,7 @@ print_(f'batch_size: {batch_size}')
 generator_batch_size = 2
 print_(f'generator_batch_size: {generator_batch_size}')
 # Number of instances that should have the same label for a drift to be confirmed
-test_batch_size = 1
+test_batch_size = 4
 print_(f'test_batch_size: {test_batch_size}')
 
 # Set the learning rate
@@ -771,6 +770,8 @@ elif dataset == 4:
     files = random.sample(files, 200)
     files_train = files[:160]
     files_test = files[-40:]
+    files_train.sort(key=lambda x: int(''.join(i for i in x if i.isdigit())))
+    files_test.sort(key=lambda x: int(''.join(i for i in x if i.isdigit())))
 
 select_orbits(logs, files_train, 'train')
 print_('training orbits:')
