@@ -480,7 +480,7 @@ def detect_drifts(df, init_idx, init_labels, device, epochs=100, steps_generator
 
     # Create training dataset
     print_(f'training dataset indices = {drift_indices}')
-    print_(f'training dataset labels  = {drift_labels + [0]}')
+    print_(f'training dataset labels  = {drift_labels}')
     training_dataset = create_training_dataset(
         dataset=features, indices=drift_indices, drift_labels=drift_labels + [0])
 
