@@ -422,7 +422,7 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
 
 
 # Train GAN and detect drifts
-def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, test_batch_size=4,
+def detect_drifts(df, init_idx, init_labels, device, epochs=100, steps_generator=100, equalize=True, test_batch_size=4,
                   seed=0, batch_size=8, lr=0.001, momentum=0.9, weight_decay=0.0005,
                   generator_batch_size=1, sequence_length=2):
 
@@ -442,9 +442,9 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         print_(
             f'{orbit} - {orbits_idx[-1]} - ({df["DATE"].iloc[idx[0]]}, {df["DATE"].iloc[idx[-1]]})')
 
-    drift_indices = [orbits_idx[0]]
-    cur_orbit = 1
-    drift_labels = []
+    drift_indices = init_idx
+    cur_orbit = 1 + len(init_labels)
+    drift_labels = init_labels
     drift_orbits = {}
 
     random.seed(seed)
@@ -477,9 +477,9 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
     # Create training dataset
     print_(f'training dataset indices = {drift_indices}')
-    print_(f'training dataset labels  = {[0]}')
+    print_(f'training dataset labels  = {drift_labels + [0]}')
     training_dataset = create_training_dataset(
-        dataset=features, indices=drift_indices, drift_labels=[0])
+        dataset=features, indices=drift_indices, drift_labels=drift_labels + [0])
 
     generator, discriminator = train_gan(features=training_dataset, device=device, discriminator=discriminator,
                                          generator=generator, epochs=initial_epochs, steps_generator=steps_generator,
@@ -787,7 +787,8 @@ for f in files_test:
 
 # %% Select data
 
-df_all = load_data(f'{logs}/train.txt', f'{logs}/test.txt')
+df_all, init_idx, init_labels = load_data(
+    f'{logs}/train.txt', f'{logs}/test.txt', add_known_drifts=True)
 df_all = select_features(df_all, 'data/features.txt')
 
 
@@ -803,9 +804,9 @@ features = features / max_features
 """
 
 t1 = time.perf_counter()
-drifts = detect_drifts(df=df_all, device=device, epochs=epochs,
-                       steps_generator=steps_generator, seed=seed,
-                       batch_size=batch_size, lr=lr, momentum=0.9,
+drifts = detect_drifts(df=df_all, init_idx=init_idx, init_labels=init_labels,
+                       device=device, epochs=epochs, steps_generator=steps_generator,
+                       seed=seed, batch_size=batch_size, lr=lr, momentum=0.9,
                        weight_decay=weight_decay, test_batch_size=test_batch_size,
                        generator_batch_size=generator_batch_size, equalize=equalize,
                        sequence_length=sequence_length)

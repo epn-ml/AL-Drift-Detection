@@ -27,24 +27,41 @@ def select_orbits(logs, files, split):
 
 
 # Load orbits listed in file
-def load_data(orbits_file, orbits_file2=None):
+def load_data(orbits_file, orbits_file2=None, add_known_drifts=False):
 
     df_list = []
+    files = []
+
+    if add_known_drifts:
+        initial_indices = []
+        initial_labels = []
+        prev_len = 0
+        for i in range(1, 9):
+            with open(f'data/drift{i}.txt', 'r') as orbits:
+                f = orbits.read().splitlines()
+                files += f
+            df_orbit = pd.read_csv(f, index_col=None, header=0).dropna()
+            df_list.append(df_orbit)
+            initial_labels.append(i)
+            initial_indices.append((prev_len, prev_len + len(df_orbit.index)))
+            prev_len += len(df_orbit.index)
+
     with open(orbits_file, 'r') as orbits:
-        files = orbits.read().splitlines()
-    
-    files2 = []
+        files += orbits.read().splitlines()
+
     if orbits_file2:
         with open(orbits_file2, 'r') as orbits:
-            files2 = orbits.read().splitlines()
-    
-    files += files2
+            files += orbits.read().splitlines()
+
     for f in files:
         df_orbit = pd.read_csv(f, index_col=None, header=0).dropna()
         df_list.append(df_orbit)
 
     df = pd.concat(df_list, axis=0, ignore_index=True)
     df['SPLIT'] = orbits_file.split('/')[-1].split('.')[0]
+
+    if add_known_drifts:
+        return df, initial_indices, initial_labels
 
     return df
 
@@ -66,6 +83,18 @@ def select_features(df, features_file):
         drop_col.remove('Unnamed: 0')
 
     return df.drop(drop_col, axis=1)
+
+
+# Add drifts from file to DataFrame
+def load_drifts(df, drifts_file):
+
+    drift_orbits = {}
+    with open(drifts_file, 'r') as drifts:
+        for line in drifts.read().splitlines():
+            line = list(map(int, line.split(' ')))
+            drift_orbits[line[0]] = line[1]
+
+    df['DRIFT'] = df.apply(lambda row: drift_orbits[row['ORBIT']], axis=1)
 
 
 # Plot all orbits with crossings
