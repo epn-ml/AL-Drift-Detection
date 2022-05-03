@@ -64,6 +64,8 @@ def load_data(orbits_file, orbits_file2=None, add_known_drifts=False):
     df['SPLIT'] = orbits_file.split('/')[-1].split('.')[0]
 
     if add_known_drifts:
+        print(f'initial_indices = {initial_indices}')
+        print(f'initial_labels = {initial_labels}')
         return df, initial_indices, initial_labels
 
     return df

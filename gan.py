@@ -438,9 +438,12 @@ def detect_drifts(df, init_idx, init_labels, device, epochs=100, steps_generator
     orbits_idx = []
     for orbit in orbit_numbers:
         idx = df.loc[(df['ORBIT'] == orbit)].index
-        orbits_idx.append((idx[0], idx[-1]))
+        orbits_idx.append((idx[0], idx[-1] + 1))
         print_(
             f'{orbit} - {orbits_idx[-1]} - ({df["DATE"].iloc[idx[0]]}, {df["DATE"].iloc[idx[-1]]})')
+
+    print(f'initial_indices = {init_idx}')
+    print(f'initial_labels = {init_labels}')
 
     drift_indices = init_idx
     cur_orbit = 1 + len(init_labels)
