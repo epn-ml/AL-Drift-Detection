@@ -447,7 +447,7 @@ def detect_drifts(df, init_idx, init_labels, device, epochs=100, steps_generator
 
     drift_indices = init_idx
     cur_orbit = 1 + len(init_labels)
-    drift_labels = init_labels
+    drift_labels = init_labels[1:]
     drift_orbits = {}
 
     random.seed(seed)
@@ -482,7 +482,7 @@ def detect_drifts(df, init_idx, init_labels, device, epochs=100, steps_generator
     print_(f'training dataset indices = {drift_indices}')
     print_(f'training dataset labels  = {drift_labels}')
     training_dataset = create_training_dataset(
-        dataset=features, indices=drift_indices, drift_labels=drift_labels + [0])
+        dataset=features, indices=drift_indices, drift_labels=drift_labels)
 
     generator, discriminator = train_gan(features=training_dataset, device=device, discriminator=discriminator,
                                          generator=generator, epochs=initial_epochs, steps_generator=steps_generator,
