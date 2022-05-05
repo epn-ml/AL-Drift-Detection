@@ -33,21 +33,14 @@ def load_data(orbits_file, orbits_file2=None, add_known_drifts=False):
     files = []
 
     if add_known_drifts:
-        initial_indices = []
-        initial_labels = []
-        prev_len = 0
         for i in range(1, 9):
             files_buf = []
             with open(f'data/drift{i}.txt', 'r') as orbits:
                 f = orbits.read().splitlines()
                 files_buf += f
             for f in files_buf:
-                print(f'reading {f} - drift {i}')
                 df_orbit = pd.read_csv(f, index_col=None, header=0).dropna()
                 df_list.append(df_orbit)
-                initial_labels.append(i)
-                initial_indices.append((prev_len, prev_len + len(df_orbit.index)))
-                prev_len += len(df_orbit.index)
 
     with open(orbits_file, 'r') as orbits:
         files += orbits.read().splitlines()
@@ -57,17 +50,11 @@ def load_data(orbits_file, orbits_file2=None, add_known_drifts=False):
             files += orbits.read().splitlines()
 
     for f in files:
-        print(f'reading {f}')
         df_orbit = pd.read_csv(f, index_col=None, header=0).dropna()
         df_list.append(df_orbit)
 
     df = pd.concat(df_list, axis=0, ignore_index=True)
     df['SPLIT'] = orbits_file.split('/')[-1].split('.')[0]
-
-    if add_known_drifts:
-        print(f'initial_indices = {initial_indices}')
-        print(f'initial_labels = {initial_labels}')
-        return df, initial_indices, initial_labels
 
     return df
 
