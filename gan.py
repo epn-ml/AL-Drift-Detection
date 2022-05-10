@@ -616,7 +616,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
                 next_label = 8
             print_(
                 f'assigning drift {next_label} to known orbit {orbit_numbers[cur_orbit]}')
-        elif cur_orbit == 99:
+        if cur_orbit == 99:
             generator_label = 9
             print_(f'set generator_label = 9')
         # load known orbits from a separate directory
