@@ -578,7 +578,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
                     else:
                         next_label = 1
                     print_(
-                        f'index is above the threshold, give orbit a previous label {next_label}')
+                        f'index is above the threshold ({orbit_portion:.2f}), give orbit a previous label {next_label}')
 
             # Drift at the start
             else:
@@ -596,37 +596,6 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         # Drift detected
         drift_indices.append(
             (orbits_idx[cur_orbit][0], orbits_idx[cur_orbit][1]))
-
-        if cur_orbit < 100:
-            if cur_orbit < 13:
-                next_label = 1
-            elif cur_orbit < 27:
-                next_label = 2
-            elif cur_orbit < 42:
-                next_label = 3
-            elif cur_orbit < 50:
-                next_label = 4
-            elif cur_orbit < 63:
-                next_label = 5
-            elif cur_orbit < 77:
-                next_label = 6
-            elif cur_orbit < 89:
-                next_label = 7
-            else:
-                next_label = 8
-            print_(
-                f'assigning drift {next_label} to known orbit {orbit_numbers[cur_orbit]}')
-        if cur_orbit == 99:
-            generator_label = 9
-            print_(f'set generator_label = 9')
-        # load known orbits from a separate directory
-
-        drift_labels.append(next_label)
-        drift_orbits[orbit_numbers[cur_orbit]] = next_label
-        print_(f'add drift {drift_labels[-1]} {drift_indices[-1]}')
-
-        if len(drift_labels) > 1:
-            print_(f'drift from {drift_labels[-2]} to {drift_labels[-1]}')
 
         if max_idx != generator_label:
             # Increase the max_idx by 1 if it is above the previous drift
@@ -650,6 +619,45 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             discriminator.update()
             discriminator = discriminator.to(device)
             generator_label += 1
+
+        if cur_orbit < 100:
+            if cur_orbit < 13:
+                next_label = 1
+                generator_label = 1
+            elif cur_orbit < 27:
+                next_label = 2
+                generator_label = 2
+            elif cur_orbit < 42:
+                next_label = 3
+                generator_label = 3
+            elif cur_orbit < 50:
+                next_label = 4
+                generator_label = 4
+            elif cur_orbit < 63:
+                next_label = 5
+                generator_label = 5
+            elif cur_orbit < 77:
+                next_label = 6
+                generator_label = 6
+            elif cur_orbit < 89:
+                next_label = 7
+                generator_label = 7
+            else:
+                next_label = 8
+                generator_label = 8
+            print_(
+                f'assigning drift {next_label} to known orbit {orbit_numbers[cur_orbit]}')
+            print_(f'set generator_label = {generator_label}')
+        elif cur_orbit == 100:
+            generator_label = 9
+            print_(f'set generator_label = {generator_label}')
+
+        drift_labels.append(next_label)
+        drift_orbits[orbit_numbers[cur_orbit]] = next_label
+        print_(f'add drift {drift_labels[-1]} {drift_indices[-1]}')
+
+        if len(drift_labels) > 1:
+            print_(f'drift from {drift_labels[-2]} to {drift_labels[-1]}')
 
         generator = Generator(
             inp=features.shape[1], out=features.shape[1], sequence_length=sequence_length)

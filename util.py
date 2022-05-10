@@ -32,6 +32,7 @@ def load_data(orbits_file, orbits_file2=None, add_known_drifts=False):
     df_list = []
     files = []
 
+    # load known orbits from a separate directory
     if add_known_drifts:
         for i in range(1, 9):
             files_buf = []
