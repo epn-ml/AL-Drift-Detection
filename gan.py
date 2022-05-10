@@ -252,7 +252,7 @@ def concatenate_features(data, sequence_len=2, has_label=True):
 
 
 # Select features according to drift indices and append drift labeles
-def create_training_dataset(dataset, indices, drift_labels, max_length=100):
+def create_training_dataset(dataset, indices, drift_labels, max_length=80):
 
     removed = {}
     while len(drift_labels) > max_length:
@@ -597,24 +597,28 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         drift_indices.append(
             (orbits_idx[cur_orbit][0], orbits_idx[cur_orbit][1]))
 
-        if cur_orbit < 13:
-            next_label = 1
-        elif cur_orbit < 27:
-            next_label = 2
-        elif cur_orbit < 42:
-            next_label = 3
-        elif cur_orbit < 50:
-            next_label = 4
-        elif cur_orbit < 63:
-            next_label = 5
-        elif cur_orbit < 77:
-            next_label = 6
-        elif cur_orbit < 89:
-            next_label = 7
-        elif cur_orbit < 100:
-            next_label = 8
-        print_(
-            f'switch drift to {next_label} for known orbit {orbit_numbers[cur_orbit]}')
+        if cur_orbit < 100:
+            if cur_orbit < 13:
+                next_label = 1
+            elif cur_orbit < 27:
+                next_label = 2
+            elif cur_orbit < 42:
+                next_label = 3
+            elif cur_orbit < 50:
+                next_label = 4
+            elif cur_orbit < 63:
+                next_label = 5
+            elif cur_orbit < 77:
+                next_label = 6
+            elif cur_orbit < 89:
+                next_label = 7
+            else:
+                next_label = 8
+            print_(
+                f'assigning drift {next_label} to known orbit {orbit_numbers[cur_orbit]}')
+        elif cur_orbit == 100:
+            generator_label = 9
+            print_(f'set generator_label = 9')
         # load known orbits from a separate directory
 
         drift_labels.append(next_label)
