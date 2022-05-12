@@ -442,10 +442,10 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         print_(
             f'{orbit} - {orbits_idx[-1]} - ({df["DATE"].iloc[idx[0]]}, {df["DATE"].iloc[idx[-1]]})')
 
-    drift_indices = [orbits_idx[0]]
-    cur_orbit = 1
-    drift_labels = []
-    drift_orbits = {}
+    drift_indices = orbits_idx[:100]
+    cur_orbit = 100
+    drift_labels = 12*[1] + 14*[2] + 15*[3] + 8*[4] + 13*[5] + 14*[6] + 12*[7] + 11*[8]
+    drift_orbits = dict(zip(orbit_numbers[:100], [1] + drift_labels))
 
     random.seed(seed)
     torch.manual_seed(seed=seed)
@@ -458,7 +458,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
     current_batch_size = batch_size
     drifts_detected = [0]
-    generator_label = 1
+    generator_label = 9
 
     # Create the Generator and Discriminator objects
     generator = Generator(
@@ -477,9 +477,9 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
     # Create training dataset
     print_(f'training dataset indices = {drift_indices}')
-    print_(f'training dataset labels  = {[0]}')
+    print_(f'training dataset labels  = {drift_labels+temp_label}')
     training_dataset = create_training_dataset(
-        dataset=features, indices=drift_indices, drift_labels=[0])
+        dataset=features, indices=drift_indices, drift_labels=drift_labels+temp_label, max_length=100)
 
     generator, discriminator = train_gan(features=training_dataset, device=device, discriminator=discriminator,
                                          generator=generator, epochs=initial_epochs, steps_generator=steps_generator,
@@ -596,6 +596,10 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         # Drift detected
         drift_indices.append(
             (orbits_idx[cur_orbit][0], orbits_idx[cur_orbit][1]))
+        drift_labels.append(next_label)
+        drift_orbits[orbit_numbers[cur_orbit]] = next_label
+        print_(
+            f'add drift {drift_labels[-1]} {drift_indices[-1]} (orbit {orbit_numbers[cur_orbit]}, generator_label {generator_label})')
 
         if max_idx != generator_label:
             # Increase the max_idx by 1 if it is above the previous drift
@@ -619,42 +623,6 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             discriminator.update()
             discriminator = discriminator.to(device)
             generator_label += 1
-
-        # if cur_orbit < 100:
-        #     if cur_orbit < 13:
-        #         next_label = 1
-        #         generator_label = 1
-        #     elif cur_orbit < 27:
-        #         next_label = 2
-        #         generator_label = 2
-        #     elif cur_orbit < 42:
-        #         next_label = 3
-        #         generator_label = 3
-        #     elif cur_orbit < 50:
-        #         next_label = 4
-        #         generator_label = 4
-        #     elif cur_orbit < 63:
-        #         next_label = 5
-        #         generator_label = 5
-        #     elif cur_orbit < 77:
-        #         next_label = 6
-        #         generator_label = 6
-        #     elif cur_orbit < 89:
-        #         next_label = 7
-        #         generator_label = 7
-        #     else:
-        #         next_label = 8
-        #         generator_label = 8
-        #     print_(
-        #         f'assigning drift {next_label} to known orbit {orbit_numbers[cur_orbit]}')
-        #     print_(f'set generator_label = {generator_label}')
-        # elif cur_orbit == 100:
-        #     generator_label = 9
-        #     print_(f'set generator_label = {generator_label}')
-
-        drift_labels.append(next_label)
-        drift_orbits[orbit_numbers[cur_orbit]] = next_label
-        print_(f'add drift {drift_labels[-1]} {drift_indices[-1]} (orbit {orbit_numbers[cur_orbit]}, generator_label {generator_label})')
 
         generator = Generator(
             inp=features.shape[1], out=features.shape[1], sequence_length=sequence_length)
