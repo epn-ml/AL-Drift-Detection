@@ -441,7 +441,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         orbits_idx.append((idx[0], idx[-1] + 1))
         print_(
             f'{orbit} - {orbits_idx[-1]} - ({df["DATE"].iloc[idx[0]]}, {df["DATE"].iloc[idx[-1]]})')
-    for i in range(1, orbits_idx) - 1:
+    for i in range(1, len(orbits_idx)-1):
         if orbits_idx[i][0] != orbits_idx[i-1][1]:
             orbits_idx[i] = (orbits_idx[i-1][1], orbits_idx[i][1])
             print_(f'replaced bad orbit 1st idx: {orbits_idx[i]}')
