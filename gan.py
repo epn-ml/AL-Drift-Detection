@@ -556,7 +556,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         generator.eval()
         discriminator.eval()
 
-        drifts_detected.append(index)
+        drifts_detected.append(drift_indices[-1][0])
 
         if cur_orbit < len(orbit_numbers) - 1:
             print_(
