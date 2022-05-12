@@ -290,8 +290,6 @@ def create_training_dataset(dataset, indices, drift_labels, max_length=80):
             else:
                 modified_drift_labels.append(label)
 
-    print_(f'modified drift labels =\n{np.array(np.unique(modified_drift_labels, return_counts=True))}')
-
     training_dataset = np.hstack((dataset[indices[0][0]:indices[0][1]],
                                   np.ones((indices[0][1]-indices[0][0], 1)) * modified_drift_labels[0]))
     for idx in range(1, len(modified_drift_labels)):
@@ -471,7 +469,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
     current_batch_size = batch_size
     drifts_detected = [0]
-    generator_label = 1
+    generator_label = 2
 
     # Create the Generator and Discriminator objects
     generator = Generator(
