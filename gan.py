@@ -469,7 +469,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
     current_batch_size = batch_size
     drifts_detected = [0]
-    generator_label = 2
+    generator_label = 1
 
     # Create the Generator and Discriminator objects
     generator = Generator(
@@ -503,13 +503,14 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
     while queue_idx:
 
-        if not drift_labels or queue_labels[0] == drift_labels[-1]:
-            max_idx = 0
-        else:
-            max_idx = queue_labels[0]
         drift_indices.append(queue_idx.pop(0))
         drift_labels.append(queue_labels.pop(0))
         drift_orbits[orbit_numbers[cur_orbit]] = drift_labels[-1]
+
+        if not queue_labels or queue_labels[0] != drift_labels[-1]:
+            max_idx = generator_label
+        else:
+            max_idx = 0
 
         if max_idx != generator_label:
             # Increase the max_idx by 1 if it is above the previous drift
