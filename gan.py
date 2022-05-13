@@ -252,7 +252,7 @@ def concatenate_features(data, sequence_len=2, has_label=True):
 
 
 # Select features according to drift indices and append drift labeles
-def create_training_dataset(dataset, indices, drift_labels, max_length=100):
+def create_training_dataset(dataset, indices, drift_labels, max_length=90):
 
     removed = {}
     while len(drift_labels) > max_length:
@@ -650,8 +650,9 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         max_idx = max_idx[0]
         max_idx_saved = max_idx
         end_orbit = cur_orbit + 1
+        orbits_n = random.randrange(14, 22)
 
-        while end_orbit - cur_orbit < 20:
+        while end_orbit - cur_orbit < orbits_n:
             if end_orbit == len(orbit_numbers):
                 break
             if abs(orbit_numbers[end_orbit] - orbit_numbers[end_orbit-1]) > 4:
@@ -860,7 +861,7 @@ for f in files_test:
 df_all = load_data(f'{logs}/train.txt',
                    f'{logs}/test.txt', add_known_drifts=True)
 df_all = select_features(df_all, 'data/features.txt')
-
+print_(f'selected data: {df_all.head()}')
 
 # %% Training GAN
 
