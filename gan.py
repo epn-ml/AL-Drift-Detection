@@ -655,7 +655,6 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             if end_orbit == len(orbit_numbers):
                 break
             if abs(orbit_numbers[end_orbit] - orbit_numbers[end_orbit-1]) > 4:
-                end_orbit -= 1
                 break
             end_orbit += 1
 
