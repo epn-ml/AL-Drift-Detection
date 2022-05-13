@@ -567,7 +567,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     index = orbits_idx[cur_orbit][0]
 
     no_drifts = index
-    max_idx_prev = np.zeros(test_batch_size)
+    max_idx_prev = test_batch_size * [max_idx]
 
     print_(
         f'starting drift detection from index = {index} (orbit {orbit_numbers[cur_orbit]})')
@@ -579,6 +579,11 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         result = discriminator(torch.Tensor(data).to(torch.float).to(device))
         prob, max_idx = torch.max(result, dim=1)
         max_idx = max_idx.cpu().detach().numpy()
+        print_(
+            f'max_idx {max_idx_prev} -> {max_idx} [{index}] (orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]})')
+        # print_(f'prob = {prob.cpu().detach().numpy()}')
+        # print_(f'discriminator output:\n{result.cpu().detach().numpy()}')
+        max_idx_prev = max_idx
 
         drift_found = False
 
@@ -618,13 +623,9 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         # Found drift scenario
         else:
 
+            print_(f'orbit {cur_orbit} / {len(orbit_numbers)}')
             print_(
                 f'{index} / {orbits_idx[-1][-1]} {100 * index / orbits_idx[-1][-1]:.2f}%')
-            print_(
-                f'max_idx {max_idx_prev} -> {max_idx} [{index}] (orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]})')
-            # print_(f'prob = {prob.cpu().detach().numpy()}')
-            # print_(f'discriminator output:\n{result.cpu().detach().numpy()}')
-            max_idx_prev = max_idx
             next_label = generator_label
 
             # Drift in the middle
@@ -633,101 +634,97 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
                 print_(
                     f'detected drift in the middle of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]}')
 
-                # If index didn't reach the crossings (approximately), give orbit a new drift label
-                orbit_portion = (index - orbits_idx[cur_orbit][0]) / (
-                    orbits_idx[cur_orbit][1] - orbits_idx[cur_orbit][0])
-                if orbit_portion < 0.5:
-                    print_(
-                        f'index is below the threshold ({orbit_portion:.2f}), give orbit a new label')
-                    if temp_label[0] != 0:
-                        # add the index of the previous drift if it was a recurring drift
-                        next_label = temp_label[0]
-                        print_(f'recurring drift {next_label} (temp_label[0])')
-                    else:
-                        print_(f'new drift {next_label} (generator_label)')
-
-                else:  # else give it a previous drift label
-                    if drift_labels:
-                        next_label = drift_labels[-1]
-                    else:
-                        next_label = 1
-                    print_(
-                        f'index is above the threshold ({orbit_portion:.2f}), give orbit a previous label {next_label}')
-
             # Drift at the start
             else:
-                if temp_label[0] != 0:
-                    # add the index of the previous drift if it was a recurring drift
-                    next_label = temp_label[0]
-                    print_(f'recurring drift {next_label} (temp_label[0])')
-                else:
-                    print_(f'new drift {next_label} (generator_label)')
-
                 print_(
-                    f'detected drift at the start of orbit {orbit_numbers[cur_orbit]}')
+                    f'detected drift at the start of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]}')
 
-        max_idx = max_idx[0]
+            if temp_label[0] != 0:
+                # add the index of the previous drift if it was a recurring drift
+                next_label = temp_label[0]
+                print_(f'recurring drift {next_label} (temp_label[0])')
+            else:
+                print_(f'new drift {next_label} (generator_label)')
+
         # Drift detected
-        drift_indices.append(
-            (orbits_idx[cur_orbit][0], orbits_idx[cur_orbit][1]))
-        drift_labels.append(next_label)
-        drift_orbits[orbit_numbers[cur_orbit]] = next_label
-        print_(
-            f'add drift {drift_labels[-1]} {drift_indices[-1]} (orbit {orbit_numbers[cur_orbit]}, generator_label {generator_label})')
+        max_idx = max_idx[0]
+        max_idx_saved = max_idx
+        orbits_count = 1
 
-        if max_idx != generator_label:
-            # Increase the max_idx by 1 if it is above the previous drift
-            if temp_label[0] <= max_idx and temp_label[0] != 0:
+        while orbits_count < 20:
+            if cur_orbit + orbits_count + 1 >= len(orbit_numbers):
+                break
+            if abs(orbit_numbers[cur_orbit + orbits_count] - orbit_numbers[cur_orbit]) > 4:
+                break
+            orbits_count += 1
+
+        while cur_orbit < cur_orbit + orbits_count:
+
+            drift_indices.append(
+                (orbits_idx[cur_orbit][0], orbits_idx[cur_orbit][1]))
+            drift_labels.append(next_label)
+            drift_orbits[orbit_numbers[cur_orbit]] = next_label
+            print_(
+                f'add drift {drift_labels[-1]} {drift_indices[-1]} (orbit {orbit_numbers[cur_orbit]}, generator_label {generator_label})')
+
+            if cur_orbit + 1 == cur_orbit + orbits_count:
+                max_idx = max_idx_saved
+            else:
+                max_idx = 0
+
+            if max_idx != generator_label:
+                # Increase the max_idx by 1 if it is above the previous drift
+                if temp_label[0] <= max_idx and temp_label[0] != 0:
+                    print_(
+                        f'temp_label[0] {temp_label[0]} <= max_idx {max_idx}, max_idx += 1')
+                    max_idx += 1
+                # We reset the top layer predictions because the drift order has changed and the network should be retrained
                 print_(
-                    f'temp_label[0] {temp_label[0]} <= max_idx {max_idx}, max_idx += 1')
-                max_idx += 1
-            # We reset the top layer predictions because the drift order has changed and the network should be retrained
-            print_(
-                f'discriminator.reset_top_layer(), temp_label[0] {temp_label[0]} -> max_idx {max_idx}')
-            temp_label = [max_idx]
-            discriminator.reset_top_layer()
-            discriminator = discriminator.to(device)
+                    f'discriminator.reset_top_layer(), temp_label[0] {temp_label[0]} -> max_idx {max_idx}')
+                temp_label = [max_idx]
+                discriminator.reset_top_layer()
+                discriminator = discriminator.to(device)
 
-        else:
-            # If this is a new drift, label for the previous drift training dataset is the previous highest label
-            # which is the generator label
-            print_(
-                f'discriminator.update(), temp_label[0] {temp_label[0]} -> 0, generator_label {generator_label} += 1')
-            temp_label = [0]
-            discriminator.update()
-            discriminator = discriminator.to(device)
-            generator_label += 1
+            else:
+                # If this is a new drift, label for the previous drift training dataset is the previous highest label
+                # which is the generator label
+                print_(
+                    f'discriminator.update(), temp_label[0] {temp_label[0]} -> 0, generator_label {generator_label} += 1')
+                temp_label = [0]
+                discriminator.update()
+                discriminator = discriminator.to(device)
+                generator_label += 1
 
-        generator = Generator(
-            inp=features.shape[1], out=features.shape[1], sequence_length=sequence_length)
-        generator = generator.to(device=device)
+            generator = Generator(
+                inp=features.shape[1], out=features.shape[1], sequence_length=sequence_length)
+            generator = generator.to(device=device)
 
-        generator.train()
-        discriminator.train()
+            generator.train()
+            discriminator.train()
 
-        training_dataset = create_training_dataset(dataset=features,
-                                                   indices=drift_indices,
-                                                   drift_labels=drift_labels+temp_label)
+            training_dataset = create_training_dataset(dataset=features,
+                                                    indices=drift_indices,
+                                                    drift_labels=drift_labels+temp_label)
 
-        generator, discriminator = train_gan(features=training_dataset, device=device,
-                                             discriminator=discriminator,
-                                             generator=generator, epochs=epochs,
-                                             steps_generator=steps_generator, seed=seed,
-                                             batch_size=current_batch_size, max_label=generator_label,
-                                             lr=lr/10, momentum=momentum, equalize=equalize,
-                                             weight_decay=weight_decay, sequence_length=sequence_length)
+            generator, discriminator = train_gan(features=training_dataset, device=device,
+                                                discriminator=discriminator,
+                                                generator=generator, epochs=epochs,
+                                                steps_generator=steps_generator, seed=seed,
+                                                batch_size=current_batch_size, max_label=generator_label,
+                                                lr=lr/10, momentum=momentum, equalize=equalize,
+                                                weight_decay=weight_decay, sequence_length=sequence_length)
 
-        # Set the generator and discriminator to evaluation mode
-        generator.eval()
-        discriminator.eval()
+            # Set the generator and discriminator to evaluation mode
+            generator.eval()
+            discriminator.eval()
 
-        drifts_detected.append(index)
+            drifts_detected.append(index)
 
-        index = orbits_idx[cur_orbit][1]
-        if cur_orbit < len(orbit_numbers) - 1:
-            print_(
-                f'orbit change {orbit_numbers[cur_orbit]} -> {orbit_numbers[cur_orbit+1]}')
-        cur_orbit += 1
+            index = orbits_idx[cur_orbit][1]
+            if cur_orbit < len(orbit_numbers) - 1:
+                print_(
+                    f'orbit change {orbit_numbers[cur_orbit]} -> {orbit_numbers[cur_orbit+1]}')
+            cur_orbit += 1
 
         no_drifts = index
 
