@@ -252,7 +252,7 @@ def concatenate_features(data, sequence_len=2, has_label=True):
 
 
 # Select features according to drift indices and append drift labeles
-def create_training_dataset(dataset, indices, drift_labels, max_length=80):
+def create_training_dataset(dataset, indices, drift_labels, max_length=100):
 
     removed = {}
     while len(drift_labels) > max_length:
@@ -825,9 +825,9 @@ files_train = files[:4]
 files_test = files[-1:]
 
 if dataset == 1:
-    files = files[460:760]
-    files_train = files[:240]
-    files_test = files[-60:]
+    files = files[460:560]
+    files_train = files[:80]
+    files_test = files[-20:]
 elif dataset == 2:
     files = files[460:760]
     files_train = [f for i, f in enumerate(files) if (i+1) % 5 != 0]
