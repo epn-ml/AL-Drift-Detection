@@ -649,16 +649,19 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         # Drift detected
         max_idx = max_idx[0]
         max_idx_saved = max_idx
-        orbits_count = 1
+        end_orbit = cur_orbit + 1
 
-        while orbits_count < 20:
-            if cur_orbit + orbits_count + 1 >= len(orbit_numbers):
+        while end_orbit - cur_orbit < 20:
+            if end_orbit + 1 == len(orbit_numbers):
                 break
-            if abs(orbit_numbers[cur_orbit + orbits_count] - orbit_numbers[cur_orbit]) > 4:
+            if abs(orbit_numbers[end_orbit] - orbit_numbers[cur_orbit]) > 4:
                 break
-            orbits_count += 1
+            end_orbit += 1
 
-        while cur_orbit < cur_orbit + orbits_count:
+        print_(
+            f'assigning drift {next_label} to orbits {orbit_numbers[cur_orbit]} - {orbit_numbers[end_orbit-1]}')
+
+        while cur_orbit < end_orbit:
 
             drift_indices.append(
                 (orbits_idx[cur_orbit][0], orbits_idx[cur_orbit][1]))
@@ -667,7 +670,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             print_(
                 f'add drift {drift_labels[-1]} {drift_indices[-1]} (orbit {orbit_numbers[cur_orbit]}, generator_label {generator_label})')
 
-            if cur_orbit + 1 == cur_orbit + orbits_count:
+            if cur_orbit + 1 == end_orbit:
                 max_idx = max_idx_saved
             else:
                 max_idx = 0
@@ -703,16 +706,16 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             discriminator.train()
 
             training_dataset = create_training_dataset(dataset=features,
-                                                    indices=drift_indices,
-                                                    drift_labels=drift_labels+temp_label)
+                                                       indices=drift_indices,
+                                                       drift_labels=drift_labels+temp_label)
 
             generator, discriminator = train_gan(features=training_dataset, device=device,
-                                                discriminator=discriminator,
-                                                generator=generator, epochs=epochs,
-                                                steps_generator=steps_generator, seed=seed,
-                                                batch_size=current_batch_size, max_label=generator_label,
-                                                lr=lr/10, momentum=momentum, equalize=equalize,
-                                                weight_decay=weight_decay, sequence_length=sequence_length)
+                                                 discriminator=discriminator,
+                                                 generator=generator, epochs=epochs,
+                                                 steps_generator=steps_generator, seed=seed,
+                                                 batch_size=current_batch_size, max_label=generator_label,
+                                                 lr=lr/10, momentum=momentum, equalize=equalize,
+                                                 weight_decay=weight_decay, sequence_length=sequence_length)
 
             # Set the generator and discriminator to evaluation mode
             generator.eval()
