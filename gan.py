@@ -428,9 +428,11 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
     # Standardization
     features = df.iloc[:, 1:-3].values
+    print_(f'features:\n{features[:5]}')
     mean = np.mean(features, axis=1).reshape(features.shape[0], 1)
     std = np.std(features, axis=1).reshape(features.shape[0], 1)
     features = (features - mean) / (std + 0.000001)
+    print_(f'standardized:\n{features[:5]}')
 
     print_(f'total size = {len(features)}')
 
