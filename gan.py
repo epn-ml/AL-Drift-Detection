@@ -427,7 +427,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
                   generator_batch_size=1, sequence_length=2):
 
     # Standardization
-    features = df.iloc[:, 1:-3].values
+    features = df.iloc[:, 1:-2].values
     print_(f'features:\n{features[:5]}')
     mean = np.mean(features, axis=1).reshape(features.shape[0], 1)
     std = np.std(features, axis=1).reshape(features.shape[0], 1)
@@ -741,7 +741,6 @@ print_(f'weight_decay: {weight_decay}')
 seed = np.random.randint(65536)
 
 np.set_printoptions(suppress=True)
-np.set_printoptions(precision=2)
 
 device_name = 'cuda'
 if len(sys.argv) > 3:
