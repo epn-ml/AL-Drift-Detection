@@ -522,8 +522,8 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         prob, max_idx = torch.max(result, dim=1)
         max_idx = max_idx.cpu().detach().numpy()
         if not np.array_equal(max_idx, max_idx_prev):
-            print_(
-                f'max_idx {max_idx_prev} -> {max_idx} [{index}]')  # (orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]})')
+            # print_(
+            #     f'max_idx {max_idx_prev} -> {max_idx} [{index}]')  # (orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]})')
             # print_(f'prob = {prob.cpu().detach().numpy()}')
             # print_(f'discriminator output:\n{result.cpu().detach().numpy()}')
             max_idx_prev = max_idx
@@ -614,7 +614,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         # print_(
         #     f'indices = {(orbits_idx[cur_orbit][0], orbits_idx[end_orbit-1][1])}')
         print_(
-            f'orbits {new_orbits[0]} - {new_orbits[-1]} ({end_orbit-cur_orbit}) -- drift {next_label}')
+            f'orbits {new_orbits[0]} - {new_orbits[-1]} ({end_orbit-cur_orbit}) -- drift {next_label} ([{max_idx_prev[0]}] -> {max_idx})')
 
         drift_indices.append(
             (orbits_idx[cur_orbit][0], orbits_idx[end_orbit-1][1]))
