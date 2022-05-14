@@ -603,7 +603,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
         while end_orbit - cur_orbit < orbits_max:
             if end_orbit == len(orbit_numbers):
-                print_(f'reached final orbit {orbit_numbers[end_orbit]}')
+                print_(f'reached final orbit {orbit_numbers[end_orbit-1]}')
                 break
             # 6 - max difference between orbits in the same drift
             if abs(orbit_numbers[end_orbit] - orbit_numbers[end_orbit-1]) > 6:
