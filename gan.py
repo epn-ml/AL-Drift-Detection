@@ -518,11 +518,12 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         result = discriminator(torch.Tensor(data).to(torch.float).to(device))
         prob, max_idx = torch.max(result, dim=1)
         max_idx = max_idx.cpu().detach().numpy()
-        print_(
-            f'max_idx {max_idx_prev} -> {max_idx} [{index}] (orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]})')
-        # print_(f'prob = {prob.cpu().detach().numpy()}')
-        # print_(f'discriminator output:\n{result.cpu().detach().numpy()}')
-        max_idx_prev = max_idx
+        if not np.array_equal(max_idx, max_idx_prev):
+            print_(
+                f'max_idx {max_idx_prev} -> {max_idx} [{index}] (orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]})')
+            # print_(f'prob = {prob.cpu().detach().numpy()}')
+            # print_(f'discriminator output:\n{result.cpu().detach().numpy()}')
+            max_idx_prev = max_idx
 
         drift_found = False
 
@@ -607,6 +608,8 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         drift_orbits = {**drift_orbits, **new_drift_orbits}
         print_(
             f'assigning drift {next_label} to orbits {orbit_numbers[cur_orbit]} - {orbit_numbers[end_orbit-1]}, generator_label {generator_label}')
+        print_(
+            f'indices = {(orbits_idx[cur_orbit][0], orbits_idx[end_orbit-1][1])}')
 
         drift_indices.append(
             (orbits_idx[cur_orbit][0], orbits_idx[end_orbit-1][1]))
@@ -664,7 +667,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         if cur_orbit + orbits_n < len(orbit_numbers):
             print_(
                 f'orbit change {orbit_numbers[cur_orbit]} -> {orbit_numbers[cur_orbit+orbits_n]}')
-        cur_orbit += orbits_n  # = end_orbit
+        cur_orbit = end_orbit
 
         no_drifts = index
 
@@ -680,7 +683,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     drifts = list(zip(drift_labels, drift_indices))
 
     for d in drifts:
-        print_(f'{d[0]}: {d[1]} - orbit {orbit_numbers[orbits_idx.index(d[1])]}')
+        print_(f'drift - {d[0]}: indices - {d[1]}')
 
     print_(generator)
     print_(discriminator)
@@ -690,7 +693,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             drifts_file.write(
                 f'{orbit} {drift_orbits[orbit]}\n')
 
-    return drifts
+    return drift_orbits
 
 
 # %% Setup
