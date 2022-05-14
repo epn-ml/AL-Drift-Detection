@@ -269,13 +269,13 @@ def create_training_dataset(dataset, indices, drift_labels, max_length=100):
         del indices[i]
         del drift_labels[i]
 
-    if len(removed) > 0:
-        print_(f'removed labels = {removed}')
+    # if len(removed) > 0:
+    #     print_(f'removed labels = {removed}')
 
-    print_(
-        f'training dataset indices = {(indices[0][0], indices[-1][-1])}')
-    print_(
-        f'training dataset labels len = {len(drift_labels)}, unique =\n{np.array(np.unique(drift_labels, return_counts=True))}')
+    # print_(
+    #     f'training dataset indices = {(indices[0][0], indices[-1][-1])}')
+    # print_(
+    #     f'training dataset labels len = {len(drift_labels)}, unique =\n{np.array(np.unique(drift_labels, return_counts=True))}')
 
     # If there is a periodicity, we switch all previous drifts to the same label
     modified_drift_labels = [x for x in drift_labels]
@@ -408,7 +408,7 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     # This is the label for new drifts (any input other than the currently learned distributions)
     generator_label = ones * max_label
 
-    print_(f'training GAN...')
+    # print_(f'training GAN...')
     for epochs_trained in range(epochs):
         discriminator = train_discriminator(real_data=real_data, fake_data=generator_data, discriminator=discriminator,
                                             generator=generator, optimizer=optimizer_discriminator,
@@ -445,7 +445,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         idx = df.loc[(df['ORBIT'] == orbit)].index
         orbits_idx.append((idx[0], idx[-1] + 1))
         print_(
-            f'{orbit} - {orbits_idx[-1]} - ({df["DATE"].iloc[idx[0]]}, {df["DATE"].iloc[idx[-1]]})')
+            f'{orbit} - {orbits_idx[-1]} - ({df["DATE"].iloc[idx[0]]}, {df["DATE"].iloc[idx[-1]]})', with_date=False)
     for i in range(1, len(orbits_idx)-1):
         if orbits_idx[i][0] != orbits_idx[i-1][1]:
             orbits_idx[i] = (orbits_idx[i-1][1], orbits_idx[i][1])
@@ -492,8 +492,8 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     initial_epochs = epochs * 2
 
     # Create training dataset
-    print_(f'training dataset indices = {drift_indices}')
-    print_(f'training dataset labels  = {drift_labels+temp_label}')
+    # print_(f'training dataset indices = {drift_indices}')
+    # print_(f'training dataset labels  = {drift_labels+temp_label}')
     training_dataset = create_training_dataset(
         dataset=features, indices=drift_indices, drift_labels=drift_labels+temp_label)
 
@@ -567,10 +567,10 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         # Found drift scenario
         else:
 
-            print_(f'orbit {cur_orbit} / {len(orbit_numbers)}')
-            print_(
-                f'{index} / {orbits_idx[-1][-1]} {100 * index / orbits_idx[-1][-1]:.2f}%')
-            next_label = generator_label
+            # print_(f'orbit {cur_orbit} / {len(orbit_numbers)}')
+            # print_(
+            #     f'{index} / {orbits_idx[-1][-1]} {100 * index / orbits_idx[-1][-1]:.2f}%')
+            # next_label = generator_label
 
             # Drift in the middle
             # if no_drifts != index:
