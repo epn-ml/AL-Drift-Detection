@@ -776,6 +776,9 @@ elif dataset == 3:
 elif dataset == 4:
     idx = random.randrange(len(files) // 2, len(files) - 400)
     files = files[idx:idx+400]
+elif dataset == 4:
+    idx = random.randrange(0, len(files) - 1000)
+    files = files[idx:idx+1000]
 
 
 # %% Select data
