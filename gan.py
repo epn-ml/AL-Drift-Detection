@@ -570,7 +570,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             # print_(f'orbit {cur_orbit} / {len(orbit_numbers)}')
             # print_(
             #     f'{index} / {orbits_idx[-1][-1]} {100 * index / orbits_idx[-1][-1]:.2f}%')
-            # next_label = generator_label
+            next_label = generator_label
 
             # Drift in the middle
             # if no_drifts != index:
