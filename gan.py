@@ -596,9 +596,9 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         max_idx = max_idx[0]
         end_orbit = cur_orbit + 1
         if cur_orbit < 100:
-            orbits_max = random.randrange(14, 22)
-        else:
             orbits_max = 21
+        else:
+            orbits_max = random.randrange(14, 22)
         print_(f'max orbits in a drift = {orbits_max}')
 
         while end_orbit - cur_orbit < orbits_max:
