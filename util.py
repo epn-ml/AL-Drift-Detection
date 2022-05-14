@@ -1,3 +1,4 @@
+import glob
 import os
 from datetime import datetime
 
@@ -18,44 +19,25 @@ def print_f(fptr, print_str, with_date=True):
     os.fsync(fptr.fileno())
 
 
-# Write selected orbits to file
-def select_orbits(logs, files, split):
-
-    with open(f'{logs}/{split}.txt', 'w') as orbits:
-        for f in files:
-            orbits.write(f + '\n')
-
-
 # Load orbits listed in file
-def load_data(orbits_file, orbits_file2=None, add_known_drifts=False):
+def load_data(files, add_known_drifts=False):
 
     df_list = []
-    files = []
 
-    # load known orbits from a separate directory
+    # Load known orbits from a separate directory
     if add_known_drifts:
-        for i in range(1, 9):
-            files_buf = []
-            with open(f'data/drift{i}.txt', 'r') as orbits:
-                f = orbits.read().splitlines()
-                files_buf += f
-            for f in files_buf:
-                df_orbit = pd.read_csv(f, index_col=None, header=0).dropna()
-                df_list.append(df_orbit)
-
-    with open(orbits_file, 'r') as orbits:
-        files += orbits.read().splitlines()
-
-    if orbits_file2:
-        with open(orbits_file2, 'r') as orbits:
-            files += orbits.read().splitlines()
+        files_known = glob.glob('data/drifts/*.csv')
+        files_known.sort(key=lambda x: int(
+            ''.join(i for i in x if i.isdigit())))
+        for f in files_known:
+            df_orbit = pd.read_csv(f, index_col=None, header=0).dropna()
+            df_list.append(df_orbit)
 
     for f in files:
         df_orbit = pd.read_csv(f, index_col=None, header=0).dropna()
         df_list.append(df_orbit)
 
     df = pd.concat(df_list, axis=0, ignore_index=True)
-    df['SPLIT'] = orbits_file.split('/')[-1].split('.')[0]
 
     return df
 

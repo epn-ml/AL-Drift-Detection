@@ -15,7 +15,7 @@ from torch.nn import Linear, Module, ReLU, Sequential
 from torch.optim import Adadelta
 from torch.utils.data import DataLoader
 
-from util import load_data, print_f, select_features, select_orbits
+from util import load_data, print_f, select_features
 
 global seq_len
 global fptr
@@ -655,7 +655,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         while end_orbit - cur_orbit < orbits_n:
             if end_orbit == len(orbit_numbers):
                 break
-            if abs(orbit_numbers[end_orbit] - orbit_numbers[end_orbit-1]) > 4:
+            if abs(orbit_numbers[end_orbit] - orbit_numbers[end_orbit-1]) > 5:
                 break
             end_orbit += 1
 
@@ -822,46 +822,24 @@ print_(
 
 files = glob.glob('data/orbits/*.csv')
 files.sort(key=lambda x: int(''.join(i for i in x if i.isdigit())))
-files_train = files[:4]
-files_test = files[-1:]
 
 if dataset == 1:
     files = files[460:560]
-    files_train = files[:80]
-    files_test = files[-20:]
 elif dataset == 2:
-    files = files[460:760]
-    files_train = [f for i, f in enumerate(files) if (i+1) % 5 != 0]
-    files_test = files[4::5]
+    files = files[460:660]
 elif dataset == 3:
+    idx = random.randrange(0, len(files) - 100)
+    files = files[idx:idx+200]
+elif dataset == 4:
     idx = random.randrange(0, len(files) - 200)
     files = files[idx:idx+200]
-    files_train = [f for i, f in enumerate(files) if (i+1) % 5 != 0]
-    files_test = files[4::5]
-elif dataset == 4:
-    files = random.sample(files, 200)
-    files_train = files[:160]
-    files_test = files[-40:]
-    files_train.sort(key=lambda x: int(''.join(i for i in x if i.isdigit())))
-    files_test.sort(key=lambda x: int(''.join(i for i in x if i.isdigit())))
-
-select_orbits(logs, files_train, 'train')
-print_('training orbits:')
-for f in files_train:
-    print_(f, with_date=False)
-
-select_orbits(logs, files_test, 'test')
-print_('testing orbits:')
-for f in files_test:
-    print_(f, with_date=False)
 
 
 # %% Select data
 
-df_all = load_data(f'{logs}/train.txt',
-                   f'{logs}/test.txt', add_known_drifts=True)
+df_all = load_data(files, add_known_drifts=True)
 df_all = select_features(df_all, 'data/features.txt')
-print_(f'selected data: {df_all.head()}')
+print_(f'selected data:\n{df_all.head()}')
 
 # %% Training GAN
 
