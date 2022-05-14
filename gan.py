@@ -523,6 +523,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         max_idx = max_idx.cpu().detach().numpy()
         if not np.array_equal(max_idx, max_idx_prev):
             max_idx_prev_saved = max_idx_prev
+            idx_saved = index
             # print_(
             #     f'max_idx {max_idx_prev} -> {max_idx} [{index}]')  # (orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]})')
             # print_(f'prob = {prob.cpu().detach().numpy()}')
@@ -614,7 +615,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         # print_(
         #     f'indices = {(orbits_idx[cur_orbit][0], orbits_idx[end_orbit-1][1])}')
         print_(
-            f'orbits {new_orbits[0]} - {new_orbits[-1]} ({end_orbit-cur_orbit}) -- drift {next_label} ({max_idx_prev_saved} -> {max_idx})')
+            f'orbits {new_orbits[0]} - {new_orbits[-1]} ({end_orbit-cur_orbit}) -- drift {next_label} ({max_idx_prev_saved} -> {max_idx} [{idx_saved}])')
 
         drift_indices.append(
             (orbits_idx[cur_orbit][0], orbits_idx[end_orbit-1][1]))
