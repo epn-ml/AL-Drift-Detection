@@ -771,10 +771,10 @@ if dataset == 1:
 elif dataset == 2:
     files = files[460:760]
 elif dataset == 3:
-    idx = random.randrange(0, len(files) - 100)
+    idx = random.randrange(0, len(files) // 2 - 300)
     files = files[idx:idx+300]
 elif dataset == 4:
-    idx = random.randrange(0, len(files) - 200)
+    idx = random.randrange(len(files) // 2, len(files) - 400)
     files = files[idx:idx+400]
 
 
