@@ -429,14 +429,19 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     # Standardization
     features = df.iloc[:, 1:-2].values
     print_(f'features:\n{features[:5]}')
+    print_(f'min:\n{features.min(axis=0)}')
+    print_(f'max:\n{features.max(axis=0)}')
+
     mean = np.mean(features, axis=1).reshape(features.shape[0], 1)
     std = np.std(features, axis=1).reshape(features.shape[0], 1)
     features = (features - mean) / (std + 0.000001)
     print_(f'standardized:\n{features[:5]}')
-
-    print_(f'total size = {len(features)}')
+    print_(f'min:\n{features.min(axis=0)}')
+    print_(f'max:\n{features.max(axis=0)}')
 
     orbit_numbers = pd.unique(df['ORBIT']).tolist()
+    print_(f'total size = {len(features)}')
+    print_(f'total number of orbits = {len(orbit_numbers)}')
     orbits_idx = []
     for orbit in orbit_numbers:
         idx = df.loc[(df['ORBIT'] == orbit)].index
@@ -591,15 +596,19 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         max_idx = max_idx[0]
         end_orbit = cur_orbit + 1
         if cur_orbit < 100:
-            orbits_n = random.randrange(14, 22)
+            orbits_max = random.randrange(14, 22)
         else:
-            orbits_n = 21
+            orbits_max = 21
+        print_(f'max orbits in a drift = {orbits_max}')
 
-        while end_orbit - cur_orbit < orbits_n:
+        while end_orbit - cur_orbit < orbits_max:
             if end_orbit == len(orbit_numbers):
+                print_(f'reached final orbit {orbit_numbers[end_orbit]}')
                 break
             # 6 - max difference between orbits in the same drift
             if abs(orbit_numbers[end_orbit] - orbit_numbers[end_orbit-1]) > 6:
+                print_(
+                    f'orbits {orbit_numbers[end_orbit]} and {orbit_numbers[end_orbit-1]} belong to different drifts')
                 break
             end_orbit += 1
 
@@ -607,7 +616,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         new_drift_orbits = dict(zip(new_orbits, [next_label]*len(new_orbits)))
         drift_orbits = {**drift_orbits, **new_drift_orbits}
         print_(
-            f'assigning drift {next_label} to orbits {orbit_numbers[cur_orbit]} - {orbit_numbers[end_orbit-1]}, generator_label {generator_label}')
+            f'assigning drift {next_label} to orbits {new_orbits[0]} - {new_orbits[-1]}, generator_label {generator_label}')
         print_(
             f'indices = {(orbits_idx[cur_orbit][0], orbits_idx[end_orbit-1][1])}')
 
@@ -664,9 +673,9 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         drifts_detected.append(index)
 
         index = orbits_idx[end_orbit-1][1]
-        if cur_orbit + orbits_n < len(orbit_numbers):
+        if cur_orbit + orbits_max < len(orbit_numbers):
             print_(
-                f'orbit change {orbit_numbers[cur_orbit]} -> {orbit_numbers[cur_orbit+orbits_n]}')
+                f'orbit change {orbit_numbers[cur_orbit]} -> {orbit_numbers[cur_orbit+orbits_max]}')
         cur_orbit = end_orbit
 
         no_drifts = index
@@ -764,13 +773,13 @@ files.sort(key=lambda x: int(''.join(i for i in x if i.isdigit())))
 if dataset == 1:
     files = files[460:560]
 elif dataset == 2:
-    files = files[460:660]
+    files = files[460:760]
 elif dataset == 3:
     idx = random.randrange(0, len(files) - 100)
-    files = files[idx:idx+200]
+    files = files[idx:idx+300]
 elif dataset == 4:
     idx = random.randrange(0, len(files) - 200)
-    files = files[idx:idx+200]
+    files = files[idx:idx+400]
 
 
 # %% Select data
