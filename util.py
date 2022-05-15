@@ -61,22 +61,6 @@ def select_features(df, features_file):
     return df.drop(drop_col, axis=1)
 
 
-# Get tuples with indices for each orbit
-def index_orbits(df):
-
-    orbit_numbers = pd.unique(df['ORBIT']).tolist()
-    orbits_idx = []
-    for orbit in orbit_numbers:
-        idx = df.loc[(df['ORBIT'] == orbit)].index
-        orbits_idx.append((idx[0], idx[-1] + 1))
-    for i in range(1, len(orbits_idx)-1):
-        if orbits_idx[i][0] != orbits_idx[i-1][1]:
-            orbits_idx[i] = (orbits_idx[i-1][1], orbits_idx[i][1])
-        if orbits_idx[i][1] != orbits_idx[i+1][0]:
-            orbits_idx[i] = (orbits_idx[i][0], orbits_idx[i+1][0])
-    
-    return orbits_idx
-
 # Load orbits and drifts from file
 def load_drifts(drifts_file):
 

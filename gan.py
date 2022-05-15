@@ -440,12 +440,21 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     print_(f'total size = {len(features)}')
 
     orbit_numbers = pd.unique(df['ORBIT']).tolist()
+    print_(f'total size = {len(features)}')
     print_(f'total number of orbits = {len(orbit_numbers)}')
-
-    orbits_idx = index_orbits(df)
-    for orb, idx in zip(orbit_numbers, orbits_idx):
+    orbits_idx = []
+    for orbit in orbit_numbers:
+        idx = df.loc[(df['ORBIT'] == orbit)].index
+        orbits_idx.append((idx[0], idx[-1] + 1))
         print_(
-            f'{orb} - {idx} - ({df["DATE"].iloc[idx[0]]}, {df["DATE"].iloc[idx[1]]})', with_date=False)
+            f'{orbit} - {orbits_idx[-1]} - ({df["DATE"].iloc[idx[0]]}, {df["DATE"].iloc[idx[-1]]})', with_date=False)
+    for i in range(1, len(orbits_idx)-1):
+        if orbits_idx[i][0] != orbits_idx[i-1][1]:
+            orbits_idx[i] = (orbits_idx[i-1][1], orbits_idx[i][1])
+            print_(f'replaced bad orbit 1st idx: {orbits_idx[i]}')
+        if orbits_idx[i][1] != orbits_idx[i+1][0]:
+            orbits_idx[i] = (orbits_idx[i][0], orbits_idx[i+1][0])
+            print_(f'replaced bad orbit 2nd idx: {orbits_idx[i]}')
 
     # Initial orbit with known drift
     drift_indices = [orbits_idx[0]]
