@@ -554,19 +554,6 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         if not drift_found:
             continue
 
-        # End of orbit scenario
-        # Should not be reached
-        if index >= orbits_idx[end_orbit-1][1]:
-
-            print_(
-                f'no drifts detected from orbit {orbit_numbers[cur_orbit]} to {orbit_numbers[end_orbit-1][1]}')
-            print_(f'labelling orbit with previous drift label')
-            max_idx_prev_saved = max_idx_prev
-            if len(drift_labels) > 0:
-                next_label = drift_labels[-1]
-            else:
-                next_label = 1  # initial drift label
-
         # Found drift scenario
         end_orbit = cur_orbit + 1
         if cur_orbit < 100:
@@ -582,6 +569,19 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             if orbit_numbers[end_orbit] - orbit_numbers[cur_orbit] >= orbits_max:
                 break
             end_orbit += 1
+
+        # End of orbit scenario
+        # Should not be reached
+        if index >= orbits_idx[end_orbit-1][1]:
+
+            print_(
+                f'no drifts detected from orbit {orbit_numbers[cur_orbit]} to {orbit_numbers[end_orbit-1][1]}')
+            print_(f'labelling orbit with previous drift label')
+            max_idx_prev_saved = max_idx_prev
+            if len(drift_labels) > 0:
+                next_label = drift_labels[-1]
+            else:
+                next_label = 1  # initial drift label
 
         else:
 
