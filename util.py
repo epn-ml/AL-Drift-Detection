@@ -77,8 +77,8 @@ def index_orbits(df):
     
     return orbits_idx
 
-# Add drifts from file to DataFrame
-def load_drifts(df, drifts_file):
+# Load orbits and drifts from file
+def load_drifts(drifts_file):
 
     drift_orbits = {}
     with open(drifts_file, 'r') as drifts:
@@ -86,7 +86,7 @@ def load_drifts(df, drifts_file):
             line = list(map(int, line.split(' ')))
             drift_orbits[line[0]] = line[1]
 
-    df['DRIFT'] = df.apply(lambda row: drift_orbits[row['ORBIT']], axis=1)
+    return drift_orbits
 
 
 # Plot all orbits with crossings

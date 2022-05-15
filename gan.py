@@ -332,7 +332,7 @@ def concat_feature(data, idx, sequence_len=2):
 
 
 # Equalize before concatenating
-def equalize_and_concatenate(features, max_count=100, sequence_len=2):
+def equalize_and_concatenate(features, max_count=10000, sequence_len=2):
 
     modified_features = features[:, :-1]
     modified_features = np.vstack(
@@ -426,6 +426,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
                   seed=0, batch_size=8, lr=0.001, momentum=0.9, weight_decay=0.0005,
                   generator_batch_size=1, sequence_length=2):
 
+    # TODO: standardize inside df
     # Standardization
     features = df.iloc[:, 1:-2].values
     print_(f'features:\n{features[:5]}')
@@ -703,7 +704,7 @@ dataset = int(sys.argv[2])
 if not os.path.exists(logs):
     os.makedirs(logs)
 
-fptr = open(f'{logs}/log.txt', 'w')
+fptr = open(f'{logs}/log_gan.txt', 'w')
 print_(f'dataset: {dataset}')
 
 # Set the number of epochs the GAN should be trained
@@ -778,9 +779,9 @@ elif dataset == 5:
 
 # %% Select data
 
-df_all = load_data(files, add_known_drifts=True)
-df_all = select_features(df_all, 'data/features.txt')
-print_(f'selected data:\n{df_all.head()}')
+df = load_data(files, add_known_drifts=True)
+df = select_features(df, 'data/features_gan.txt')
+print_(f'selected data:\n{df.head()}')
 
 # %% Training GAN
 
@@ -794,7 +795,7 @@ features = features / max_features
 """
 
 t1 = time.perf_counter()
-drifts = detect_drifts(df=df_all, device=device, epochs=epochs, steps_generator=steps_generator,
+drifts = detect_drifts(df=df, device=device, epochs=epochs, steps_generator=steps_generator,
                        seed=seed, batch_size=batch_size, lr=lr, momentum=0.9,
                        weight_decay=weight_decay, test_batch_size=test_batch_size,
                        generator_batch_size=generator_batch_size, equalize=equalize,
