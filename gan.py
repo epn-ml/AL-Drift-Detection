@@ -15,7 +15,7 @@ from torch.nn import Linear, Module, ReLU, Sequential
 from torch.optim import Adadelta
 from torch.utils.data import DataLoader
 
-from util import load_data, print_f, select_features, index_orbits
+from util import load_data, print_f, select_features
 
 global seq_len
 global fptr
