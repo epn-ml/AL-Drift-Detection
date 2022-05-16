@@ -66,7 +66,7 @@ def train_clf(df, max_count=10):
 
         df_drift = df.loc[df['DRIFT'] == drift]
         orbit_numbers = pd.unique(df_drift['ORBIT']).tolist()
-        print_(f'{len(orbit_numbers)} orbits with drift {drift}')
+        print_(f'{len(orbit_numbers)} train orbits with drift {drift}')
         if len(orbit_numbers) > max_count:
             random.shuffle(orbit_numbers)
             orbit_numbers = orbit_numbers[:max_count]
@@ -80,7 +80,6 @@ def train_clf(df, max_count=10):
             classes = np.unique(labels)
             weights = compute_class_weight(
                 'balanced', classes=classes, y=labels)
-            print_(f'weights = {weights}')
 
             x = np.array(features, copy=True)
             x = x.reshape(-1, x.shape[1], 1)
@@ -245,18 +244,22 @@ df['SPLIT'] = 'train'
 len_train = 0
 len_test = 0
 for drift in np.unique(list(drift_orbits.values())):
+
     all_orbits = [k for k, v in drift_orbits.items() if v == drift]
-    test_orbits = random.sample(all_orbits, len(all_orbits) // 5)
+    test_count = len(all_orbits) // 5
+    if test_count == 0:
+        test_count = 1
+    
+    test_orbits = random.sample(all_orbits, test_count)
     train_orbits = [orb for orb in all_orbits if orb not in test_orbits]
     len_train += len(train_orbits)
     len_test += len(test_orbits)
-    print_(f'train orbits for drift {drift}:')
+    
+    print_(f'train orbits for drift {drift}: {train_orbits}')
     for orb in train_orbits:
-        print_(f'{orb}', with_date=False)
         df.loc[df['ORBIT'] == orb, 'DRIFT'] = drift
-    print_(f'test orbits for drift {drift}:')
+    print_(f'test orbits for drift {drift}: {test_orbits}')
     for orb in test_orbits:
-        print_(f'{orb}', with_date=False)
         df.loc[df['ORBIT'] == orb, 'DRIFT'] = drift
         df.loc[df['ORBIT'] == orb, 'SPLIT'] = 'test'
 
