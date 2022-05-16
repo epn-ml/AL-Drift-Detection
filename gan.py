@@ -566,9 +566,6 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         else:
             drift_found = True
 
-        if not drift_found:
-            continue
-
         # End of orbit sequence scenario
         if index >= orbits_idx[end_orbit-1][1]:
 
@@ -578,6 +575,9 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
                 next_label = drift_labels[-1]
             else:
                 next_label = 1  # initial drift label
+
+        if not drift_found:
+            continue
 
         else:
 
