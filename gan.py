@@ -573,7 +573,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         if index >= orbits_idx[end_orbit-1][1]:
 
             print_(
-                f'no drifts detected from orbit {orbit_numbers[cur_orbit]} to {orbit_numbers[end_orbit-1][1]}')
+                f'no drifts detected from orbit {orbit_numbers[cur_orbit]} to {orbit_numbers[end_orbit-1]}')
             if len(drift_labels) > 0:
                 next_label = drift_labels[-1]
             else:
