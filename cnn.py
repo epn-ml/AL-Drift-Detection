@@ -150,6 +150,7 @@ fptr = open(f'{logs}/log_cnn.txt', 'w')
 
 drifts_orbits = load_drifts(f'{logs}/drifts.txt', 'w')
 files = []
+# TODO: load known orbits from different folder
 for orb in drifts_orbits:
     files.append(f'data/orbits/df_{orb}.csv')
 
