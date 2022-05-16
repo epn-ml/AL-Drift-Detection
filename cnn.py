@@ -246,7 +246,7 @@ len_train = 0
 len_test = 0
 for drift in np.unique(list(drift_orbits.values())):
     all_orbits = [k for k, v in drift_orbits.items() if v == drift]
-    test_orbits = random.sample(test_orbits, len(test_orbits) // 5)
+    test_orbits = random.sample(all_orbits, len(all_orbits) // 5)
     train_orbits = [orb for orb in all_orbits if orb not in test_orbits]
     len_train += len(train_orbits)
     len_test += len(test_orbits)
