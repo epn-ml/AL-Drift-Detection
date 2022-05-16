@@ -516,8 +516,23 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     max_idx_prev_saved = max_idx_prev
     idx_saved = index
 
+    end_orbit = cur_orbit + 1
+    if cur_orbit < 100:
+        orbits_max = 21
+    else:
+        # model doesn't detect where a new drift ends
+        orbits_max = random.randrange(14, 22)
+
+    while end_orbit < len(orbit_numbers):
+        # 6 - max difference between orbits in the same drift
+        if abs(orbit_numbers[end_orbit] - orbit_numbers[end_orbit-1]) > 6:
+            break
+        if orbit_numbers[end_orbit] - orbit_numbers[cur_orbit] >= orbits_max:
+            break
+        end_orbit += 1
+
     print_(
-        f'starting drift detection from index = {index} (orbit {orbit_numbers[cur_orbit]})')
+        f'starting drift detection from index = {index} (orbits {orbit_numbers[cur_orbit]}-{orbit_numbers[end_orbit-1]})')
     print_('===========================')
 
     while index < orbits_idx[-1][-1]:
@@ -542,14 +557,14 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         if np.all(max_idx[1:] != max_idx[0]) or max_idx[0] == 0:
 
             # Should not be reached
-            if index - no_drifts >= 500000:
-                print_(f'no drifts detected from index {no_drifts} to {index}')
-                return [(0, (0, len(features)))]
+            # if index - no_drifts >= 500000:
+            #     print_(f'no drifts detected from index {no_drifts} to {index}')
+            #     return dict(zip(orbit_numbers, [1]*len(orbit_numbers)))
 
             index += test_batch_size
-            # If index reached the end of an orbit, give this orbit a previous drift label
-            if index >= orbits_idx[cur_orbit][1]:
-                index = orbits_idx[cur_orbit][1]
+            # If index reached the end of an orbit sequence, give it a previous drift label
+            if index >= orbits_idx[end_orbit-1][1]:
+                index = orbits_idx[end_orbit-1][1]
                 drift_found = True
             else:  # else keep looking for drifts
                 drift_found = False
@@ -559,29 +574,11 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         if not drift_found:
             continue
 
-        # Found drift scenario
-        end_orbit = cur_orbit + 1
-        if cur_orbit < 100:
-            orbits_max = 21
-        else:
-            # model doesn't detect where a new drift ends
-            orbits_max = random.randrange(14, 22)
-
-        while end_orbit < len(orbit_numbers):
-            # 6 - max difference between orbits in the same drift
-            if abs(orbit_numbers[end_orbit] - orbit_numbers[end_orbit-1]) > 6:
-                break
-            if orbit_numbers[end_orbit] - orbit_numbers[cur_orbit] >= orbits_max:
-                break
-            end_orbit += 1
-
-        # End of orbit scenario
-        # Should not be reached
+        # End of orbit sequence scenario
         if index >= orbits_idx[end_orbit-1][1]:
 
             print_(
                 f'no drifts detected from orbit {orbit_numbers[cur_orbit]} to {orbit_numbers[end_orbit-1][1]}')
-            print_(f'labelling orbit with previous drift label')
             max_idx_prev_saved = max_idx_prev
             if len(drift_labels) > 0:
                 next_label = drift_labels[-1]
@@ -677,12 +674,25 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         drifts_detected.append(index)
 
         index = orbits_idx[end_orbit-1][1]
+        no_drifts = index
         # if cur_orbit + orbits_max < len(orbit_numbers):
         #     print_(
         #         f'orbit change {orbit_numbers[cur_orbit]} -> {orbit_numbers[cur_orbit+orbits_max]}')
         cur_orbit = end_orbit
 
-        no_drifts = index
+        if cur_orbit < len(orbit_numbers):
+            end_orbit = cur_orbit + 1
+            if cur_orbit < 100:
+                orbits_max = 21
+            else:
+                orbits_max = random.randrange(14, 22)
+
+            while end_orbit < len(orbit_numbers):
+                if abs(orbit_numbers[end_orbit] - orbit_numbers[end_orbit-1]) > 6:
+                    break
+                if orbit_numbers[end_orbit] - orbit_numbers[cur_orbit] >= orbits_max:
+                    break
+                end_orbit += 1
 
         # print_('===========================')
 
