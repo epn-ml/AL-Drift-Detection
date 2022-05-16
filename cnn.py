@@ -64,7 +64,10 @@ def train_clf(df, max_count=10):
     clf.summary(print_fn=lambda x: summary.append(x))
     print_(f'cnn:\n{summary}')
 
-    for drift in pd.unique(df['DRIFT']).tolist():
+    drifts = pd.unique(df['DRIFT']).tolist()
+    print_(f'drifts: {drifts}')
+
+    for drift in drifts:
 
         df_drift = df.loc[df['DRIFT'] == drift]
         orbit_numbers = pd.unique(df_drift['ORBIT']).tolist()
