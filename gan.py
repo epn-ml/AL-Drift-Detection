@@ -525,15 +525,21 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     end_orbit = 13
 
     print_(
-        f'starting drift detection from index = {index} (orbit {orbit_numbers[cur_orbit]})')
+        f'starting drift detection from index = {index} (orbits {orbit_numbers[cur_orbit]} - {orbit_numbers[end_orbit-1]})')
     print_('===========================')
 
     while index < orbits_idx[-1][-1]:
 
-        data = features[index:index + test_batch_size]
-        result = discriminator(torch.Tensor(data).to(torch.float).to(device))
-        prob, max_idx = torch.max(result, dim=1)
-        max_idx = max_idx.cpu().detach().numpy()
+        # Pre-train
+        if cur_orbit < 100:
+            max_idx = max_idx_prev + 1
+        else:
+            data = features[index:index + test_batch_size]
+            result = discriminator(torch.Tensor(
+                data).to(torch.float).to(device))
+            prob, max_idx = torch.max(result, dim=1)
+            max_idx = max_idx.cpu().detach().numpy()
+
         if not np.array_equal(max_idx, max_idx_prev):
             # print_(
             #     f'max_idx {max_idx_prev} -> {max_idx} [{index}]', with_date=False)
@@ -548,6 +554,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             # Should not be reached
             if index - no_drifts >= 500000:
                 print_(f'no drifts detected from index {no_drifts} to {index}')
+                print_(f'terminating')
                 return dict(zip(orbit_numbers, [1]*len(orbit_numbers)))
 
             index += test_batch_size
@@ -563,24 +570,8 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         if not drift_found:
             continue
 
-        # Found drift scenario
-        end_orbit = cur_orbit + 1
-        if cur_orbit < 100:
-            orbits_max = 21
-        else:
-            # model doesn't detect where a new drift ends
-            orbits_max = random.randrange(14, 22)
-
-        while end_orbit < len(orbit_numbers):
-            # 6 - max difference between orbits in the same drift
-            if abs(orbit_numbers[end_orbit] - orbit_numbers[end_orbit-1]) > 6:
-                break
-            if orbit_numbers[end_orbit] - orbit_numbers[cur_orbit] >= orbits_max:
-                break
-            end_orbit += 1
-
+        # Drift detected
         # End of orbit scenario
-        # Should not be reached
         if index >= orbits_idx[end_orbit-1][1]:
 
             if len(drift_labels) > 0:
@@ -588,8 +579,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             else:
                 next_label = 1  # initial drift label
             print_(
-                f'no drifts detected from orbit {orbit_numbers[cur_orbit]} to {orbit_numbers[end_orbit-1]}')
-            print_(f'labelling orbit with previous drift label {next_label}')
+                f'no drifts detected in orbits {orbit_numbers[cur_orbit]} - {orbit_numbers[end_orbit-1]}')
 
         else:
 
@@ -598,23 +588,29 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             #     f'{index} / {orbits_idx[-1][-1]} {100 * index / orbits_idx[-1][-1]:.2f}%')
             next_label = generator_label
 
-            # Drift in the middle
-            # if no_drifts != index:
-            #     print_(f'no drifts detected from index {no_drifts} to {index}')
-            #     print_(
-            #         f'detected drift in the middle of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]}')
-
-            # Drift at the start
-            # else:
-            #     print_(
-            #         f'detected drift at the start of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]}')
-
             if temp_label[0] != 0:
                 # add the index of the previous drift if it was a recurring drift
                 next_label = temp_label[0]
                 # print_(f'recurring drift {next_label} (temp_label[0])')
             # else:
             #     print_(f'new drift {next_label} (generator_label)')
+
+            # Drift in the middle
+            if no_drifts != index:
+                proportion = (index - orbits_idx[cur_orbit][0]) / (
+                    orbits_idx[end_orbit-1][1] - orbits_idx[cur_orbit][0])
+                print_(
+                    f'no drifts detected from index {no_drifts} to {index} ({proportion:.2f})')
+                if proportion > 0.5:
+                    if drift_labels:
+                        next_label = drift_labels[-1]
+                    else:
+                        next_label = 1
+
+            # Drift at the start
+            # else:
+            #     print_(
+            #         f'detected drift at the start of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]}')
 
         new_orbits = orbit_numbers[cur_orbit:end_orbit]
         new_drift_orbits = dict(zip(new_orbits, [next_label]*len(new_orbits)))
@@ -680,12 +676,26 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         drifts_detected.append(index)
 
         index = orbits_idx[end_orbit-1][1]
+        no_drifts = index
         # if cur_orbit + orbits_max < len(orbit_numbers):
         #     print_(
         #         f'orbit change {orbit_numbers[cur_orbit]} -> {orbit_numbers[cur_orbit+orbits_max]}')
-        cur_orbit = end_orbit
 
-        no_drifts = index
+        cur_orbit = end_orbit
+        end_orbit = cur_orbit + 1
+        if cur_orbit < 100:
+            orbits_max = 21
+        else:
+            # model doesn't detect where a new drift should end
+            orbits_max = random.randrange(14, 22)
+
+        while end_orbit < len(orbit_numbers):
+            # 6 - max difference between orbits in the same drift
+            if abs(orbit_numbers[end_orbit] - orbit_numbers[end_orbit-1]) > 6:
+                break
+            if orbit_numbers[end_orbit] - orbit_numbers[cur_orbit] >= orbits_max:
+                break
+            end_orbit += 1
 
         # print_('===========================')
 
