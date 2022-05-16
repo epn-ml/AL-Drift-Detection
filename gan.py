@@ -512,6 +512,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
     no_drifts = index
     max_idx_prev = np.array(test_batch_size * [0])
+    max_idx_prev_saved = max_idx_prev
 
     print_(
         f'starting drift detection from index = {index} (orbit {orbit_numbers[cur_orbit]})')
@@ -618,7 +619,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         # print_(
         #     f'indices = {(orbits_idx[cur_orbit][0], orbits_idx[end_orbit-1][1])}')
         print_(
-            f'orbits {new_orbits[0]} - {new_orbits[-1]} ({end_orbit-cur_orbit}, {end_orbit}/{len(orbit_numbers)}) -- drift {next_label}\t({max_idx_prev_saved} -> {max_idx} [{idx_saved}])')
+            f'{end_orbit}/{len(orbit_numbers)} orbits {new_orbits[0]} - {new_orbits[-1]} ({end_orbit-cur_orbit}) -- drift {next_label} ({max_idx_prev_saved} -> {max_idx} [{idx_saved}])')
 
         drift_indices.append(
             (orbits_idx[cur_orbit][0], orbits_idx[end_orbit-1][1]))
@@ -693,15 +694,10 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     drifts = list(zip(drift_labels, drift_indices))
 
     for d in drifts:
-        print_(f'indices {d[1]} -- drift {d[0]}')
+        print_(f'indices {d[1]} -- drift {d[0]}', with_date=False)
 
     print_(generator)
     print_(discriminator)
-
-    with open(f'{logs}/drifts.txt', 'w') as drifts_file:
-        for orbit in drift_orbits:
-            drifts_file.write(
-                f'{orbit} {drift_orbits[orbit]}\n')
 
     return drift_orbits
 
@@ -713,7 +709,7 @@ dataset = int(sys.argv[2])
 if not os.path.exists(logs):
     os.makedirs(logs)
 
-fptr = open(f'{logs}/log_gan.txt', 'w')
+fptr = open(f'{logs}/log_gan_set{dataset}.txt', 'w')
 print_(f'dataset: {dataset}')
 
 # Set the number of epochs the GAN should be trained
@@ -752,8 +748,6 @@ print_(f'weight_decay: {weight_decay}')
 
 # Set a random seed for the experiment
 seed = np.random.randint(65536)
-
-np.set_printoptions(suppress=True)
 
 device_name = 'cuda'
 if len(sys.argv) > 3:
@@ -794,24 +788,19 @@ print_(f'selected data:\n{df.head()}')
 
 # %% Training GAN
 
-"""
-# Min max scaling
-min_features = np.min(features, axis=1)
-features = features - np.reshape(min_features, newshape=(min_features.shape[0], 1))
-max_features = np.max(features, axis=1)
-max_features = np.reshape(max_features, newshape=(max_features.shape[0], 1)) + 0.000001
-features = features / max_features
-"""
-
 t1 = time.perf_counter()
-drifts = detect_drifts(df=df, device=device, epochs=epochs, steps_generator=steps_generator,
-                       seed=seed, batch_size=batch_size, lr=lr, momentum=0.9,
-                       weight_decay=weight_decay, test_batch_size=test_batch_size,
-                       generator_batch_size=generator_batch_size, equalize=equalize,
-                       sequence_length=sequence_length)
+drift_orbits = detect_drifts(df=df, device=device, epochs=epochs, steps_generator=steps_generator,
+                             seed=seed, batch_size=batch_size, lr=lr, momentum=0.9,
+                             weight_decay=weight_decay, test_batch_size=test_batch_size,
+                             generator_batch_size=generator_batch_size, equalize=equalize,
+                             sequence_length=sequence_length)
 t2 = time.perf_counter()
 print_(f'drift detection time is {t2 - t1:.2f} seconds')
 
+with open(f'{logs}/drifts_set{dataset}.txt', 'w') as drifts_file:
+    for orbit in drift_orbits:
+        drifts_file.write(
+            f'{orbit} {drift_orbits[orbit]}\n')
 
 # %% Close log file
 
