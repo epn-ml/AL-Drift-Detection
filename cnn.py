@@ -60,7 +60,9 @@ def train_clf(df, max_count=10):
     print_(f'total size = {len(df.index)}')
 
     clf = cnn((len(df_features.columns), 1))
-    print_(f'cnn:\n{clf.summary()}')
+    summary = []
+    clf.summary(print_fn=lambda x: summary.append(x))
+    print_(f'cnn:\n{summary}')
 
     for drift in pd.unique(df['DRIFT']).tolist():
 
@@ -93,7 +95,9 @@ def train_clf(df, max_count=10):
                                   v in enumerate(weights)},
                     verbose=0)
 
-    print_(f'cnn:\n{clf.summary()}')
+    summary = []
+    clf.summary(print_fn=lambda x: summary.append(x))
+    print_(f'cnn:\n{summary}')
 
     return clf
 
@@ -249,12 +253,12 @@ for drift in np.unique(list(drift_orbits.values())):
     test_count = len(all_orbits) // 5
     if test_count == 0:
         test_count = 1
-    
+
     test_orbits = random.sample(all_orbits, test_count)
     train_orbits = [orb for orb in all_orbits if orb not in test_orbits]
     len_train += len(train_orbits)
     len_test += len(test_orbits)
-    
+
     print_(f'train orbits for drift {drift}: {train_orbits}')
     for orb in train_orbits:
         df.loc[df['ORBIT'] == orb, 'DRIFT'] = drift
