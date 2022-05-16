@@ -332,7 +332,7 @@ def concat_feature(data, idx, sequence_len=2):
 
 
 # Equalize before concatenating
-def equalize_and_concatenate(features, max_count=10000, sequence_len=2):
+def equalize_and_concatenate(features, max_count=100, sequence_len=2):
 
     modified_features = features[:, :-1]
     modified_features = np.vstack(
@@ -392,7 +392,7 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     if equalize:
         # Equalize and concatenate at the same time
         concatenated_data = equalize_and_concatenate(
-            features, sequence_len=sequence_length)
+            features, sequence_len=sequence_length, max_count=len(features) // 2)
         features = equalize_classes(features)
     else:
         # This data contains the current vector and next vector
@@ -426,21 +426,22 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
                   seed=0, batch_size=8, lr=0.001, momentum=0.9, weight_decay=0.0005,
                   generator_batch_size=1, sequence_length=2):
 
-    # TODO: standardize inside df
     # Standardization
+    df_features = df.iloc[:, 1:-2]
+    print_(f'features:\n{df_features.head()}')
+    print_(f'mean:\n{df_features.mean()}')
+
+    df.iloc[:, 1:-2] = (df_features - df_features.mean()) / df_features.std()
+    print_(f'standardized:\n{df.iloc[:, 1:-2].head()}')
+    print_(f'mean:\n{df.iloc[:, 1:-2].mean()}')
+    print_(f'total size = {len(df.index)}')
+
     features = df.iloc[:, 1:-2].values
     print_(f'features:\n{features[:5]}')
-    print_(f'mean:\n{features.mean(axis=0)}')
-
-    mean = np.mean(features, axis=1).reshape(features.shape[0], 1)
-    std = np.std(features, axis=1).reshape(features.shape[0], 1)
-    features = (features - mean) / (std + 0.000001)
-    print_(f'standardized:\n{features[:5]}')
     print_(f'mean:\n{features.mean(axis=0)}')
     print_(f'total size = {len(features)}')
 
     orbit_numbers = pd.unique(df['ORBIT']).tolist()
-    print_(f'total size = {len(features)}')
     print_(f'total number of orbits = {len(orbit_numbers)}')
     orbits_idx = []
     for orbit in orbit_numbers:
@@ -709,7 +710,7 @@ dataset = int(sys.argv[2])
 if not os.path.exists(logs):
     os.makedirs(logs)
 
-fptr = open(f'{logs}/log_gan_set{dataset}.txt', 'w')
+fptr = open(f'{logs}/log_set{dataset}.txt', 'w')
 print_(f'dataset: {dataset}')
 
 # Set the number of epochs the GAN should be trained
