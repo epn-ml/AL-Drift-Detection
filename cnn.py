@@ -51,10 +51,12 @@ def train_clf(df, max_count=10):
     df_features = df.iloc[:, 1:-4]
     print_(f'features:\n{df_features.head()}')
     print_(f'mean:\n{df_features.mean()}')
+    print_(f'std:\n{df_features.std()}')
 
     df.iloc[:, 1:-4] = (df_features - df_features.mean()) / df_features.std()
     print_(f'standardized:\n{df.iloc[:, 1:-4].head()}')
     print_(f'mean:\n{df.iloc[:, 1:-4].mean()}')
+    print_(f'std:\n{df.iloc[:, 1:-4].std()}')
     print_(f'total size = {len(df.index)}')
 
     clf = cnn((len(df_features.columns), 1))
@@ -72,7 +74,7 @@ def train_clf(df, max_count=10):
 
         for orbit in orbit_numbers:
 
-            df_orbit = df_drift.loc(df['ORBIT'] == orbit)
+            df_orbit = df_drift.loc[df['ORBIT'] == orbit]
             features = df_orbit.iloc[:, 1:-4].values
             labels = df_orbit['LABEL'].tolist()
             classes = np.unique(labels)
@@ -106,16 +108,18 @@ def test_clfs(df, clf):
     df_features = df.iloc[:, 1:-5]
     print_(f'features:\n{df_features.head()}')
     print_(f'mean:\n{df_features.mean()}')
+    print_(f'std:\n{df_features.std()}')
 
     df.iloc[:, 1:-5] = (df_features - df_features.mean()) / df_features.std()
     print_(f'standardized:\n{df.iloc[:, 1:-5].head()}')
     print_(f'mean:\n{df.iloc[:, 1:-5].mean()}')
+    print_(f'std:\n{df.iloc[:, 1:-5].std()}')
     print_(f'total size = {len(df.index)}')
 
     orbit_numbers = pd.unique(df['ORBIT']).tolist()
     for orbit in orbit_numbers:
 
-        df_orbit = df.loc(df['ORBIT'] == orbit)
+        df_orbit = df.loc[df['ORBIT'] == orbit]
         features = df_orbit.iloc[:, 1:-5].values
 
         x = np.array(features, copy=True)
@@ -124,9 +128,78 @@ def test_clfs(df, clf):
         print_(
             f'testing classifier on orbit {orbit} ({df_orbit.iloc[0]["SPLIT"]})')
         pred = clf.predict(x)  # window vs step
-        df.loc[df['ORBIT'] == orbit, 'LABEL_PRED'] = pred.argmax(axis=-1)
+        labels = df['LABELS']
+        labels_pred = pred.argmax(axis=-1)
+        df.loc[df['ORBIT'] == orbit, 'LABEL_PRED'] = labels_pred
 
-    return df
+        f1 = precision_recall_fscore_support(
+            y_true=labels, y_pred=labels_pred, average=None, labels=np.unique(labels))[2]
+        print(f'f-score: {f1}')
+
+    return df['LABEL_PRED']
+
+
+# Plot all orbits with crossings
+def plot_orbits(logs, df, test=False, pred=False, draw=[1, 3]):
+
+    colours = {0: 'red', 1: 'green', 2: 'yellow', 3: 'blue', 4: 'purple'}
+    title = 'labels in training orbit '
+    folder = 'train-'
+    if test:
+        title = 'labels in testing orbit '
+        folder = 'test-'
+        df = df.loc[df['SPLIT'] == 'test']
+    else:
+        df = df.loc[df['SPLIT'] == 'train']
+
+    label_col = 'LABEL'
+    if pred:
+        label_col = 'LABEL_PRED'
+        title = 'Preicted ' + title
+        folder += 'pred'
+    else:
+        title = 'True ' + title
+        folder += 'true'
+
+    if not os.path.exists(f'{logs}/{folder}'):
+        os.makedirs(f'{logs}/{folder}')
+
+    for orbit in pd.unique(df['ORBIT']).tolist():
+
+        df_orbit = df.loc[df['ORBIT'] == orbit]
+        fig = go.Figure()
+
+        # Plotting components of the magnetic field B_x, B_y, B_z in MSO coordinates
+        fig.add_trace(go.Scatter(
+            x=df_orbit['DATE'], y=df_orbit['BX_MSO'], name='B_x'))
+        fig.add_trace(go.Scatter(
+            x=df_orbit['DATE'], y=df_orbit['BY_MSO'], name='B_y'))
+        fig.add_trace(go.Scatter(
+            x=df_orbit['DATE'], y=df_orbit['BZ_MSO'], name='B_z'))
+
+        # Plotting total magnetic field magnitude B along the orbit
+        fig.add_trace(go.Scatter(
+            x=df_orbit['DATE'], y=-df_orbit['B_tot'], name='|B|', line_color='darkgray'))
+        fig.add_trace(go.Scatter(x=df_orbit['DATE'], y=df_orbit['B_tot'], name='|B|',
+                                 line_color='darkgray', showlegend=False))
+
+        for i in draw:
+            for _, row in df_orbit.loc[df_orbit[label_col] == i].iterrows():
+                fig.add_trace(go.Scatter(
+                    x=[row['DATE'], row['DATE']],
+                    y=[-450, 450],
+                    mode='lines',
+                    line_color=colours[i],
+                    opacity=0.1,
+                    showlegend=False
+                ))
+
+        fig.update_layout(
+            {'title': f'{title}{orbit} (drift {df_orbit.iloc[0]["DRIFT"]})'})
+        fig.write_image(
+            f'{logs}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png')
+        # fig.write_html(
+        #     f'{logs}/{folder}/fig_{orbit}.png')
 
 
 # %% Setup
@@ -140,41 +213,50 @@ if gpus:
         print_(e)
 
 logs = sys.argv[1]
+dataset = int(sys.argv[2])
+plots = sys.argv[3]
 if not os.path.exists(logs):
     os.makedirs(logs)
 
 fptr = open(f'{logs}/log_cnn.txt', 'w')
+print_(f'dataset: {dataset}')
 
 
 # %% Load data
 
-drifts_orbits = load_drifts(f'{logs}/drifts.txt', 'w')
+drift_orbits = load_drifts(f'data/drifts_set{dataset}.txt')
 files = []
-# TODO: load known orbits from different folder
-for orb in drifts_orbits:
-    files.append(f'data/orbits/df_{orb}.csv')
+cur_orbit = 0
+for orb in drift_orbits:
+    if cur_orbit < 100:
+        files.append(f'data/drifts/df_{orb}.csv')
+        print_(f'data/drifts/df_{orb}.csv', with_date=False)
+    else:
+        files.append(f'data/orbits/df_{orb}.csv')
+        print_(f'data/orbits/df_{orb}.csv', with_date=False)
+    cur_orbit += 1
 
-df = load_data(files, add_known_drifts=True)
-df = select_features(df, 'data/features_gan.txt')
+df = load_data(files)
+df = select_features(df, 'data/features_cnn.txt')
 df['DRIFT'] = 1
 df['SPLIT'] = 'train'
 
 # Randomly select orbits for testing
 len_train = 0
 len_test = 0
-for drift in np.unique(list(drifts_orbits.values())):
-    all_orbits = [k for k, v in drifts_orbits.items() if v == drift]
+for drift in np.unique(list(drift_orbits.values())):
+    all_orbits = [k for k, v in drift_orbits.items() if v == drift]
     test_orbits = random.sample(test_orbits, len(test_orbits) // 5)
     train_orbits = [orb for orb in all_orbits if orb not in test_orbits]
     len_train += len(train_orbits)
     len_test += len(test_orbits)
     print_(f'train orbits for drift {drift}:')
     for orb in train_orbits:
-        print_(f'{orb}')
+        print_(f'{orb}', with_date=False)
         df.loc[df['ORBIT'] == orb, 'DRIFT'] = drift
     print_(f'test orbits for drift {drift}:')
     for orb in test_orbits:
-        print_(f'{orb}')
+        print_(f'{orb}', with_date=False)
         df.loc[df['ORBIT'] == orb, 'DRIFT'] = drift
         df.loc[df['ORBIT'] == orb, 'SPLIT'] = 'test'
 
@@ -194,73 +276,60 @@ print_(f'training time is {t2 - t1:.2f} seconds')
 # %% Testing classifiers
 
 t1 = time.perf_counter()
-all_pred = test_clfs(df.copy())
+df_pred = test_clfs(df.copy())
 t2 = time.perf_counter()
 print_(f'testing time is {t2 - t1:.2f} seconds')
 
-
-# # %% Evaluation
-
-# for n in orbits_all:
-#     idx = orbits_all[n]
-#     split = 'train'
-#     if n in orbits_test:
-#         split = 'test'
-#     f1 = precision_recall_fscore_support(labels_all_true[idx[0]:idx[1]],
-#                                          all_pred[idx[0]:idx[1]],
-#                                          average=None,
-#                                          labels=np.unique(labels_all_true[idx[0]:idx[1]]))[2]
-#     for d, d_idx in drifts:
-#         if d_idx == idx:
-#             print_(
-#                 f'{split} orbit {n} {idx} drift {d} f-score - {f1}')
-#             break
-
-# auc_value = accuracy_score(y_true=labels_train_true, y_pred=labels_train_pred)
-# print_(f'accuracy value is {auc_value} for training dataset {dataset}')
-# prf = precision_recall_fscore_support(
-#     labels_train_true, labels_train_pred, average=None, labels=np.unique(labels_train_true))
-# print_(f'precision: {prf[0]}')
-# print_(f'recall: {prf[1]}')
-# print_(f'f-score: {prf[2]}')
-# print_(f'support: {prf[3]}')
-# print_(
-#     f'confusion matrix:\n{confusion_matrix(labels_train_true, labels_train_pred)}')
-
-# auc_value = accuracy_score(y_true=labels_test_true, y_pred=labels_test_pred)
-# print_(f'accuracy value is {auc_value} for testing dataset {dataset}')
-# prf = precision_recall_fscore_support(
-#     labels_test_true, labels_test_pred, average=None, labels=np.unique(labels_test_true))
-# print_(f'precision: {prf[0]}')
-# print_(f'recall: {prf[1]}')
-# print_(f'f-score: {prf[2]}')
-# print_(f'support: {prf[3]}')
-# print_(
-#     f'confusion matrix:\n{confusion_matrix(labels_test_true, labels_test_pred)}')
-# print_(f'unique test true: {np.unique(labels_test_true)}')
-# print_(f'unique test pred: {np.unique(labels_test_pred)}')
+df = df.join(df_pred)
 
 
-# # %% Plots
+# %% Evaluation
 
-# if plots != '':
-#     print_(f'plotting {plots}...')
-#     if '0' in plots:
-#         os.makedirs(f'../logs/{folder}/train-true')
-#         plot_orbit(df_all, orbits_train, 'train-true')
-#         print_(f'plotted train-true')
-#     if '1' in plots:
-#         os.makedirs(f'../logs/{folder}/train-pred')
-#         plot_orbit(df_all, orbits_train, 'train-pred')
-#         print_(f'plotted train-pred')
-#     if '2' in plots:
-#         os.makedirs(f'../logs/{folder}/test-true')
-#         plot_orbit(df_all, orbits_test, 'test-true')
-#         print_(f'plotted test-true')
-#     if '3' in plots:
-#         os.makedirs(f'../logs/{folder}/test-pred')
-#         plot_orbit(df_all, orbits_test, 'test-pred')
-#         print_(f'plotted test-pred')
+labels_train_true = df.loc[df['SPLIT'] == 'train', 'LABEL'].tolist()
+labels_train_pred = df.loc[df['SPLIT'] == 'train', 'LABEL_PRED'].tolist()
+labels_test_true = df.loc[df['SPLIT'] == 'test', 'LABEL'].tolist()
+labels_test_pred = df.loc[df['SPLIT'] == 'test', 'LABEL_PRED'].tolist()
+
+auc_value = accuracy_score(y_true=labels_train_true, y_pred=labels_train_pred)
+print_(f'accuracy value is {auc_value} for training dataset')
+prf = precision_recall_fscore_support(
+    labels_train_true, labels_train_pred, average=None, labels=np.unique(labels_train_true))
+print_(f'precision: {prf[0]}')
+print_(f'recall: {prf[1]}')
+print_(f'f-score: {prf[2]}')
+print_(f'support: {prf[3]}')
+print_(
+    f'confusion matrix:\n{confusion_matrix(labels_train_true, labels_train_pred)}')
+
+auc_value = accuracy_score(y_true=labels_test_true, y_pred=labels_test_pred)
+print_(f'accuracy value is {auc_value} for testing dataset')
+prf = precision_recall_fscore_support(
+    labels_test_true, labels_test_pred, average=None, labels=np.unique(labels_test_true))
+print_(f'precision: {prf[0]}')
+print_(f'recall: {prf[1]}')
+print_(f'f-score: {prf[2]}')
+print_(f'support: {prf[3]}')
+print_(
+    f'confusion matrix:\n{confusion_matrix(labels_test_true, labels_test_pred)}')
+
+
+# %% Plots
+
+df['B_tot'] = (df['BX_MSO']**2 + df['BY_MSO']**2 + df['BZ_MSO']**2)**0.5
+if plots != '':
+    print_(f'plotting {plots}...')
+    if '0' in plots:
+        plot_orbits(logs, df, test=False, pred=False)
+        print_(f'plotted train-true')
+    if '1' in plots:
+        plot_orbits(logs, df, test=False, pred=True)
+        print_(f'plotted train-pred')
+    if '2' in plots:
+        plot_orbits(logs, df, test=True, pred=False)
+        print_(f'plotted test-true')
+    if '3' in plots:
+        plot_orbits(logs, df, test=True, pred=True)
+        print_(f'plotted test-pred')
 
 
 # %% Close log file

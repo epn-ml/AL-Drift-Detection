@@ -2,9 +2,7 @@ import glob
 import os
 from datetime import datetime
 
-import numpy as np
 import pandas as pd
-import plotly.graph_objects as go
 
 
 # Function to write the log to file
@@ -71,63 +69,3 @@ def load_drifts(drifts_file):
             drift_orbits[line[0]] = line[1]
 
     return drift_orbits
-
-
-# Plot all orbits with crossings
-def plot_orbit(logs, df, pred=False, draw=[1, 3]):
-
-    df['B_tot'] = (df['BX_MSO']**2 + df['BY_MSO']**2 + df['BZ_MSO']**2)**0.5
-    colours = {0: 'red', 1: 'green', 2: 'yellow', 3: 'blue', 4: 'purple'}
-
-    title = ' labels in training orbit '
-    if df['SPLIT'][0] == 'test':
-        title = ' labels in testing orbit '
-
-    folder = df['SPLIT'][0] + '-'
-    label_col = 'LABEL'
-    if pred:
-        label_col = 'LABEL_PRED'
-        title = 'Preicted' + title
-        folder += 'pred'
-    else:
-        title = 'True' + title
-        folder += 'true'
-
-    if not os.path.exists(f'{logs}/{folder}'):
-        os.makedirs(f'{logs}/{folder}')
-
-    for orbit in np.unique(df['ORBIT']):
-
-        df_orbit = df.loc[df['ORBIT'] == orbit]
-        fig = go.Figure()
-
-        # Plotting components of the magnetic field B_x, B_y, B_z in MSO coordinates
-        fig.add_trace(go.Scatter(
-            x=df_orbit['DATE'], y=df_orbit['BX_MSO'], name='B_x'))
-        fig.add_trace(go.Scatter(
-            x=df_orbit['DATE'], y=df_orbit['BY_MSO'], name='B_y'))
-        fig.add_trace(go.Scatter(
-            x=df_orbit['DATE'], y=df_orbit['BZ_MSO'], name='B_z'))
-
-        # Plotting total magnetic field magnitude B along the orbit
-        fig.add_trace(go.Scatter(
-            x=df_orbit['DATE'], y=-df_orbit['B_tot'], name='|B|', line_color='darkgray'))
-        fig.add_trace(go.Scatter(x=df_orbit['DATE'], y=df_orbit['B_tot'], name='|B|',
-                                 line_color='darkgray', showlegend=False))
-
-        for i in draw:
-            for _, row in df_orbit[df_orbit[label_col] == i].iterrows():
-                fig.add_trace(go.Scatter(
-                    x=[row['DATE'], row['DATE']],
-                    y=[-450, 450],
-                    mode='lines',
-                    line_color=colours[i],
-                    opacity=0.1,
-                    showlegend=False
-                ))
-
-        fig.update_layout({'title': f'{title + str(orbit)}'})
-        fig.write_image(
-            f'{logs}/{folder}/fig_{orbit}.png')
-        # fig.write_html(
-        #     f'{logs}/{folder}/fig_{orbit}.png')

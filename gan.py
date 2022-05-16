@@ -456,7 +456,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     print_(f'total number of orbits = {len(orbit_numbers)}')
     orbits_idx = []
     for orbit in orbit_numbers:
-        idx = df.loc[(df['ORBIT'] == orbit)].index
+        idx = df.loc[df['ORBIT'] == orbit].index
         orbits_idx.append((idx[0], idx[-1] + 1))
         print_(
             f'{orbit} - {orbits_idx[-1]} - ({df["DATE"].iloc[idx[0]]}, {df["DATE"].iloc[idx[-1]]})', with_date=False)
@@ -555,7 +555,8 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
             # Should not be reached
             if index - no_drifts >= 500000:
-                print_(f'no drifts detected from index {no_drifts} to {index}, terminating')
+                print_(
+                    f'no drifts detected from index {no_drifts} to {index}, terminating')
                 return dict(zip(orbit_numbers, [1]*len(orbit_numbers)))
 
             index += test_batch_size
@@ -807,10 +808,13 @@ drift_orbits = detect_drifts(df=df, device=device, epochs=epochs, steps_generato
 t2 = time.perf_counter()
 print_(f'drift detection time is {t2 - t1:.2f} seconds')
 
-with open(f'{logs}/drifts_set{dataset}.txt', 'w') as drifts_file:
-    for orbit in drift_orbits:
-        drifts_file.write(
-            f'{orbit} {drift_orbits[orbit]}\n')
+with open(f'{logs}/drifts_set{dataset}.txt', 'w') as drifts_file_log:
+    with open(f'data/drifts_set{dataset}.txt', 'w') as drifts_file:
+        for orbit in drift_orbits:
+            drifts_file_log.write(
+                f'{orbit} {drift_orbits[orbit]}\n')
+            drifts_file.write(
+                f'{orbit} {drift_orbits[orbit]}\n')
 
 # %% Close log file
 
