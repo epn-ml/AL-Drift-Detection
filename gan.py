@@ -427,28 +427,27 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
                   generator_batch_size=1, sequence_length=2):
 
     # Standardization
-    features = df.iloc[:, 1:-2].values
-    print_(f'features:\n{features[:5]}')
-    print_(f'mean:\n{features.mean(axis=0)}')
+    # features = df.iloc[:, 1:-2].values
+    # print_(f'features:\n{features[:5]}')
+    # print_(f'mean:\n{features.mean(axis=0)}')
 
-    mean = np.mean(features, axis=1).reshape(features.shape[0], 1)
-    std = np.std(features, axis=1).reshape(features.shape[0], 1)
-    features = (features - mean) / (std + 0.000001)
-    print_(f'standardized:\n{features[:5]}')
-    print_(f'mean:\n{features.mean(axis=0)}')
-    print_(f'total size = {len(features)}')
+    # mean = np.mean(features, axis=1).reshape(features.shape[0], 1)
+    # std = np.std(features, axis=1).reshape(features.shape[0], 1)
+    # features = (features - mean) / (std + 0.000001)
+    # print_(f'standardized:\n{features[:5]}')
+    # print_(f'mean:\n{features.mean(axis=0)}')
+    # print_(f'total size = {len(features)}')
 
     df_features = df.iloc[:, 1:-2]
     print_(f'df_features:\n{df_features.head()}')
     print_(f'df_mean:\n{df_features.mean()}')
+
     df.iloc[:, 1:-2] = (df_features - df_features.mean()) / df_features.std()
     print_(f'standardized:\n{df.iloc[:, 1:-2].head()}')
     print_(f'mean:\n{df.iloc[:, 1:-2].mean()}')
     print_(f'total size = {len(df.index)}')
-    features_pd = df.iloc[:, 1:-2].values
-    print_(f'features_pd:\n{features_pd[:5]}')
-    print_(f'mean_pd:\n{features_pd.mean(axis=0)}')
-    print_(f'total size pd = {len(features_pd)}')
+    features = df.iloc[:, 1:-2].values
+    print_(f'features:\n{features[:5]}')
 
     orbit_numbers = pd.unique(df['ORBIT']).tolist()
     print_(f'total size = {len(features)}')
