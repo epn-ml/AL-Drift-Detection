@@ -300,7 +300,7 @@ def create_training_dataset(dataset, indices, drift_labels, max_length=100):
 
 
 # Equalize number of drift labels used for training
-def equalize_classes(features, max_count=100):
+def equalize_classes(features, max_count=1000):
 
     modified_dataset = None
     labels = features[:, -1]
@@ -332,7 +332,7 @@ def concat_feature(data, idx, sequence_len=2):
 
 
 # Equalize before concatenating
-def equalize_and_concatenate(features, max_count=100, sequence_len=2):
+def equalize_and_concatenate(features, max_count=1000, sequence_len=2):
 
     modified_features = features[:, :-1]
     modified_features = np.vstack(
@@ -392,7 +392,7 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     if equalize:
         # Equalize and concatenate at the same time
         concatenated_data = equalize_and_concatenate(
-            features, sequence_len=sequence_length, max_count=len(features) // 2)
+            features, sequence_len=sequence_length)
         features = equalize_classes(features)
     else:
         # This data contains the current vector and next vector
