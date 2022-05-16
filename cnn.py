@@ -286,7 +286,7 @@ print_(f'training time is {t2 - t1:.2f} seconds')
 # %% Testing classifiers
 
 t1 = time.perf_counter()
-df_pred = test_clfs(df.copy())
+df_pred = test_clfs(df.copy(), clf)
 t2 = time.perf_counter()
 print_(f'testing time is {t2 - t1:.2f} seconds')
 
