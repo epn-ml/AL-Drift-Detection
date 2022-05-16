@@ -559,9 +559,9 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
                 return dict(zip(orbit_numbers, [1]*len(orbit_numbers)))
 
             index += test_batch_size
-            # If index reached the end of an orbit sequence, give it a previous drift label
-            if index >= orbits_idx[end_orbit-1][1]:
-                index = orbits_idx[end_orbit-1][1]
+            # If index reached the end of an orbit, give it a previous drift label
+            if index >= orbits_idx[cur_orbit][1]:
+                index = orbits_idx[cur_orbit][1]
                 drift_found = True
             else:  # else keep looking for drifts
                 drift_found = False
@@ -573,14 +573,15 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
         # Drift detected
         # End of orbit scenario
-        if index >= orbits_idx[end_orbit-1][1]:
+        if index >= orbits_idx[cur_orbit][1]:
 
+            end_orbit = cur_orbit + 1
             if len(drift_labels) > 0:
                 next_label = drift_labels[-1]
             else:
                 next_label = 1  # initial drift label
             print_(
-                f'no drifts detected in orbits {orbit_numbers[cur_orbit]} - {orbit_numbers[end_orbit-1]}')
+                f'no drifts detected during orbit {orbit_numbers[cur_orbit]}')
 
         else:
 
@@ -597,16 +598,9 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             #     print_(f'new drift {next_label} (generator_label)')
 
             # Drift in the middle
-            if no_drifts != index:
-                proportion = (index - orbits_idx[cur_orbit][0]) / (
-                    orbits_idx[end_orbit-1][1] - orbits_idx[cur_orbit][0])
-                if proportion > 0.5:
-                    print_(
-                        f'no drifts detected from index {no_drifts} to {index} ({proportion:.2f})')
-                    if drift_labels:
-                        next_label = drift_labels[-1]
-                    else:
-                        next_label = 1
+            # if no_drifts != index:
+            #     print_(
+            #         f'no drifts detected from index {no_drifts} to {index}')
 
             # Drift at the start
             # else:
