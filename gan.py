@@ -300,7 +300,7 @@ def create_training_dataset(dataset, indices, drift_labels, max_length=100):
 
 
 # Equalize number of drift labels used for training
-def equalize_classes(features, max_count=100):
+def equalize_classes(features, max_count=40000):
 
     modified_dataset = None
     labels = features[:, -1]
@@ -332,7 +332,7 @@ def concat_feature(data, idx, sequence_len=2):
 
 
 # Equalize before concatenating
-def equalize_and_concatenate(features, max_count=100, sequence_len=2):
+def equalize_and_concatenate(features, max_count=40000, sequence_len=2):
 
     modified_features = features[:, :-1]
     modified_features = np.vstack(
@@ -540,17 +540,16 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         prob, max_idx = torch.max(result, dim=1)
         max_idx = max_idx.cpu().detach().numpy()
         if not np.array_equal(max_idx, max_idx_prev):
-            print_(
-                f'max_idx {max_idx_prev} -> {max_idx} [{index}]')
+            # print_(
+            #     f'max_idx {max_idx_prev} -> {max_idx} [{index}]', with_date=False)
             # print_(f'prob = {prob.cpu().detach().numpy()}')
             # print_(f'discriminator output:\n{result.cpu().detach().numpy()}')
             max_idx_prev = max_idx
 
         drift_found = False
 
-        # If max_idx didn't change or max_idx has more than 1 unique number, keep looking for drifts
-        # if np.array_equal(max_idx, max_idx_prev) or len(np.unique(max_idx)) != 1:
-        if np.all(max_idx[1:] != max_idx[0]) or max_idx[0] == 0:
+        # if np.all(max_idx[1:] != max_idx[0]) or max_idx[0] == 0:
+        if max_idx[0] != 0:
 
             # Should not be reached
             # if index - no_drifts >= 500000:
@@ -613,7 +612,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         # print_(
         #     f'indices = {(orbits_idx[cur_orbit][0], orbits_idx[end_orbit-1][1])}')
         print_(
-            f'{end_orbit}/{len(orbit_numbers)} orbits {new_orbits[0]} - {new_orbits[-1]} ({end_orbit-cur_orbit}) -- drift {next_label}')
+            f'{end_orbit}/{len(orbit_numbers)} orbits {new_orbits[0]} - {new_orbits[-1]} ({end_orbit-cur_orbit}) -- drift {next_label} (max_idx = {max_idx})')
 
         drift_indices.append(
             (orbits_idx[cur_orbit][0], orbits_idx[end_orbit-1][1]))
@@ -742,7 +741,7 @@ print_(f'batch_size: {batch_size}')
 generator_batch_size = 2
 print_(f'generator_batch_size: {generator_batch_size}')
 # Number of instances that should have the same label for a drift to be confirmed
-test_batch_size = 4
+test_batch_size = 1
 print_(f'test_batch_size: {test_batch_size}')
 
 # Set the learning rate
