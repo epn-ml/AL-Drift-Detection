@@ -438,6 +438,18 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     print_(f'mean:\n{features.mean(axis=0)}')
     print_(f'total size = {len(features)}')
 
+    df_features = df.iloc[:, 1:-2]
+    print_(f'df_features:\n{df_features.head()}')
+    print_(f'df_mean:\n{df_features.mean()}')
+    df.iloc[:, 1:-2] = (df_features - df_features.mean()) / df_features.std()
+    print_(f'standardized:\n{df.iloc[:, 1:-2].head()}')
+    print_(f'mean:\n{df.iloc[:, 1:-2].mean()}')
+    print_(f'total size = {len(df.index)}')
+    features_pd = df.iloc[:, 1:-2].values
+    print_(f'features_pd:\n{features_pd[:5]}')
+    print_(f'mean_pd:\n{features_pd.mean(axis=0)}')
+    print_(f'total size pd = {len(features_pd)}')
+
     orbit_numbers = pd.unique(df['ORBIT']).tolist()
     print_(f'total size = {len(features)}')
     print_(f'total number of orbits = {len(orbit_numbers)}')
@@ -539,9 +551,9 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
                 return dict(zip(orbit_numbers, [1]*len(orbit_numbers)))
 
             index += test_batch_size
-            # If index reached the end of an orbit, give this orbit a previous drift label
-            if index >= orbits_idx[cur_orbit][1]:
-                index = orbits_idx[cur_orbit][1]
+            # If index reached the end of an orbit sequence, give it a previous drift label
+            if index >= orbits_idx[end_orbit-1][1]:
+                index = orbits_idx[end_orbit-1][1]
                 drift_found = True
             else:  # else keep looking for drifts
                 drift_found = False
@@ -571,13 +583,13 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         # Should not be reached
         if index >= orbits_idx[end_orbit-1][1]:
 
-            print_(
-                f'no drifts detected from orbit {orbit_numbers[cur_orbit]} to {orbit_numbers[end_orbit-1]}')
-            print_(f'labelling orbit with previous drift label')
             if len(drift_labels) > 0:
                 next_label = drift_labels[-1]
             else:
                 next_label = 1  # initial drift label
+            print_(
+                f'no drifts detected from orbit {orbit_numbers[cur_orbit]} to {orbit_numbers[end_orbit-1]}')
+            print_(f'labelling orbit with previous drift label {next_label}')
 
         else:
 
