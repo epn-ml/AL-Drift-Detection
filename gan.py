@@ -441,10 +441,12 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     df_features = df.iloc[:, 1:-2]
     print_(f'df_features:\n{df_features.head()}')
     print_(f'df_mean:\n{df_features.mean()}')
+    print_(f'df_std:\n{df_features.std()}')
 
     df.iloc[:, 1:-2] = (df_features - df_features.mean()) / df_features.std()
     print_(f'standardized:\n{df.iloc[:, 1:-2].head()}')
     print_(f'mean:\n{df.iloc[:, 1:-2].mean()}')
+    print_(f'std:\n{df.iloc[:, 1:-2].std()}')
     print_(f'total size = {len(df.index)}')
     features = df.iloc[:, 1:-2].values
     print_(f'features:\n{features[:5]}')
@@ -553,8 +555,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
             # Should not be reached
             if index - no_drifts >= 500000:
-                print_(f'no drifts detected from index {no_drifts} to {index}')
-                print_(f'terminating')
+                print_(f'no drifts detected from index {no_drifts} to {index}, terminating')
                 return dict(zip(orbit_numbers, [1]*len(orbit_numbers)))
 
             index += test_batch_size
@@ -599,9 +600,9 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             if no_drifts != index:
                 proportion = (index - orbits_idx[cur_orbit][0]) / (
                     orbits_idx[end_orbit-1][1] - orbits_idx[cur_orbit][0])
-                print_(
-                    f'no drifts detected from index {no_drifts} to {index} ({proportion:.2f})')
                 if proportion > 0.5:
+                    print_(
+                        f'no drifts detected from index {no_drifts} to {index} ({proportion:.2f})')
                     if drift_labels:
                         next_label = drift_labels[-1]
                     else:
