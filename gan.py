@@ -635,6 +635,8 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             temp_label = [max_idx]
             discriminator.reset_top_layer()
             discriminator = discriminator.to(device)
+            print_(
+                f'Previous drift {max_idx} occured at {index} (orbits {orbit_numbers[cur_orbit]} - {orbit_numbers[end_orbit]})')
 
         else:
             # If this is a new drift, label for the previous drift training dataset is the previous highest label
