@@ -513,8 +513,6 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
     no_drifts = index
     max_idx_prev = np.array(test_batch_size * [0])
-    max_idx_prev_saved = max_idx_prev
-    idx_saved = index
 
     end_orbit = cur_orbit + 1
     if cur_orbit < 100:
@@ -542,10 +540,8 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         prob, max_idx = torch.max(result, dim=1)
         max_idx = max_idx.cpu().detach().numpy()
         if not np.array_equal(max_idx, max_idx_prev):
-            max_idx_prev_saved = max_idx_prev
-            idx_saved = index
-            # print_(
-            #     f'max_idx {max_idx_prev} -> {max_idx} [{index}]')  # (orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]})')
+            print_(
+                f'max_idx {max_idx_prev} -> {max_idx} [{index}]')
             # print_(f'prob = {prob.cpu().detach().numpy()}')
             # print_(f'discriminator output:\n{result.cpu().detach().numpy()}')
             max_idx_prev = max_idx
@@ -579,7 +575,6 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
             print_(
                 f'no drifts detected from orbit {orbit_numbers[cur_orbit]} to {orbit_numbers[end_orbit-1][1]}')
-            max_idx_prev_saved = max_idx_prev
             if len(drift_labels) > 0:
                 next_label = drift_labels[-1]
             else:
@@ -618,7 +613,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         # print_(
         #     f'indices = {(orbits_idx[cur_orbit][0], orbits_idx[end_orbit-1][1])}')
         print_(
-            f'{end_orbit}/{len(orbit_numbers)} orbits {new_orbits[0]} - {new_orbits[-1]} ({end_orbit-cur_orbit}) -- drift {next_label} ({max_idx_prev_saved} -> {max_idx} [{idx_saved}])')
+            f'{end_orbit}/{len(orbit_numbers)} orbits {new_orbits[0]} - {new_orbits[-1]} ({end_orbit-cur_orbit}) -- drift {next_label}')
 
         drift_indices.append(
             (orbits_idx[cur_orbit][0], orbits_idx[end_orbit-1][1]))
