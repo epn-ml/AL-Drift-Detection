@@ -570,6 +570,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         # End of orbit scenario
         if index >= orbits_idx[cur_orbit][1]:
 
+            next_drift = drift_orbits[orbit_numbers[cur_orbit-1]]
             end_orbit = cur_orbit + 1
             if len(drift_labels) > 0:
                 next_label = drift_labels[-1]
@@ -580,6 +581,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
         else:
 
+            next_drift = max_idx[0]
             # print_(f'orbit {cur_orbit} / {len(orbit_numbers)}')
             # print_(
             #     f'{index} / {orbits_idx[-1][-1]} {100 * index / orbits_idx[-1][-1]:.2f}%')
@@ -629,10 +631,10 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             generator_label += 1
 
         new_orbits = orbit_numbers[cur_orbit:end_orbit]
-        new_drift_orbits = dict(zip(new_orbits, [max_idx]*len(new_orbits)))
+        new_drift_orbits = dict(zip(new_orbits, [next_drift]*len(new_orbits)))
         drift_orbits = {**drift_orbits, **new_drift_orbits}
         print_(
-            f'{end_orbit}/{len(orbit_numbers)} orbits {new_orbits[0]} - {new_orbits[-1]} ({end_orbit-cur_orbit}) -- drift {max_idx}')
+            f'{end_orbit}/{len(orbit_numbers)} orbits {new_orbits[0]} - {new_orbits[-1]} ({end_orbit-cur_orbit}) -- drift {next_drift}')
 
         drift_indices.append(
             (orbits_idx[cur_orbit][0], orbits_idx[end_orbit-1][1]))
