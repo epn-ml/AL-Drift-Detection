@@ -94,7 +94,9 @@ def train_clf(df, max_orbits=100):
                                   v in enumerate(weights)},
                     verbose=0)
 
+            # Intermediate evaluation
             labels_pred = clf.predict_on_batch(x)
+            labels_pred = labels_pred.argmax(axis=-1)
             f1 = precision_recall_fscore_support(
                 y_true=y, y_pred=labels_pred, average=None, labels=classes)[2]
             print_(f'f-score: {f1}')
@@ -117,8 +119,8 @@ def test_clfs(df, clf):
     x = np.array(features, copy=True)
     x = x.reshape(-1, x.shape[1], 1)
 
-    pred = clf.predict(x)  # window vs step
-    labels_pred = pred.argmax(axis=-1)
+    labels_pred = clf.predict(x)  # window vs step
+    labels_pred = labels_pred.argmax(axis=-1)
     df['LABEL_PRED'] = labels_pred
 
     return df['LABEL_PRED']
