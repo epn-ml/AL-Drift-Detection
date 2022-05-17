@@ -45,7 +45,7 @@ def cnn(shape):
 
 
 # Train classifier based on drift
-def train_clf(df, max_count=5):
+def train_clf(df, max_orbits=100):
 
     # Standardization
     df_features = df.iloc[:, 1:-4]
@@ -71,9 +71,9 @@ def train_clf(df, max_count=5):
         df_drift = df.loc[df['DRIFT'] == drift]
         orbit_numbers = pd.unique(df_drift['ORBIT']).tolist()
         print_(f'{len(orbit_numbers)} train orbits with drift {drift}')
-        if len(orbit_numbers) > max_count:
+        if len(orbit_numbers) > max_orbits:
             random.shuffle(orbit_numbers)
-            orbit_numbers = orbit_numbers[:max_count]
+            orbit_numbers = orbit_numbers[:max_orbits]
         print_(f'selected orbits for training: {orbit_numbers}')
 
         for orbit in orbit_numbers:
@@ -96,9 +96,6 @@ def train_clf(df, max_count=5):
                     class_weight={k: v for k,
                                   v in enumerate(weights)},
                     verbose=0)
-
-    print_('cnn:')
-    clf.summary(print_fn=print_)
 
     return clf
 
@@ -138,7 +135,7 @@ def test_clfs(df, clf):
 
         f1 = precision_recall_fscore_support(
             y_true=labels, y_pred=labels_pred, average=None, labels=np.unique(labels))[2]
-        print(f'f-score: {f1}')
+        print_(f'f-score: {f1}')
 
     return df['LABEL_PRED']
 
