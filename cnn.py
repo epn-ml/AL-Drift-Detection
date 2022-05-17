@@ -48,11 +48,11 @@ def cnn(shape):
 def train_clf(df, max_orbits=100):
 
     # Standardization
-    df_features = df.iloc[:, 1:-4]
+    df_features = df.iloc[:, 1:-5]
     print_(f'features:\n{df_features.head()}')
 
-    df.iloc[:, 1:-4] = (df_features - df_features.mean()) / df_features.std()
-    print_(f'standardized:\n{df.iloc[:, 1:-4].head()}')
+    df.iloc[:, 1:-5] = (df_features - df_features.mean()) / df_features.std()
+    print_(f'standardized:\n{df.iloc[:, 1:-5].head()}')
     print_(f'total size = {len(df.index)}')
 
     len_features = len(df.iloc[:, 1:-5].columns)
