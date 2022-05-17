@@ -132,7 +132,7 @@ def test_clfs(df, clf):
         print_(
             f'testing classifier on orbit {orbit} ({df_orbit.iloc[0]["SPLIT"]})')
         pred = clf.predict(x)  # window vs step
-        labels = df['LABEL']
+        labels = df_orbit['LABEL']
         labels_pred = pred.argmax(axis=-1)
         df.loc[df['ORBIT'] == orbit, 'LABEL_PRED'] = labels_pred
 
