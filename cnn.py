@@ -63,8 +63,8 @@ def train_clf(df, max_orbits=100):
     drifts = pd.unique(df['DRIFT']).tolist()
     print_(f'drifts: {drifts}')
 
-    x_all = np.array([])
-    y_all = np.array([])
+    x_all = []
+    y_all = []
 
     for drift in drifts:
 
@@ -87,8 +87,11 @@ def train_clf(df, max_orbits=100):
             x = x.reshape(-1, x.shape[1], 1)
             y = np.asarray(labels)
 
-            x_all = np.concatenate(x_all, x)
-            y_all = np.concatenate(y_all, y)
+            x_all += x.tolist()
+            y_all += y.tolist()
+
+    x_all = np.array(x_all)
+    y_all = np.array(y_all)
 
     clf.fit(x=x_all, y=y_all,
             batch_size=16,
