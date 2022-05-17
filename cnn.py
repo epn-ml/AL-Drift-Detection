@@ -86,7 +86,6 @@ def train_clf(df, max_orbits=100):
             x = x.reshape(-1, x.shape[1], 1)
             y = np.asarray(labels)
 
-            print_(f'training classifier on orbit {orbit}')
             clf.fit(x=x, y=y,
                     batch_size=64,
                     epochs=20,
@@ -99,7 +98,7 @@ def train_clf(df, max_orbits=100):
             labels_pred = labels_pred.argmax(axis=-1)
             f1 = precision_recall_fscore_support(
                 y_true=y, y_pred=labels_pred, average=None, labels=classes)[2]
-            print_(f'f-score: {f1}')
+            print_(f'training classifier on orbit {orbit}, f-score: {f1}')
 
     return clf
 
