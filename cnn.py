@@ -32,7 +32,7 @@ def print_(print_str, with_date=True):
 # Create CNN model
 def cnn(shape):
     model = keras.Sequential()
-    model.add(layers.Conv1D(64, 3, activation='relu', input_shape=shape))
+    model.add(layers.Conv1D(64, 2, activation='relu', input_shape=shape))
     model.add(layers.Dense(16, activation='relu'))
     model.add(layers.MaxPooling1D())
     model.add(layers.Flatten())
@@ -73,32 +73,36 @@ def train_clf(df, max_orbits=100):
             orbit_numbers = orbit_numbers[:max_orbits]
         print_(f'selected orbits for training: {orbit_numbers}')
 
+        x_all = np.array([])
+        y_all = np.array([])
+
         for orbit in orbit_numbers:
 
             df_orbit = df_drift.loc[df['ORBIT'] == orbit]
             features = df_orbit.iloc[:, 1:-5].values
             labels = df_orbit['LABEL'].tolist()
             classes = np.unique(labels)
-            weights = compute_class_weight(
-                'balanced', classes=classes, y=labels)
 
             x = np.array(features, copy=True)
             x = x.reshape(-1, x.shape[1], 1)
             y = np.asarray(labels)
 
-            clf.fit(x=x, y=y,
-                    batch_size=64,
-                    epochs=20,
-                    class_weight={k: v for k,
-                                  v in enumerate(weights)},
-                    verbose=0)
+            x_all = np.concatenate(x_all, x)
+            y_all = np.concatenate(y_all, y)
 
-            # Intermediate evaluation
-            labels_pred = clf.predict_on_batch(x)
-            labels_pred = labels_pred.argmax(axis=-1)
-            f1 = precision_recall_fscore_support(
-                y_true=y, y_pred=labels_pred, average=None, labels=classes)[2]
-            print_(f'training classifier on orbit {orbit}, f-score: {f1}')
+    clf.fit(x=x_all, y=y_all,
+            batch_size=16,
+            epochs=20,
+            verbose=0)
+    acc = clf.evaluate(x, y)
+    print_(f'loss: {acc[0]}, accuracy: {acc[1]}')
+
+    # Intermediate evaluation
+    labels_pred = clf.predict(x_all)
+    labels_pred = labels_pred.argmax(axis=-1)
+    f1 = precision_recall_fscore_support(
+        y_true=y_all, y_pred=labels_pred, average=None, labels=classes)[2]
+    print_(f'training f-score: {f1}')
 
     return clf
 
