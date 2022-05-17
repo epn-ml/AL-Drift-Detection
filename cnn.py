@@ -94,7 +94,7 @@ def train_clf(df, max_orbits=100):
             batch_size=16,
             epochs=20,
             verbose=2)
-    acc = clf.evaluate(x, y)
+    acc = clf.evaluate(x_all, y_all)
     print_(f'loss: {acc[0]}, accuracy: {acc[1]}')
 
     # Intermediate evaluation
