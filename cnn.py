@@ -63,6 +63,9 @@ def train_clf(df, max_orbits=100):
     drifts = pd.unique(df['DRIFT']).tolist()
     print_(f'drifts: {drifts}')
 
+    x_all = np.array([])
+    y_all = np.array([])
+
     for drift in drifts:
 
         df_drift = df.loc[df['DRIFT'] == drift]
@@ -72,9 +75,6 @@ def train_clf(df, max_orbits=100):
             random.shuffle(orbit_numbers)
             orbit_numbers = orbit_numbers[:max_orbits]
         print_(f'selected orbits for training: {orbit_numbers}')
-
-        x_all = np.array([])
-        y_all = np.array([])
 
         for orbit in orbit_numbers:
 
