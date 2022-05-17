@@ -439,20 +439,14 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     # print_(f'total size = {len(features)}')
 
     df_features = df.iloc[:, 1:-2]
-    print_(f'df_features:\n{df_features.head()}')
-    print_(f'df_mean:\n{df_features.mean()}')
-    print_(f'df_std:\n{df_features.std()}')
+    print_(f'features:\n{df_features.head()}')
 
     df.iloc[:, 1:-2] = (df_features - df_features.mean()) / df_features.std()
-    print_(f'standardized:\n{df.iloc[:, 1:-2].head()}')
-    print_(f'mean:\n{df.iloc[:, 1:-2].mean()}')
-    print_(f'std:\n{df.iloc[:, 1:-2].std()}')
+    print_(f'standardized:\n{df.head()}')
     print_(f'total size = {len(df.index)}')
     features = df.iloc[:, 1:-2].values
-    print_(f'features:\n{features[:5]}')
 
     orbit_numbers = pd.unique(df['ORBIT']).tolist()
-    print_(f'total size = {len(features)}')
     print_(f'total number of orbits = {len(orbit_numbers)}')
     orbits_idx = []
     for orbit in orbit_numbers:
@@ -812,12 +806,9 @@ t2 = time.perf_counter()
 print_(f'drift detection time is {t2 - t1:.2f} seconds')
 
 with open(f'{logs}/drifts_set{dataset}.txt', 'w') as drifts_file_log:
-    with open(f'data/drifts_set{dataset}.txt', 'w') as drifts_file:
-        for orbit in drift_orbits:
-            drifts_file_log.write(
-                f'{orbit} {drift_orbits[orbit]}\n')
-            drifts_file.write(
-                f'{orbit} {drift_orbits[orbit]}\n')
+    for orbit in drift_orbits:
+        drifts_file_log.write(
+            f'{orbit} {drift_orbits[orbit]}\n')
 
 # %% Close log file
 

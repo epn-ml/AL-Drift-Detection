@@ -50,17 +50,14 @@ def train_clf(df, max_orbits=100):
     # Standardization
     df_features = df.iloc[:, 1:-4]
     print_(f'features:\n{df_features.head()}')
-    print_(f'mean:\n{df_features.mean()}')
-    print_(f'std:\n{df_features.std()}')
 
     df.iloc[:, 1:-4] = (df_features - df_features.mean()) / df_features.std()
     print_(f'standardized:\n{df.iloc[:, 1:-4].head()}')
-    print_(f'mean:\n{df.iloc[:, 1:-4].mean()}')
-    print_(f'std:\n{df.iloc[:, 1:-4].std()}')
     print_(f'total size = {len(df.index)}')
 
-    clf = cnn((len(df_features.columns), 1))
-    print_('cnn:')
+    len_features = len(df.iloc[:, 1:-5].columns)
+    clf = cnn((len_features, 1))
+    print_(f'cnn ({len_features} features):')
     clf.summary(print_fn=print_)
 
     drifts = pd.unique(df['DRIFT']).tolist()
@@ -79,7 +76,7 @@ def train_clf(df, max_orbits=100):
         for orbit in orbit_numbers:
 
             df_orbit = df_drift.loc[df['ORBIT'] == orbit]
-            features = df_orbit.iloc[:, 1:-4].values
+            features = df_orbit.iloc[:, 1:-5].values
             labels = df_orbit['LABEL'].tolist()
             classes = np.unique(labels)
             weights = compute_class_weight(
@@ -97,45 +94,32 @@ def train_clf(df, max_orbits=100):
                                   v in enumerate(weights)},
                     verbose=0)
 
+            labels_pred = clf.predict_on_batch(x)
+            f1 = precision_recall_fscore_support(
+                y_true=y, y_pred=labels_pred, average=None, labels=classes)[2]
+            print_(f'f-score: {f1}')
+
     return clf
 
 
 # Test classifier
 def test_clfs(df, clf):
 
-    df['LABEL_PRED'] = 0
-
     # Standardization
     df_features = df.iloc[:, 1:-5]
     print_(f'features:\n{df_features.head()}')
-    print_(f'mean:\n{df_features.mean()}')
-    print_(f'std:\n{df_features.std()}')
 
     df.iloc[:, 1:-5] = (df_features - df_features.mean()) / df_features.std()
     print_(f'standardized:\n{df.iloc[:, 1:-5].head()}')
-    print_(f'mean:\n{df.iloc[:, 1:-5].mean()}')
-    print_(f'std:\n{df.iloc[:, 1:-5].std()}')
     print_(f'total size = {len(df.index)}')
 
-    orbit_numbers = pd.unique(df['ORBIT']).tolist()
-    for orbit in orbit_numbers:
+    features = df.iloc[:, 1:-5].values
+    x = np.array(features, copy=True)
+    x = x.reshape(-1, x.shape[1], 1)
 
-        df_orbit = df.loc[df['ORBIT'] == orbit]
-        features = df_orbit.iloc[:, 1:-5].values
-
-        x = np.array(features, copy=True)
-        x = x.reshape(-1, x.shape[1], 1)
-
-        print_(
-            f'testing classifier on orbit {orbit} ({df_orbit.iloc[0]["SPLIT"]})')
-        pred = clf.predict(x)  # window vs step
-        labels = df_orbit['LABEL']
-        labels_pred = pred.argmax(axis=-1)
-        df.loc[df['ORBIT'] == orbit, 'LABEL_PRED'] = labels_pred
-
-        f1 = precision_recall_fscore_support(
-            y_true=labels, y_pred=labels_pred, average=None, labels=np.unique(labels))[2]
-        print_(f'f-score: {f1}')
+    pred = clf.predict(x)  # window vs step
+    labels_pred = pred.argmax(axis=-1)
+    df['LABEL_PRED'] = labels_pred
 
     return df['LABEL_PRED']
 
@@ -216,6 +200,9 @@ if gpus:
 logs = sys.argv[1]
 dataset = int(sys.argv[2])
 plots = sys.argv[3]
+# logs = 'logs_cnn'
+# dataset = 1
+# plots = '0123'
 if not os.path.exists(logs):
     os.makedirs(logs)
 
@@ -239,6 +226,8 @@ for orb in drift_orbits:
 
 df = load_data(files)
 df = select_features(df, 'data/features_cnn.txt')
+
+df['LABEL_PRED'] = 0
 df['DRIFT'] = 1
 df['SPLIT'] = 'train'
 
@@ -285,10 +274,31 @@ df_pred = test_clfs(df.copy(), clf)
 t2 = time.perf_counter()
 print_(f'testing time is {t2 - t1:.2f} seconds')
 
-df = df.join(df_pred)
+df['LABEL_PRED'] = df_pred
 
 
 # %% Evaluation
+
+drifts = pd.unique(df['DRIFT']).tolist()
+print_(f'drifts: {drifts}')
+
+for drift in drifts:
+
+    df_drift = df.loc[df['DRIFT'] == drift]
+    orbit_numbers = pd.unique(df_drift['ORBIT']).tolist()
+    print_(f'{len(orbit_numbers)} orbits with drift {drift}')
+    print_(f'{orbit_numbers}')
+
+    for orbit in orbit_numbers:
+
+        df_orbit = df_drift.loc[df['ORBIT'] == orbit]
+        labels = df_orbit['LABEL'].tolist()
+        labels_pred = df_orbit['LABEL_PRED'].tolist()
+        classes = np.unique(labels)
+
+        f1 = precision_recall_fscore_support(
+            y_true=labels, y_pred=labels_pred, average=None, labels=classes)[2]
+        print_(f'{df_orbit.iloc[0]["SPLIT"]} orbit {orbit} f-score: {f1}')
 
 labels_train_true = df.loc[df['SPLIT'] == 'train', 'LABEL'].tolist()
 labels_train_pred = df.loc[df['SPLIT'] == 'train', 'LABEL_PRED'].tolist()
@@ -320,8 +330,8 @@ print_(
 
 # %% Plots
 
-df['B_tot'] = (df['BX_MSO']**2 + df['BY_MSO']**2 + df['BZ_MSO']**2)**0.5
 if plots != '':
+    df['B_tot'] = (df['BX_MSO']**2 + df['BY_MSO']**2 + df['BZ_MSO']**2)**0.5
     print_(f'plotting {plots}...')
     if '0' in plots:
         plot_orbits(logs, df, test=False, pred=False)
