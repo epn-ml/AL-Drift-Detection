@@ -60,9 +60,8 @@ def train_clf(df, max_count=5):
     print_(f'total size = {len(df.index)}')
 
     clf = cnn((len(df_features.columns), 1))
-    summary = []
-    clf.summary(print_fn=lambda x: summary.append(x))
-    print_(f'cnn:\n{summary}')
+    print_('cnn:')
+    clf.summary(print_fn=print_)
 
     drifts = pd.unique(df['DRIFT']).tolist()
     print_(f'drifts: {drifts}')
@@ -98,9 +97,8 @@ def train_clf(df, max_count=5):
                                   v in enumerate(weights)},
                     verbose=0)
 
-    summary = []
-    clf.summary(print_fn=lambda x: summary.append(x))
-    print_(f'cnn:\n{summary}')
+    print_('cnn:')
+    clf.summary(print_fn=print_)
 
     return clf
 
@@ -134,7 +132,7 @@ def test_clfs(df, clf):
         print_(
             f'testing classifier on orbit {orbit} ({df_orbit.iloc[0]["SPLIT"]})')
         pred = clf.predict(x)  # window vs step
-        labels = df['LABELS']
+        labels = df['LABEL']
         labels_pred = pred.argmax(axis=-1)
         df.loc[df['ORBIT'] == orbit, 'LABEL_PRED'] = labels_pred
 
