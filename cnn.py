@@ -93,7 +93,7 @@ def train_clf(df, max_orbits=100):
     clf.fit(x=x_all, y=y_all,
             batch_size=16,
             epochs=20,
-            verbose=0)
+            verbose=2)
     acc = clf.evaluate(x, y)
     print_(f'loss: {acc[0]}, accuracy: {acc[1]}')
 
