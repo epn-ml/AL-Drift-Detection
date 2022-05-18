@@ -109,7 +109,7 @@ def train_clf(df, logs, max_orbits=5):
             verbose=2)
 
     acc = clf.evaluate(x_all, y_all, verbose=2)
-    print_(f'metric names: {clf.metric_names}')
+    print_(f'metric names: {clf.metrics_names}')
     print_(f'evaluation: {acc}')
 
     # Intermediate evaluation
