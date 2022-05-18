@@ -115,9 +115,11 @@ def train_clf(df, logs, max_orbits=5):
     # Intermediate evaluation
     labels_pred = clf.predict(x_all)
     labels_pred = labels_pred.argmax(axis=-1)
-    f1 = precision_recall_fscore_support(
-        y_true=y_all, y_pred=labels_pred, average=None, labels=classes)[2]
-    print_(f'training f-score: {f1}')
+    prf = precision_recall_fscore_support(
+        y_true=y_all, y_pred=labels_pred, average=None, labels=classes)
+    print_(f'training precision: {prf[0]}')
+    print_(f'training recall: {prf[1]}')
+    print_(f'training f-score: {prf[2]}')
 
     return clf
 
