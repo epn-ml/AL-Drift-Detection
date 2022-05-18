@@ -45,7 +45,7 @@ def cnn(shape):
 
 
 # Train classifier based on drift
-def train_clf(df, max_orbits=100):
+def train_clf(df, max_orbits=5):
 
     # Standardization
     df_features = df.iloc[:, 1:-5]
@@ -81,7 +81,6 @@ def train_clf(df, max_orbits=100):
             df_orbit = df_drift.loc[df['ORBIT'] == orbit]
             features = df_orbit.iloc[:, 1:-5].values
             labels = df_orbit['LABEL'].tolist()
-            classes = np.unique(labels)
 
             x = np.array(features, copy=True)
             x = x.reshape(-1, x.shape[1], 1)
@@ -93,12 +92,20 @@ def train_clf(df, max_orbits=100):
     x_all = np.array(x_all)
     y_all = np.array(y_all)
 
+    weights = compute_class_weight(
+        'balanced', classes=np.unique(y_all), y=y_all)
+    print_(f'weights: {weights}')
+
     clf.fit(x=x_all, y=y_all,
             batch_size=16,
             epochs=20,
+            class_weight={k: v for k,
+                          v in enumerate(weights)},
             verbose=2)
-    acc = clf.evaluate(x_all, y_all)
-    print_(f'loss: {acc[0]}, accuracy: {acc[1]}')
+
+    acc = clf.evaluate(x_all, y_all, verbose=2)
+    print_(f'metric names: {clf.metric_names}')
+    print_(f'evaluation: {acc}')
 
     # Intermediate evaluation
     labels_pred = clf.predict(x_all)
