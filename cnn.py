@@ -93,9 +93,10 @@ def train_clf(df, logs, max_orbits=10):
 
     x_all = np.array(x_all)
     y_all = np.array(y_all)
+    classes = np.unique(y_all)
 
     weights = compute_class_weight(
-        'balanced', classes=np.unique(y_all), y=y_all)
+        'balanced', classes=classes, y=y_all)
     print_(f'weights: {weights}')
 
     logger = CSVLogger(f'{logs}/log_cnn.csv', separator=',', append=True)
