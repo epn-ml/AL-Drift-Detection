@@ -33,11 +33,11 @@ def print_(print_str, with_date=True):
 # Create CNN model
 def cnn(shape):
     model = keras.Sequential()
-    model.add(layers.Conv1D(64, 2, activation='relu', input_shape=shape))
-    model.add(layers.MaxPooling1D())
-    model.add(layers.Flatten())
+    model.add(layers.Conv1D(64, 2, strides=1, activation='relu',
+              padding='same', input_shape=shape))
+    model.add(layers.LSTM(64, return_sequences=True))
     model.add(layers.Dense(16, activation='relu'))
-    model.add(layers.LSTM(64))
+    model.add(layers.Flatten())
     model.add(layers.Dense(5, activation='softmax'))
 
     model.compile(loss=keras.losses.SparseCategoricalCrossentropy(),
