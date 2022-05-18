@@ -14,6 +14,7 @@ from sklearn.metrics import (accuracy_score, confusion_matrix,
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow import keras
 from tensorflow.keras import layers
+from tensorflow.keras.callbacks import CSVLogger
 
 from util import load_data, load_drifts, print_f, select_features
 
@@ -33,9 +34,10 @@ def print_(print_str, with_date=True):
 def cnn(shape):
     model = keras.Sequential()
     model.add(layers.Conv1D(64, 2, activation='relu', input_shape=shape))
-    model.add(layers.Dense(16, activation='relu'))
     model.add(layers.MaxPooling1D())
     model.add(layers.Flatten())
+    model.add(layers.Dense(16, activation='relu'))
+    model.add(layers.LSTM(64))
     model.add(layers.Dense(5, activation='softmax'))
 
     model.compile(loss=keras.losses.SparseCategoricalCrossentropy(),
@@ -45,7 +47,7 @@ def cnn(shape):
 
 
 # Train classifier based on drift
-def train_clf(df, max_orbits=5):
+def train_clf(df, logs, max_orbits=5):
 
     # Standardization
     df_features = df.iloc[:, 1:-5]
@@ -96,9 +98,12 @@ def train_clf(df, max_orbits=5):
         'balanced', classes=np.unique(y_all), y=y_all)
     print_(f'weights: {weights}')
 
+    logger = CSVLogger(f'{logs}/log_cnn.csv', separator=',', append=True)
+
     clf.fit(x=x_all, y=y_all,
             batch_size=16,
             epochs=20,
+            callbacks=[logger],
             class_weight={k: v for k,
                           v in enumerate(weights)},
             verbose=2)
@@ -277,7 +282,7 @@ print_(f'total test orbits: {len_test}')
 # %% Training classifiers
 
 t1 = time.perf_counter()
-clf = train_clf(df.loc[df['SPLIT'] == 'train'].copy())
+clf = train_clf(df.loc[df['SPLIT'] == 'train'].copy(), logs)
 t2 = time.perf_counter()
 print_(f'training time is {t2 - t1:.2f} seconds')
 
