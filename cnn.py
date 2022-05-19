@@ -1,5 +1,6 @@
 # %% imports
 
+import datetime
 import os
 import random
 import sys
@@ -14,7 +15,6 @@ from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support)
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow import keras
-from tensorflow.keras import backend as K
 from tensorflow.keras import layers, metrics
 from wandb.keras import WandbCallback
 
@@ -29,29 +29,11 @@ global fptr
 def print_(print_str, with_date=True):
 
     global fptr
-    print(print_str)
     print_f(fptr, print_str, with_date)
-
-
-# Custom metrics
-def recall_m(y_true, y_pred):
-    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
-    recall = true_positives / (possible_positives + K.epsilon())
-    return recall
-
-
-def precision_m(y_true, y_pred):
-    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
-    precision = true_positives / (predicted_positives + K.epsilon())
-    return precision
-
-
-def f1_m(y_true, y_pred):
-    precision = precision_m(y_true, y_pred)
-    recall = recall_m(y_true, y_pred)
-    return 2*((precision*recall)/(precision+recall+K.epsilon()))
+    if with_date:
+        print(print_str)
+    else:
+        print(f'{str(datetime.now())}: {print_str}')
 
 
 # Create CNN model
@@ -67,7 +49,7 @@ def cnn(shape):
 
     model.compile(loss=keras.losses.SparseCategoricalCrossentropy(),
                   optimizer=keras.optimizers.Adam(learning_rate=0.001),
-                  metrics=[metrics.sparse_categorical_accuracy, precision_m, recall_m, f1_m])
+                  metrics=['accuracy', metrics.categorical_accuracy, metrics.sparse_categorical_accuracy])
 
     return model
 
@@ -356,9 +338,10 @@ for drift in drifts:
         labels_pred = df_orbit['LABEL_PRED'].tolist()
         classes = np.unique(labels)
 
-        f1 = precision_recall_fscore_support(
+        prf = precision_recall_fscore_support(
             y_true=labels, y_pred=labels_pred, average=None, labels=classes)[2]
-        print_(f'{df_orbit.iloc[0]["SPLIT"]} orbit {orbit} f-score: {f1}')
+        print_(
+            f'{df_orbit.iloc[0]["SPLIT"]} orbit {orbit} f-score: {prf[2]}, recall: {prf[1]}, precision: {prf[0]}')
 
 labels_train_true = df.loc[df['SPLIT'] == 'train', 'LABEL'].tolist()
 labels_train_pred = df.loc[df['SPLIT'] == 'train', 'LABEL_PRED'].tolist()
