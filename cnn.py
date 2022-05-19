@@ -29,6 +29,7 @@ global fptr
 def print_(print_str, with_date=True):
 
     global fptr
+    print(print_str)
     print_f(fptr, print_str, with_date)
 
 
