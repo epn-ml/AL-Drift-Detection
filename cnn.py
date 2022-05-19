@@ -10,7 +10,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import tensorflow as tf
 import wandb
-from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
+from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support)
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow import keras
