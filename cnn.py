@@ -9,16 +9,50 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import tensorflow as tf
+import wandb
+from keras.callbacks import Callback
 from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support)
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow import keras
 from tensorflow.keras import layers
-from tensorflow.keras.callbacks import CSVLogger
+from wandb.keras import WandbCallback
 
 from util import load_data, load_drifts, print_f, select_features
 
 global fptr
+
+
+class Metrics(Callback):
+
+    def on_train_begin(self, logs={}):
+        self.val_auc = []
+        self.val_precisions = []
+        self.val_recalls = []
+        self.val_f1s = []
+
+    def on_epoch_end(self, epoch, logs={}):
+        val_predict = (np.asarray(self.model.predict(
+            self.model.validation_data[0]))).round()
+        val_targ = self.model.validation_data[1]
+        _val_auc = accuracy_score(y_true=val_targ, y_pred=val_predict)
+        prf = precision_recall_fscore_support(
+            val_targ, val_predict, average=None, labels=np.unique(val_targ))
+        _val_precision = prf[0]
+        _val_recall = prf[1]
+        _val_f1 = prf[2]
+        self.val_auc.append(_val_auc)
+        self.val_f1s.append(_val_f1)
+        self.val_recalls.append(_val_recall)
+        self.val_precisions.append(_val_precision)
+
+        print_(f'epoch: {epoch}')
+        print_(f'precision: {prf[0]}')
+        print_(f'recall: {prf[1]}')
+        print_(f'f-score: {prf[2]}')
+        print_(f'support: {prf[3]}')
+
+        return
 
 
 # %% Functions
@@ -32,6 +66,7 @@ def print_(print_str, with_date=True):
 
 # Create CNN model
 def cnn(shape):
+
     model = keras.Sequential()
     model.add(layers.Conv1D(64, 2, strides=1, activation='relu',
               padding='same', input_shape=shape))
@@ -41,13 +76,14 @@ def cnn(shape):
     model.add(layers.Dense(5, activation='softmax'))
 
     model.compile(loss=keras.losses.SparseCategoricalCrossentropy(),
-                  optimizer='adam', metrics=['accuracy'])
+                  optimizer=keras.optimizers.Adam(learning_rate=0.001),
+                  metrics=['accuracy'])
 
     return model
 
 
 # Train classifier based on drift
-def train_clf(df, logs, dataset, max_orbits=4):
+def train_clf(df, max_orbits=5):
 
     # Standardization
     df_features = df.iloc[:, 1:-5]
@@ -65,8 +101,8 @@ def train_clf(df, logs, dataset, max_orbits=4):
     drifts = pd.unique(df['DRIFT']).tolist()
     print_(f'drifts: {drifts}')
 
-    x_all = []
-    y_all = []
+    x_train = []
+    y_train = []
 
     for drift in drifts:
 
@@ -88,37 +124,47 @@ def train_clf(df, logs, dataset, max_orbits=4):
             x = x.reshape(-1, x.shape[1], 1)
             y = np.asarray(labels)
 
-            x_all += x.tolist()
-            y_all += y.tolist()
+            x_train += x.tolist()
+            y_train += y.tolist()
 
-    x_all = np.array(x_all)
-    y_all = np.array(y_all)
-    classes = np.unique(y_all)
+    x_train = np.array(x_train)
+    y_train = np.array(y_train)
+    classes = np.unique(y_train)
 
     weights = compute_class_weight(
-        'balanced', classes=classes, y=y_all)
+        'balanced', classes=classes, y=y_train)
     print_(f'weights: {weights}')
 
-    logger = CSVLogger(f'{logs}/log_cnn_set{dataset}.csv',
-                       separator=',', append=True)
+    wandb.config = {
+        'filters': 64,
+        'kernel_size': 2,
+        'units_lstm': 64,
+        'units_dense': 16,
+        'batch_size': 128,
+        'epochs': 20,
+        'learning_rate': 0.001
+    }
 
-    clf.fit(x=x_all, y=y_all,
+    metrics = Metrics()
+
+    clf.fit(x=x_train, y=y_train,
+            validation_split=0.2,
             batch_size=16,
             epochs=20,
-            callbacks=[logger],
+            callbacks=[WandbCallback(), metrics],
             class_weight={k: v for k,
                           v in enumerate(weights)},
             verbose=2)
 
-    acc = clf.evaluate(x_all, y_all, verbose=2)
+    acc = clf.evaluate(x_train, y_train, verbose=2)
     print_(f'metric names: {clf.metrics_names}')
     print_(f'evaluation: {acc}')
 
     # Intermediate evaluation
-    labels_pred = clf.predict(x_all)
+    labels_pred = clf.predict(x_train)
     labels_pred = labels_pred.argmax(axis=-1)
     prf = precision_recall_fscore_support(
-        y_true=y_all, y_pred=labels_pred, average=None, labels=classes)
+        y_true=y_train, y_pred=labels_pred, average=None, labels=classes)
     print_(f'training precision: {prf[0]}')
     print_(f'training recall: {prf[1]}')
     print_(f'training f-score: {prf[2]}')
@@ -221,6 +267,8 @@ if gpus:
     except RuntimeError as e:
         print_(e)
 
+wandb.init(project="cnn", entity="irodionr")
+
 logs = sys.argv[1]
 dataset = int(sys.argv[2])
 plots = sys.argv[3]
@@ -286,7 +334,7 @@ print_(f'total test orbits: {len_test}')
 # %% Training classifiers
 
 t1 = time.perf_counter()
-clf = train_clf(df.loc[df['SPLIT'] == 'train'].copy(), logs, dataset)
+clf = train_clf(df.loc[df['SPLIT'] == 'train'].copy())
 t2 = time.perf_counter()
 print_(f'training time is {t2 - t1:.2f} seconds')
 
