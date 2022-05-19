@@ -66,7 +66,7 @@ def cnn(shape):
 
     model.compile(loss=keras.losses.SparseCategoricalCrossentropy(),
                   optimizer=keras.optimizers.Adam(learning_rate=0.001),
-                  metrics=[metrics.SparseCategoricalAccuracy, precision_m, recall_m, f1_m])
+                  metrics=[metrics.sparse_categorical_accuracy, precision_m, recall_m, f1_m])
 
     return model
 
