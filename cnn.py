@@ -15,44 +15,11 @@ from sklearn.metrics import (accuracy_score, confusion_matrix,
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow import keras
 from tensorflow.keras import layers
-from tensorflow.keras.callbacks import Callback
 from wandb.keras import WandbCallback
 
 from util import load_data, load_drifts, print_f, select_features
 
 global fptr
-
-
-class Metrics(Callback):
-
-    def on_train_begin(self, logs={}):
-        self.val_auc = []
-        self.val_precisions = []
-        self.val_recalls = []
-        self.val_f1s = []
-
-    def on_epoch_end(self, epoch, logs={}):
-        val_predict = (np.asarray(self.model.predict(
-            self.model.validation_data[0]))).round()
-        val_targ = self.model.validation_data[1]
-        _val_auc = accuracy_score(y_true=val_targ, y_pred=val_predict)
-        prf = precision_recall_fscore_support(
-            val_targ, val_predict, average=None, labels=np.unique(val_targ))
-        _val_precision = prf[0]
-        _val_recall = prf[1]
-        _val_f1 = prf[2]
-        self.val_auc.append(_val_auc)
-        self.val_f1s.append(_val_f1)
-        self.val_recalls.append(_val_recall)
-        self.val_precisions.append(_val_precision)
-
-        print_(f'epoch: {epoch}')
-        print_(f'precision: {prf[0]}')
-        print_(f'recall: {prf[1]}')
-        print_(f'f-score: {prf[2]}')
-        print_(f'support: {prf[3]}')
-
-        return
 
 
 # %% Functions
@@ -145,13 +112,11 @@ def train_clf(df, max_orbits=5):
         'learning_rate': 0.001
     }
 
-    metrics = Metrics()
-
     clf.fit(x=x_train, y=y_train,
             validation_split=0.2,
             batch_size=16,
             epochs=20,
-            callbacks=[WandbCallback(), metrics],
+            callbacks=[WandbCallback()],
             class_weight={k: v for k,
                           v in enumerate(weights)},
             verbose=2)
