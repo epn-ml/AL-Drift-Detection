@@ -339,7 +339,7 @@ for drift in drifts:
         classes = np.unique(labels)
 
         prf = precision_recall_fscore_support(
-            y_true=labels, y_pred=labels_pred, average=None, labels=classes)[2]
+            y_true=labels, y_pred=labels_pred, average=None, labels=classes)
         print_(
             f'{df_orbit.iloc[0]["SPLIT"]} orbit {orbit} f-score: {prf[2]}, recall: {prf[1]}, precision: {prf[0]}')
 
