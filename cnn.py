@@ -34,27 +34,12 @@ def print_(print_str, with_date=True):
 # Custom metrics
 def prf_m(y_true, y_pred):
 
-    cm = confusion_matrix(y_true, y_pred)
-    precision = []
-    recall = []
-    f1 = []
+    y_true = y_true.numpy()
+    y_pred = y_pred.numpy()
+    prf = precision_recall_fscore_support(
+        y_true, y_pred, average=None, labels=np.unique(y_true))
 
-    for i, _ in enumerate(cm):
-        tp = cm[i][i]
-        fp = 0
-        fn = 0
-
-        for j, _ in enumerate(cm[i]):
-            if j != i:
-                fp += cm[j][i]
-                fn += cm[i][j]
-
-        precision.append(tp / (tp + fp) if tp + fp != 0 else 0)
-        recall.append(tp / (tp + fn) if tp + fn != 0 else 0)
-        f1.append(2 * precision[i] * recall[i] / (precision[i] +
-                  recall[i]) if precision[i] + recall[i] != 0 else 0)
-
-    return [precision, recall, f1]
+    return prf
 
 
 # Create CNN model
@@ -70,7 +55,8 @@ def cnn(shape):
 
     model.compile(loss=keras.losses.SparseCategoricalCrossentropy(),
                   optimizer=keras.optimizers.Adam(learning_rate=0.001),
-                  metrics=[metrics.sparse_categorical_accuracy, prf_m])
+                  metrics=[metrics.sparse_categorical_accuracy, prf_m],
+                  run_eagerly=True)
 
     return model
 
