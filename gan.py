@@ -519,6 +519,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     no_drifts = index
     max_idx_prev = np.array(test_batch_size * [0])
     end_orbit = 13
+    prev_drift = -1
 
     print_(
         f'starting drift detection from index = {index} (orbits {orbit_numbers[cur_orbit]} - {orbit_numbers[end_orbit-1]})')
@@ -610,6 +611,8 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             if temp_label[0] <= max_idx and temp_label[0] != 0:
                 # print_(
                 #     f'temp_label[0] {temp_label[0]} <= max_idx {max_idx}, max_idx += 1')
+                if next_drift == max_idx:
+                    next_drift += 1
                 max_idx += 1
             # We reset the top layer predictions because the drift order has changed and the network should be retrained
             # print_(
@@ -630,9 +633,13 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             discriminator = discriminator.to(device)
             generator_label += 1
 
+        if next_drift == prev_drift:
+            next_drift = next_label
+
         new_orbits = orbit_numbers[cur_orbit:end_orbit]
         new_drift_orbits = dict(zip(new_orbits, [next_drift]*len(new_orbits)))
         drift_orbits = {**drift_orbits, **new_drift_orbits}
+        prev_drift = next_drift
         print_(
             f'{end_orbit}/{len(orbit_numbers)} orbits {new_orbits[0]} - {new_orbits[-1]} ({end_orbit-cur_orbit}) -- drift {next_drift}')
 
