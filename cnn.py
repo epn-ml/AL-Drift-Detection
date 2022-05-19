@@ -165,7 +165,7 @@ def test_clfs(df, clf):
 
 
 # Plot all orbits with crossings
-def plot_orbits(logs, df, test=False, pred=False, draw=[1, 3]):
+def plot_orbits(logs, dataset, df, test=False, pred=False, draw=[1, 3]):
 
     colours = {0: 'red', 1: 'green', 2: 'yellow', 3: 'blue', 4: 'purple'}
     title = 'labels in training orbit '
@@ -222,7 +222,7 @@ def plot_orbits(logs, df, test=False, pred=False, draw=[1, 3]):
         fig.update_layout(
             {'title': f'{title}{orbit} (drift {df_orbit.iloc[0]["DRIFT"]})'})
         fig.write_image(
-            f'{logs}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png')
+            f'{logs}/plots_set{dataset}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png')
         # fig.write_html(
         #     f'{logs}/{folder}/fig_{orbit}.png')
 
@@ -377,16 +377,16 @@ if plots != '':
     df['B_tot'] = (df['BX_MSO']**2 + df['BY_MSO']**2 + df['BZ_MSO']**2)**0.5
     print_(f'plotting {plots}...')
     if '0' in plots:
-        plot_orbits(logs, df, test=False, pred=False)
+        plot_orbits(logs, dataset, df, test=False, pred=False)
         print_(f'plotted train-true')
     if '1' in plots:
-        plot_orbits(logs, df, test=False, pred=True)
+        plot_orbits(logs, dataset, df, test=False, pred=True)
         print_(f'plotted train-pred')
     if '2' in plots:
-        plot_orbits(logs, df, test=True, pred=False)
+        plot_orbits(logs, dataset, df, test=True, pred=False)
         print_(f'plotted test-true')
     if '3' in plots:
-        plot_orbits(logs, df, test=True, pred=True)
+        plot_orbits(logs, dataset, df, test=True, pred=True)
         print_(f'plotted test-pred')
 
 
