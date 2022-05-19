@@ -10,11 +10,10 @@ import pandas as pd
 import plotly.graph_objects as go
 import tensorflow as tf
 import wandb
-from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
+from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support)
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow import keras
-from tensorflow.keras import backend as K
 from tensorflow.keras import layers, metrics
 from wandb.keras import WandbCallback
 
@@ -33,24 +32,29 @@ def print_(print_str, with_date=True):
 
 
 # Custom metrics
-def recall_m(y_true, y_pred):
-    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
-    recall = true_positives / (possible_positives + K.epsilon())
-    return recall
+def prf_m(y_true, y_pred):
 
+    cm = confusion_matrix(y_true.argmax(axis=1), y_pred.argmax(axis=1))
+    precision = []
+    recall = []
+    f1 = []
 
-def precision_m(y_true, y_pred):
-    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
-    precision = true_positives / (predicted_positives + K.epsilon())
-    return precision
+    for i, _ in enumerate(cm):
+        tp = cm[i][i]
+        fp = 0
+        fn = 0
 
+        for j, _ in enumerate(cm[i]):
+            if j != i:
+                fp += cm[j][i]
+                fn += cm[i][j]
 
-def f1_m(y_true, y_pred):
-    precision = precision_m(y_true, y_pred)
-    recall = recall_m(y_true, y_pred)
-    return 2*((precision*recall)/(precision+recall+K.epsilon()))
+        precision.append(tp / (tp + fp) if tp + fp != 0 else 0)
+        recall.append(tp / (tp + fn) if tp + fn != 0 else 0)
+        f1.append(2 * precision[i] * recall[i] / (precision[i] +
+                  recall[i]) if precision[i] + recall[i] != 0 else 0)
+
+    return [precision, recall, f1]
 
 
 # Create CNN model
@@ -66,7 +70,7 @@ def cnn(shape):
 
     model.compile(loss=keras.losses.SparseCategoricalCrossentropy(),
                   optimizer=keras.optimizers.Adam(learning_rate=0.001),
-                  metrics=[metrics.sparse_categorical_accuracy, precision_m, recall_m, f1_m])
+                  metrics=[metrics.sparse_categorical_accuracy, prf_m])
 
     return model
 
