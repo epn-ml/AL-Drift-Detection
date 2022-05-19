@@ -34,7 +34,7 @@ def print_(print_str, with_date=True):
 # Custom metrics
 def prf_m(y_true, y_pred):
 
-    cm = confusion_matrix(y_true.argmax(axis=1), y_pred.argmax(axis=1))
+    cm = confusion_matrix(y_true, y_pred)
     precision = []
     recall = []
     f1 = []
