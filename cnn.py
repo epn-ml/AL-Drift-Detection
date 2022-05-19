@@ -31,6 +31,13 @@ def print_(print_str, with_date=True):
     print_f(fptr, print_str, with_date)
 
 
+# Custom metrics
+def prf_m(y_true, y_pred):
+    prf = precision_recall_fscore_support(
+        y_true, y_pred, average=None, labels=np.unique(y_true))
+    return prf
+
+
 # Create CNN model
 def cnn(shape):
 
@@ -44,7 +51,7 @@ def cnn(shape):
 
     model.compile(loss=keras.losses.SparseCategoricalCrossentropy(),
                   optimizer=keras.optimizers.Adam(learning_rate=0.001),
-                  metrics=['accuracy'])
+                  metrics=['accuracy', prf_m])
 
     return model
 
