@@ -10,10 +10,11 @@ import pandas as pd
 import plotly.graph_objects as go
 import tensorflow as tf
 import wandb
-from sklearn.metrics import (accuracy_score, confusion_matrix,
+from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
                              precision_recall_fscore_support)
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow import keras
+from tensorflow.keras import backend as K
 from tensorflow.keras import layers, metrics
 from wandb.keras import WandbCallback
 
@@ -32,14 +33,24 @@ def print_(print_str, with_date=True):
 
 
 # Custom metrics
-def prf_m(y_true, y_pred):
+def recall_m(y_true, y_pred):
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+    recall = true_positives / (possible_positives + K.epsilon())
+    return recall
 
-    y_true = y_true.numpy()
-    y_pred = y_pred.numpy()
-    prf = precision_recall_fscore_support(
-        y_true, y_pred, average=None, labels=np.unique(y_true))
 
-    return prf
+def precision_m(y_true, y_pred):
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+    precision = true_positives / (predicted_positives + K.epsilon())
+    return precision
+
+
+def f1_m(y_true, y_pred):
+    precision = precision_m(y_true, y_pred)
+    recall = recall_m(y_true, y_pred)
+    return 2*((precision*recall)/(precision+recall+K.epsilon()))
 
 
 # Create CNN model
@@ -55,8 +66,7 @@ def cnn(shape):
 
     model.compile(loss=keras.losses.SparseCategoricalCrossentropy(),
                   optimizer=keras.optimizers.Adam(learning_rate=0.001),
-                  metrics=[metrics.sparse_categorical_accuracy, prf_m],
-                  run_eagerly=True)
+                  metrics=[metrics.sparse_categorical_accuracy, precision_m, recall_m, f1_m])
 
     return model
 
