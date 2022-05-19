@@ -47,7 +47,7 @@ def cnn(shape):
 
 
 # Train classifier based on drift
-def train_clf(df, logs, max_orbits=3):
+def train_clf(df, logs, dataset, max_orbits=4):
 
     # Standardization
     df_features = df.iloc[:, 1:-5]
@@ -99,7 +99,8 @@ def train_clf(df, logs, max_orbits=3):
         'balanced', classes=classes, y=y_all)
     print_(f'weights: {weights}')
 
-    logger = CSVLogger(f'{logs}/log_cnn.csv', separator=',', append=True)
+    logger = CSVLogger(f'{logs}/log_cnn_set{dataset}.csv',
+                       separator=',', append=True)
 
     clf.fit(x=x_all, y=y_all,
             batch_size=16,
@@ -229,7 +230,7 @@ plots = sys.argv[3]
 if not os.path.exists(logs):
     os.makedirs(logs)
 
-fptr = open(f'{logs}/log_cnn.txt', 'w')
+fptr = open(f'{logs}/log_cnn_set{dataset}.txt', 'w')
 print_(f'dataset: {dataset}')
 
 
@@ -285,7 +286,7 @@ print_(f'total test orbits: {len_test}')
 # %% Training classifiers
 
 t1 = time.perf_counter()
-clf = train_clf(df.loc[df['SPLIT'] == 'train'].copy(), logs)
+clf = train_clf(df.loc[df['SPLIT'] == 'train'].copy(), logs, dataset)
 t2 = time.perf_counter()
 print_(f'training time is {t2 - t1:.2f} seconds')
 
