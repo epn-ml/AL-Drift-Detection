@@ -10,11 +10,11 @@ import pandas as pd
 import plotly.graph_objects as go
 import tensorflow as tf
 import wandb
-from keras import backend as K
 from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
                              precision_recall_fscore_support)
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow import keras
+from tensorflow.keras import backend as K
 from tensorflow.keras import layers, metrics
 from wandb.keras import WandbCallback
 
