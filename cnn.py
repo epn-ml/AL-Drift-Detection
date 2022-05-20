@@ -37,29 +37,6 @@ def print_(print_str, with_date=True):
         print(print_str)
 
 
-# Custom metrics
-def recall_m(y_true, y_pred):
-    TP = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-    Positives = K.sum(K.round(K.clip(y_true, 0, 1)))
-
-    recall = TP / (Positives + K.epsilon())
-    return recall
-
-
-def precision_m(y_true, y_pred):
-    TP = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-    Pred_Positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
-
-    precision = TP / (Pred_Positives + K.epsilon())
-    return precision
-
-
-def f1(y_true, y_pred):
-    precision, recall = precision_m(y_true, y_pred), recall_m(y_true, y_pred)
-
-    return 2*((precision*recall)/(precision+recall+K.epsilon()))
-
-
 # Create CNN model
 def cnn(shape):
 
@@ -73,7 +50,7 @@ def cnn(shape):
 
     model.compile(loss=keras.losses.SparseCategoricalCrossentropy(),
                   optimizer=keras.optimizers.Adam(learning_rate=0.001),
-                  metrics=['accuracy', metrics.sparse_categorical_accuracy, f1, recall_m, precision_m])
+                  metrics=['accuracy', metrics.sparse_categorical_accuracy])
 
     return model
 
