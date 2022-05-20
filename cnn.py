@@ -55,7 +55,7 @@ def cnn(shape):
 
 
 # Train classifier based on drift
-def train_clf(df, max_orbits=5):
+def train_clf(df, max_orbits=15):
 
     # Standardization
     df_features = df.iloc[:, 1:-5]
