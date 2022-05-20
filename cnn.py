@@ -186,8 +186,8 @@ def plot_orbits(logs, dataset, df, test=False, pred=False, draw=[1, 3]):
         title = 'True ' + title
         folder += 'true'
 
-    if not os.path.exists(f'{logs}/{folder}'):
-        os.makedirs(f'{logs}/{folder}')
+    if not os.path.exists(f'{logs}/plots_set{dataset}/{folder}'):
+        os.makedirs(f'{logs}/plots_set{dataset}/{folder}')
 
     for orbit in pd.unique(df['ORBIT']).tolist():
 
