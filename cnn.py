@@ -159,9 +159,9 @@ def train_clf(df, max_orbits=10):
         y_test = df_drift_test['LABEL'].tolist()
         prf_test = precision_recall_fscore_support(
             y_true=y_test, y_pred=labels_pred_test, average=None, labels=classes)
-        print_(f'training precision: {prf_test[0]}')
-        print_(f'training recall: {prf_test[1]}')
-        print_(f'training f-score: {prf_test[2]}')
+        print_(f'testing precision: {prf_test[0]}')
+        print_(f'testing recall: {prf_test[1]}')
+        print_(f'testing f-score: {prf_test[2]}')
 
         print_(f'========================================')
 
