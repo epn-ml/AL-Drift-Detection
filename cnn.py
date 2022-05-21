@@ -333,7 +333,7 @@ for drift in pd.unique(list(drift_orbits.values())).tolist():
         df.loc[df['ORBIT'] == orb, 'DRIFT'] = drift
         df.loc[df['ORBIT'] == orb, 'SPLIT'] = 'test'
 
-print_(f'selected data:\n{df.head()}')
+# print_(f'selected data:\n{df.head()}')
 print_(f'total train orbits: {len_train}')
 print_(f'total test orbits: {len_test}')
 
