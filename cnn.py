@@ -59,10 +59,10 @@ def train_clf(df, max_orbits=15):
 
     # Standardization
     df_features = df.iloc[:, 1:-5]
-    print_(f'features:\n{df_features.head()}')
+    # print_(f'features:\n{df_features.head()}')
 
     df.iloc[:, 1:-5] = (df_features - df_features.mean()) / df_features.std()
-    print_(f'standardized:\n{df.iloc[:, 1:-5].head()}')
+    # print_(f'standardized:\n{df.iloc[:, 1:-5].head()}')
     print_(f'total size = {len(df.index)}')
 
     clfs = []
