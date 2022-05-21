@@ -162,7 +162,7 @@ def train_clf(df, max_orbits=15):
         labels_pred_test = labels_pred_test.argmax(axis=-1)
         df.loc[(df['DRIFT'] == drift) & (df['SPLIT'] == 'test'),
                'LABEL_PRED'] = labels_pred_test
-        y_test = df_drift['LABEL'].tolist()
+        y_test = df_drift_test['LABEL'].tolist()
         prf_test = precision_recall_fscore_support(
             y_true=y_test, y_pred=labels_pred_test, average=None, labels=classes)
         print_(f'training precision: {prf_test[0]}')
