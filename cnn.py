@@ -55,7 +55,7 @@ def cnn(shape):
 
 
 # Train classifier based on drift
-def train_clf(df, max_orbits=15):
+def train_clf(df, max_orbits=10):
 
     # Standardization
     df_features = df.iloc[:, 1:-5]
@@ -90,12 +90,7 @@ def train_clf(df, max_orbits=15):
         df_drift_train = df.loc[(df['DRIFT'] == drift)
                                 & (df['SPLIT'] == 'train')]
         orbit_numbers = pd.unique(df_drift_train['ORBIT']).tolist()
-        print_(f'{len(orbit_numbers)} train orbits with drift {drift}')
-        # if len(orbit_numbers) > max_orbits:
-        #     random.shuffle(orbit_numbers)
-        #     orbit_numbers = orbit_numbers[:max_orbits]
-        #     orbit_numbers.sort()
-        print_(f'selected orbits for training: {orbit_numbers}')
+        print_(f'train orbits with drift {drift}: {orbit_numbers}')
 
         x_train = []
         y_train = []
@@ -122,7 +117,6 @@ def train_clf(df, max_orbits=15):
         print_(f'weights: {weights}')
 
         clf.fit(x=x_train, y=y_train,
-                validation_split=0.2,
                 batch_size=16,
                 epochs=20,
                 callbacks=[WandbCallback()],
@@ -308,15 +302,26 @@ df['SPLIT'] = 'train'
 # Randomly select orbits for testing
 len_train = 0
 len_test = 0
-for drift in np.unique(list(drift_orbits.values())):
+max_orbits = 10
+for drift in pd.unique(list(drift_orbits.values())).tolist():
 
     all_orbits = [k for k, v in drift_orbits.items() if v == drift]
-    test_count = len(all_orbits) // 5
-    if test_count == 0:
-        test_count = 1
+    train_count = len(all_orbits) * 4 // 5  # 80% of orbits
+    if train_count == 0:
+        train_count = len(all_orbits) - 1
+        if train_count == 0:
+            train_count = 1
+    if train_count > max_orbits:
+        train_count = max_orbits
 
-    test_orbits = random.sample(all_orbits, test_count)
-    train_orbits = [orb for orb in all_orbits if orb not in test_orbits]
+    if train_count != len(all_orbits):
+        train_orbits = [
+            all_orbits[i] for i in sorted(random.sample(range(len(all_orbits)), train_count))
+        ]
+    else:
+        train_orbits = all_orbits
+
+    test_orbits = [orb for orb in all_orbits if orb not in train_orbits]
     len_train += len(train_orbits)
     len_test += len(test_orbits)
 
