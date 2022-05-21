@@ -15,7 +15,6 @@ from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support)
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow import keras
-from tensorflow.keras import backend as K
 from tensorflow.keras import layers, metrics
 from wandb.keras import WandbCallback
 
@@ -66,47 +65,11 @@ def train_clf(df, max_orbits=15):
     print_(f'standardized:\n{df.iloc[:, 1:-5].head()}')
     print_(f'total size = {len(df.index)}')
 
+    clfs = []
     len_features = len(df.iloc[:, 1:-5].columns)
-    clf = cnn((len_features, 1))
-    print_(f'cnn ({len_features} features):')
-    clf.summary(print_fn=print_)
-
     drifts = pd.unique(df['DRIFT']).tolist()
     print_(f'drifts: {drifts}')
-
-    x_train = []
-    y_train = []
-
-    for drift in drifts:
-
-        df_drift = df.loc[df['DRIFT'] == drift]
-        orbit_numbers = pd.unique(df_drift['ORBIT']).tolist()
-        print_(f'{len(orbit_numbers)} train orbits with drift {drift}')
-        if len(orbit_numbers) > max_orbits:
-            random.shuffle(orbit_numbers)
-            orbit_numbers = orbit_numbers[:max_orbits]
-        print_(f'selected orbits for training: {orbit_numbers}')
-
-        for orbit in orbit_numbers:
-
-            df_orbit = df_drift.loc[df['ORBIT'] == orbit]
-            features = df_orbit.iloc[:, 1:-5].values
-            labels = df_orbit['LABEL'].tolist()
-
-            x = np.array(features, copy=True)
-            x = x.reshape(-1, x.shape[1], 1)
-            y = np.asarray(labels)
-
-            x_train += x.tolist()
-            y_train += y.tolist()
-
-    x_train = np.array(x_train)
-    y_train = np.array(y_train)
-    classes = np.unique(y_train)
-
-    weights = compute_class_weight(
-        'balanced', classes=classes, y=y_train)
-    print_(f'weights: {weights}')
+    print_(f'========================================')
 
     wandb.config = {
         'filters': 64,
@@ -118,29 +81,90 @@ def train_clf(df, max_orbits=15):
         'learning_rate': 0.001
     }
 
-    clf.fit(x=x_train, y=y_train,
-            validation_split=0.2,
-            batch_size=16,
-            epochs=20,
-            callbacks=[WandbCallback()],
-            class_weight={k: v for k,
-                          v in enumerate(weights)},
-            verbose=2)
+    for drift in drifts:
 
-    acc = clf.evaluate(x_train, y_train, verbose=2)
-    print_(f'metric names: {clf.metrics_names}')
-    print_(f'evaluation: {acc}')
+        clf = cnn((len_features, 1))
+        print_(f'cnn for drift {drift} ({len_features} features):')
+        clf.summary(print_fn=print_)
 
-    # Intermediate evaluation
-    labels_pred = clf.predict(x_train)
-    labels_pred = labels_pred.argmax(axis=-1)
-    prf = precision_recall_fscore_support(
-        y_true=y_train, y_pred=labels_pred, average=None, labels=classes)
-    print_(f'training precision: {prf[0]}')
-    print_(f'training recall: {prf[1]}')
-    print_(f'training f-score: {prf[2]}')
+        df_drift_train = df.loc[(df['DRIFT'] == drift)
+                                & (df['SPLIT'] == 'train')]
+        orbit_numbers = pd.unique(df_drift_train['ORBIT']).tolist()
+        print_(f'{len(orbit_numbers)} train orbits with drift {drift}')
+        # if len(orbit_numbers) > max_orbits:
+        #     random.shuffle(orbit_numbers)
+        #     orbit_numbers = orbit_numbers[:max_orbits]
+        #     orbit_numbers.sort()
+        print_(f'selected orbits for training: {orbit_numbers}')
 
-    return clf
+        x_train = []
+        y_train = []
+
+        for orbit in orbit_numbers:
+
+            df_orbit = df_drift_train.loc[df['ORBIT'] == orbit]
+            features = df_orbit.iloc[:, 1:-5].values
+            labels = df_orbit['LABEL'].tolist()
+
+            x = np.array(features, copy=True)
+            x = x.reshape(-1, x.shape[1], 1)
+            y = np.asarray(labels)
+
+            x_train += x.tolist()
+            y_train += y.tolist()
+
+        x_train = np.array(x_train)
+        y_train = np.array(y_train)
+        classes = np.unique(y_train)
+
+        weights = compute_class_weight(
+            'balanced', classes=classes, y=y_train)
+        print_(f'weights: {weights}')
+
+        clf.fit(x=x_train, y=y_train,
+                validation_split=0.2,
+                batch_size=16,
+                epochs=20,
+                callbacks=[WandbCallback()],
+                class_weight={k: v for k,
+                              v in enumerate(weights)},
+                verbose=2)
+
+        clfs.append(clf)
+        acc = clf.evaluate(x_train, y_train, verbose=2)
+        print_(f'metric names: {clf.metrics_names}')
+        print_(f'evaluation (drift {drift}): {acc}')
+
+        # Training evaluation
+        labels_pred = clf.predict(x_train)
+        labels_pred = labels_pred.argmax(axis=-1)
+        df.loc[(df['DRIFT'] == drift) & (df['SPLIT'] ==
+                                         'train'), 'LABEL_PRED'] = labels_pred
+        prf = precision_recall_fscore_support(
+            y_true=y_train, y_pred=labels_pred, average=None, labels=classes)
+        print_(f'training precision: {prf[0]}')
+        print_(f'training recall: {prf[1]}')
+        print_(f'training f-score: {prf[2]}')
+
+        # Testing
+        df_drift_test = df.loc[(df['DRIFT'] == drift) &
+                               (df['SPLIT'] == 'test')]
+        orbit_numbers_test = pd.unique(df_drift_test['ORBIT']).tolist()
+        print_(f'{len(orbit_numbers_test)} test orbits with drift {drift}')
+        print_(f'selected orbits for testing: {orbit_numbers_test}')
+
+        features_test = df_drift_test.iloc[:, 1:-5].values
+        x_test = np.array(features_test, copy=True)
+        x_test = x_test.reshape(-1, x_test.shape[1], 1)
+
+        labels_pred_test = clf.predict(x_test)
+        labels_pred_test = labels_pred_test.argmax(axis=-1)
+        df.loc[(df['DRIFT'] == drift) & (df['SPLIT'] == 'test'),
+               'LABEL_PRED'] = labels_pred_test
+
+        print_(f'========================================')
+
+    return df
 
 
 # Test classifier
@@ -305,19 +329,19 @@ print_(f'total test orbits: {len_test}')
 # %% Training classifiers
 
 t1 = time.perf_counter()
-clf = train_clf(df.loc[df['SPLIT'] == 'train'].copy())
+df = train_clf(df.copy())
 t2 = time.perf_counter()
 print_(f'training time is {t2 - t1:.2f} seconds')
 
 
 # %% Testing classifiers
 
-t1 = time.perf_counter()
-df_pred = test_clfs(df.copy(), clf)
-t2 = time.perf_counter()
-print_(f'testing time is {t2 - t1:.2f} seconds')
+# t1 = time.perf_counter()
+# df_pred = test_clfs(df.copy(), clf)
+# t2 = time.perf_counter()
+# print_(f'testing time is {t2 - t1:.2f} seconds')
 
-df['LABEL_PRED'] = df_pred
+# df['LABEL_PRED'] = df_pred
 
 
 # %% Evaluation
