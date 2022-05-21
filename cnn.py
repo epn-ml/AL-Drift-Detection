@@ -157,10 +157,17 @@ def train_clf(df, max_orbits=15):
         x_test = np.array(features_test, copy=True)
         x_test = x_test.reshape(-1, x_test.shape[1], 1)
 
+        # Testing evaluation
         labels_pred_test = clf.predict(x_test)
         labels_pred_test = labels_pred_test.argmax(axis=-1)
         df.loc[(df['DRIFT'] == drift) & (df['SPLIT'] == 'test'),
                'LABEL_PRED'] = labels_pred_test
+        y_test = df_drift['LABEL'].tolist()
+        prf_test = precision_recall_fscore_support(
+            y_true=y_test, y_pred=labels_pred_test, average=None, labels=classes)
+        print_(f'training precision: {prf_test[0]}')
+        print_(f'training recall: {prf_test[1]}')
+        print_(f'training f-score: {prf_test[2]}')
 
         print_(f'========================================')
 
