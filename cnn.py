@@ -71,16 +71,6 @@ def train_clf(df, max_orbits=10):
     print_(f'drifts: {drifts}')
     print_(f'========================================')
 
-    wandb.config = {
-        'filters': 64,
-        'kernel_size': 2,
-        'units_lstm': 64,
-        'units_dense': 16,
-        'batch_size': 128,
-        'epochs': 20,
-        'learning_rate': 0.001
-    }
-
     for drift in drifts:
 
         clf = cnn((len_features, 1))
@@ -118,7 +108,7 @@ def train_clf(df, max_orbits=10):
 
         clf.fit(x=x_train, y=y_train,
                 batch_size=16,
-                epochs=20,
+                epochs=13,
                 callbacks=[WandbCallback()],
                 class_weight={k: v for k,
                               v in enumerate(weights)},
@@ -263,7 +253,15 @@ if gpus:
     except RuntimeError as e:
         print_(e)
 
-wandb.init(project="cnn", entity="irodionr")
+wandb.init(project="cnn", entity="irodionr", config={
+    "filters": 64,
+    "kernel_size": 2,
+    "units_lstm": 64,
+    "units_dense": 16,
+    "batch_size": 128,
+    "epochs": 13,
+    "learning_rate": 0.001
+})
 
 logs = sys.argv[1]
 dataset = int(sys.argv[2])
