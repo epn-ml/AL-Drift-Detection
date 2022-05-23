@@ -5,10 +5,12 @@ import os
 import random
 import sys
 import time
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
 import torch
+import wandb
 from torch import nn
 from torch.autograd import Variable
 from torch.nn import Linear, Module, ReLU, Sequential
@@ -28,6 +30,10 @@ def print_(print_str, with_date=True):
 
     global fptr
     print_f(fptr, print_str, with_date)
+    if with_date:
+        print(f'{str(datetime.now())}: {print_str}')
+    else:
+        print(print_str)
 
 
 # Generator class
@@ -441,8 +447,10 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     df_features = df.iloc[:, 1:-2]
     print_(f'features:\n{df_features.head()}')
 
-    df.iloc[:, 1:-2] = (df_features - df_features.mean()) / df_features.std()
-    print_(f'standardized:\n{df.head()}')
+    for col in df_features:
+        df_features[col] = df_features[col].rolling(5000, min_periods=1).mean()
+    df.iloc[:, 1:-2] = df_features
+    print_(f'rolling mean:\n{df.head()}')
     print_(f'total size = {len(df.index)}')
     features = df.iloc[:, 1:-2].values
 
@@ -489,6 +497,8 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         inp=features.shape[1], out=features.shape[1], sequence_length=sequence_length)
     discriminator = Discriminator(
         inp=features.shape[1], final_layer_incoming_connections=512)
+
+    wandb.watch(discriminator)
 
     generator.move(device=device)
 
@@ -771,6 +781,16 @@ device = torch.device(device_name if torch.cuda.is_available() else 'cpu')
 print_(
     f'the seed for the current execution is {seed} for MESSENGER dataset with device {device}')
 
+wandb.init(project="cnn", entity="irodionr", config={
+    "sequence_length": 10,
+    "steps_generator": 20,
+    "batch_size": 8,
+    "generator_batch_size": 2,
+    "test_batch_size": 4,
+    "epochs": 20,
+    "weight_decay": 0.000000,
+    "learning_rate": 0.025
+})
 
 # %% Load data
 
