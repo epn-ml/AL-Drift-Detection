@@ -211,16 +211,18 @@ def plot_orbits(logs, dataset, df, test=False, pred=False, draw=[1, 3]):
         fig = go.Figure()
 
         # Plotting components of the magnetic field B_x, B_y, B_z in MSO coordinates
-        fig.add_trace(go.Scatter(
-            x=df_orbit['DATE'], y=df_orbit['BX_MSO'], name='B_x'))
-        fig.add_trace(go.Scatter(
-            x=df_orbit['DATE'], y=df_orbit['BY_MSO'], name='B_y'))
+        # fig.add_trace(go.Scatter(
+        #     x=df_orbit['DATE'], y=df_orbit['BX_MSO'], name='B_x'))
+        # fig.add_trace(go.Scatter(
+        #     x=df_orbit['DATE'], y=df_orbit['BY_MSO'], name='B_y'))
         fig.add_trace(go.Scatter(
             x=df_orbit['DATE'], y=df_orbit['BZ_MSO'], name='B_z'))
+        fig.add_trace(go.Scatter(
+            x=df_orbit['DATE'], y=df_orbit['COSALPHA'], name='cos_a'))
 
         # Plotting total magnetic field magnitude B along the orbit
-        fig.add_trace(go.Scatter(
-            x=df_orbit['DATE'], y=-df_orbit['B_tot'], name='|B|', line_color='darkgray'))
+        # fig.add_trace(go.Scatter(
+        #     x=df_orbit['DATE'], y=-df_orbit['B_tot'], name='|B|', line_color='darkgray'))
         fig.add_trace(go.Scatter(x=df_orbit['DATE'], y=df_orbit['B_tot'], name='|B|',
                                  line_color='darkgray', showlegend=False))
 
@@ -278,6 +280,7 @@ print_(f'dataset: {dataset}')
 
 # %% Load data
 
+# TODO: try dataset with no repeating drifts
 drift_orbits = load_drifts(f'data/drifts_set{dataset}.txt')
 files = []
 cur_orbit = 0

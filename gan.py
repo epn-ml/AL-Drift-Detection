@@ -453,7 +453,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     for col in df_features:
         df_features[col] = df_features[col].rolling(5000, min_periods=1).mean()
     df.iloc[:, 1:-2] = df_features
-    print_(f'rolling mean:\n{df.head()}')
+    print_(f'rolling mean:\n{df_features.head()}')
     print_(f'total size = {len(df.index)}')
     features = df.iloc[:, 1:-2].values
 
@@ -821,7 +821,7 @@ elif dataset == 5:
 
 df = load_data(files, add_known_drifts=True)
 df = select_features(df, 'data/features_gan.txt')
-print_(f'selected data:\n{df.head()}')
+print_(f'selected data:\n{df.columns}')
 
 # %% Training GAN
 
