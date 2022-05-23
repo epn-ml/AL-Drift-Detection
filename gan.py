@@ -447,7 +447,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     # print_(f'mean:\n{features.mean(axis=0)}')
     # print_(f'total size = {len(features)}')
 
-    df = df.loc[df['LABEL'] == 0]
+    # df = df.loc[df['LABEL'] == 0]
     df_features = df.iloc[:, 1:-2]
     print_(f'features:\n{df_features.head()}')
 
