@@ -787,7 +787,7 @@ device = torch.device(device_name if torch.cuda.is_available() else 'cpu')
 print_(
     f'the seed for the current execution is {seed} for MESSENGER dataset with device {device}')
 
-wandb.init(project="cnn", entity="irodionr", config={
+wandb.init(project="gan", entity="irodionr", config={
     "sequence_length": 10,
     "steps_generator": 20,
     "batch_size": 8,
