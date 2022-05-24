@@ -280,7 +280,6 @@ print_(f'dataset: {dataset}')
 
 # %% Load data
 
-# TODO: try dataset with no repeating drifts
 drift_orbits = load_drifts(f'data/drifts_set{dataset}.txt')
 files = []
 cur_orbit = 0
