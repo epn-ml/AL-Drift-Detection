@@ -73,6 +73,7 @@ def train_clf(df, max_orbits=10):
 
     for drift in drifts:
 
+        wandb.log({"drift": drift})
         clf = cnn((len_features, 1))
         print_(f'cnn for drift {drift} ({len_features} features):')
         clf.summary(print_fn=print_)
