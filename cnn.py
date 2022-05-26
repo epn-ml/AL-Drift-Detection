@@ -55,7 +55,7 @@ def cnn(shape):
 
 
 # Train classifier based on drift
-def train_clf(df, max_orbits=10):
+def train_clf(df, one_clf=True):
 
     # Standardization
     df_features = df.iloc[:, 1:-5]
@@ -65,42 +65,28 @@ def train_clf(df, max_orbits=10):
     # print_(f'standardized:\n{df.iloc[:, 1:-5].head()}')
     print_(f'total size = {len(df.index)}')
 
-    clfs = []
     len_features = len(df.iloc[:, 1:-5].columns)
     drifts = pd.unique(df['DRIFT']).tolist()
     print_(f'drifts: {drifts}')
     print_(f'========================================')
 
-    for drift in drifts:
+    if one_clf:
 
-        wandb.log({"drift": drift})
         clf = cnn((len_features, 1))
-        print_(f'cnn for drift {drift} ({len_features} features):')
+        print_(f'cnn for all drifts ({len_features} features):')
         clf.summary(print_fn=print_)
 
-        df_drift_train = df.loc[(df['DRIFT'] == drift)
-                                & (df['SPLIT'] == 'train')]
-        orbit_numbers = pd.unique(df_drift_train['ORBIT']).tolist()
-        print_(f'train orbits with drift {drift}: {orbit_numbers}')
+        df_train = df.loc[df['SPLIT'] == 'train']
+        orbit_numbers = pd.unique(df_train['ORBIT']).tolist()
+        print_(f'{len(orbit_numbers)} train orbits')
+        print_(f'selected orbits for training: {orbit_numbers}')
 
-        x_train = []
-        y_train = []
+        features = df_train.iloc[:, 1:-5].values
+        labels = df_train['LABEL'].tolist()
 
-        for orbit in orbit_numbers:
-
-            df_orbit = df_drift_train.loc[df['ORBIT'] == orbit]
-            features = df_orbit.iloc[:, 1:-5].values
-            labels = df_orbit['LABEL'].tolist()
-
-            x = np.array(features, copy=True)
-            x = x.reshape(-1, x.shape[1], 1)
-            y = np.asarray(labels)
-
-            x_train += x.tolist()
-            y_train += y.tolist()
-
-        x_train = np.array(x_train)
-        y_train = np.array(y_train)
+        x_train = np.array(features, copy=True)
+        x_train = x_train.reshape(-1, x_train.shape[1], 1)
+        y_train = np.asarray(labels)
         classes = np.unique(y_train)
 
         weights = compute_class_weight(
@@ -115,16 +101,14 @@ def train_clf(df, max_orbits=10):
                               v in enumerate(weights)},
                 verbose=2)
 
-        clfs.append(clf)
         acc = clf.evaluate(x_train, y_train, verbose=2)
         print_(f'metric names: {clf.metrics_names}')
-        print_(f'evaluation (drift {drift}): {acc}')
+        print_(f'evaluation: {acc}')
 
         # Training evaluation
         labels_pred = clf.predict(x_train)
         labels_pred = labels_pred.argmax(axis=-1)
-        df.loc[(df['DRIFT'] == drift) & (df['SPLIT'] ==
-                                         'train'), 'LABEL_PRED'] = labels_pred
+        df.loc[df['SPLIT'] == 'train', 'LABEL_PRED'] = labels_pred
         prf = precision_recall_fscore_support(
             y_true=y_train, y_pred=labels_pred, average=None, labels=classes)
         print_(f'training precision: {prf[0]}')
@@ -132,29 +116,116 @@ def train_clf(df, max_orbits=10):
         print_(f'training f-score: {prf[2]}')
 
         # Testing
-        df_drift_test = df.loc[(df['DRIFT'] == drift) &
-                               (df['SPLIT'] == 'test')]
-        orbit_numbers_test = pd.unique(df_drift_test['ORBIT']).tolist()
-        print_(f'{len(orbit_numbers_test)} test orbits with drift {drift}')
+        df_test = df.loc[df['SPLIT'] == 'test']
+        orbit_numbers_test = pd.unique(df_test['ORBIT']).tolist()
+        print_(f'{len(orbit_numbers_test)} test orbits')
         print_(f'selected orbits for testing: {orbit_numbers_test}')
 
-        features_test = df_drift_test.iloc[:, 1:-5].values
+        features_test = df_test.iloc[:, 1:-5].values
         x_test = np.array(features_test, copy=True)
         x_test = x_test.reshape(-1, x_test.shape[1], 1)
 
         # Testing evaluation
         labels_pred_test = clf.predict(x_test)
         labels_pred_test = labels_pred_test.argmax(axis=-1)
-        df.loc[(df['DRIFT'] == drift) & (df['SPLIT'] == 'test'),
-               'LABEL_PRED'] = labels_pred_test
-        y_test = df_drift_test['LABEL'].tolist()
+        df.loc[df['SPLIT'] == 'test', 'LABEL_PRED'] = labels_pred_test
+        y_test = df_test['LABEL'].tolist()
         prf_test = precision_recall_fscore_support(
-            y_true=y_test, y_pred=labels_pred_test, average=None, labels=classes)
+            y_true=y_test, y_pred=labels_pred_test, average=None, labels=np.unique(y_test))
         print_(f'testing precision: {prf_test[0]}')
         print_(f'testing recall: {prf_test[1]}')
         print_(f'testing f-score: {prf_test[2]}')
 
         print_(f'========================================')
+
+    else:
+
+        clfs = []
+
+        for drift in drifts:
+
+            wandb.log({"drift": drift})
+            clf = cnn((len_features, 1))
+            print_(f'cnn for drift {drift} ({len_features} features):')
+            clf.summary(print_fn=print_)
+
+            df_drift_train = df.loc[(df['DRIFT'] == drift)
+                                    & (df['SPLIT'] == 'train')]
+            orbit_numbers = pd.unique(df_drift_train['ORBIT']).tolist()
+            print_(f'train orbits with drift {drift}: {orbit_numbers}')
+
+            x_train = []
+            y_train = []
+
+            for orbit in orbit_numbers:
+
+                df_orbit = df_drift_train.loc[df['ORBIT'] == orbit]
+                features = df_orbit.iloc[:, 1:-5].values
+                labels = df_orbit['LABEL'].tolist()
+
+                x = np.array(features, copy=True)
+                x = x.reshape(-1, x.shape[1], 1)
+                y = np.asarray(labels)
+
+                x_train += x.tolist()
+                y_train += y.tolist()
+
+            x_train = np.array(x_train)
+            y_train = np.array(y_train)
+            classes = np.unique(y_train)
+
+            weights = compute_class_weight(
+                'balanced', classes=classes, y=y_train)
+            print_(f'weights: {weights}')
+
+            clf.fit(x=x_train, y=y_train,
+                    batch_size=16,
+                    epochs=13,
+                    callbacks=[WandbCallback()],
+                    class_weight={k: v for k,
+                                  v in enumerate(weights)},
+                    verbose=2)
+
+            clfs.append(clf)
+            acc = clf.evaluate(x_train, y_train, verbose=2)
+            print_(f'metric names: {clf.metrics_names}')
+            print_(f'evaluation (drift {drift}): {acc}')
+
+            # Training evaluation
+            labels_pred = clf.predict(x_train)
+            labels_pred = labels_pred.argmax(axis=-1)
+            df.loc[(df['DRIFT'] == drift) & (df['SPLIT'] ==
+                                             'train'), 'LABEL_PRED'] = labels_pred
+            prf = precision_recall_fscore_support(
+                y_true=y_train, y_pred=labels_pred, average=None, labels=classes)
+            print_(f'training precision: {prf[0]}')
+            print_(f'training recall: {prf[1]}')
+            print_(f'training f-score: {prf[2]}')
+
+            # Testing
+            df_drift_test = df.loc[(df['DRIFT'] == drift) &
+                                   (df['SPLIT'] == 'test')]
+            orbit_numbers_test = pd.unique(df_drift_test['ORBIT']).tolist()
+            print_(f'{len(orbit_numbers_test)} test orbits with drift {drift}')
+            print_(f'selected orbits for testing: {orbit_numbers_test}')
+
+            features_test = df_drift_test.iloc[:, 1:-5].values
+            x_test = np.array(features_test, copy=True)
+            x_test = x_test.reshape(-1, x_test.shape[1], 1)
+
+            # Testing evaluation
+            labels_pred_test = clf.predict(x_test)
+            labels_pred_test = labels_pred_test.argmax(axis=-1)
+            df.loc[(df['DRIFT'] == drift) & (df['SPLIT'] == 'test'),
+                   'LABEL_PRED'] = labels_pred_test
+            y_test = df_drift_test['LABEL'].tolist()
+            prf_test = precision_recall_fscore_support(
+                y_true=y_test, y_pred=labels_pred_test, average=None, labels=classes)
+            print_(f'testing precision: {prf_test[0]}')
+            print_(f'testing recall: {prf_test[1]}')
+            print_(f'testing f-score: {prf_test[2]}')
+
+            print_(f'========================================')
 
     return df
 
