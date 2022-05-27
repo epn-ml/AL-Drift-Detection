@@ -449,7 +449,10 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
     # df = df.loc[df['LABEL'] == 0]
     df_features = df.iloc[:, 1:-2]
-    print_(f'features:\n{df_features.head()}')
+    print_(f'features:\n{df.columns}')
+
+    df.iloc[:, 1:-2] = (df_features - df_features.mean()) / df_features.std()
+    df_features = df.iloc[:, 1:-2]
 
     for col in df_features:
         df_features[col] = df_features[col].rolling(5000, min_periods=1).mean()
@@ -544,11 +547,13 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         # Pre-train
         if cur_orbit < 100:
             max_idx = max_idx_prev + 1
+            prob = np.full(max_idx.shape, 1)
         else:
             data = features[index:index + test_batch_size]
             result = discriminator(torch.Tensor(
                 data).to(torch.float).to(device))
             prob, max_idx = torch.max(result, dim=1)
+            prob = prob.cpu().detach().numpy()
             max_idx = max_idx.cpu().detach().numpy()
 
         if not np.array_equal(max_idx, max_idx_prev):
@@ -620,7 +625,6 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             #         f'detected drift at the start of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]}')
 
         max_idx = max_idx[0]
-        prob = prob.cpu().detach().numpy()
         if max_idx != generator_label:
             # Increase the max_idx by 1 if it is above the previous drift
             if temp_label[0] <= max_idx and temp_label[0] != 0:
@@ -656,7 +660,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         drift_orbits = {**drift_orbits, **new_drift_orbits}
         prev_drift = next_drift
         print_(
-            f'{end_orbit}/{len(orbit_numbers)} orbits {new_orbits[0]} - {new_orbits[-1]} ({end_orbit-cur_orbit}) -- drift {next_drift}, prob {prob}')
+            f'{end_orbit}/{len(orbit_numbers)} orbits {new_orbits[0]} - {new_orbits[-1]} ({end_orbit-cur_orbit}) -- drift {next_drift}, probs {prob}')
         wandb.log({"orbit": end_orbit})
         wandb.log({"drift": next_drift})
 
