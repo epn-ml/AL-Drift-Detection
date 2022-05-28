@@ -661,7 +661,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         drift_orbits = {**drift_orbits, **new_drift_orbits}
         prev_drift = next_drift
         print_(
-            f'{end_orbit}/{len(orbit_numbers)} orbits {new_orbits[0]} - {new_orbits[-1]} ({end_orbit-cur_orbit}) -- drift {next_drift}, probs {prob}')
+            f'{end_orbit}/{len(orbit_numbers)} orbits {new_orbits[0]} - {new_orbits[-1]} ({end_orbit-cur_orbit}) -- drift {next_drift}, prob {prob}')
         wandb.log({"orbit": end_orbit})
         wandb.log({"drift": next_drift})
 
