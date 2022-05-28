@@ -625,6 +625,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             #         f'detected drift at the start of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]}')
 
         max_idx = max_idx[0]
+        prob = prob[0]
         if max_idx != generator_label:
             # Increase the max_idx by 1 if it is above the previous drift
             if temp_label[0] <= max_idx and temp_label[0] != 0:
@@ -809,7 +810,7 @@ files = glob.glob('data/orbits/*.csv')
 files.sort(key=lambda x: int(''.join(i for i in x if i.isdigit())))
 
 if dataset == 1:
-    files = files[460:560]
+    pass  # full dataset
 elif dataset == 2:
     files = files[460:760]
 elif dataset == 3:

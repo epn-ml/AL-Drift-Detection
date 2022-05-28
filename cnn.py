@@ -77,7 +77,7 @@ def train_clf(df, one_clf=True):
         clf.summary(print_fn=print_)
 
         df_train = df.loc[df['SPLIT'] == 'train']
-        orbit_numbers = pd.unique(df_train['ORBIT']).tolist()
+        orbit_numbers = pd.unique(df_train['ORBIT']).tolist()  # don't standardize
         print_(f'{len(orbit_numbers)} train orbits')
         print_(f'selected orbits for training: {orbit_numbers}')
 
