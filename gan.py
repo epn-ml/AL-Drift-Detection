@@ -30,10 +30,7 @@ def print_(print_str, with_date=True):
 
     global fptr
     print_f(fptr, print_str, with_date)
-    if with_date:
-        print(f'{str(datetime.now())}: {print_str}')
-    else:
-        print(print_str)
+    print(print_str)
 
 
 # Generator class
@@ -631,7 +628,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             if temp_label[0] <= max_idx and temp_label[0] != 0:
                 # print_(
                 #     f'temp_label[0] {temp_label[0]} <= max_idx {max_idx}, max_idx += 1')
-                if next_drift == max_idx:
+                if next_drift == max_idx and end_orbit != cur_orbit + 1:
                     next_drift += 1
                 max_idx += 1
             # We reset the top layer predictions because the drift order has changed and the network should be retrained
@@ -653,7 +650,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             discriminator = discriminator.to(device)
             generator_label += 1
 
-        if next_drift == prev_drift:
+        if next_drift == prev_drift and end_orbit != cur_orbit + 1:
             next_drift = next_label
 
         new_orbits = orbit_numbers[cur_orbit:end_orbit]
