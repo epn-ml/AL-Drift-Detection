@@ -58,7 +58,7 @@ def cnn(shape):
 def train_clf(df, one_clf=True):
 
     len_features = len(df.iloc[:, 1:-4].columns)
-    df.insert(len_features-5, 'DRIFT', df.pop('DRIFT'))
+    df.insert(len(df.columns)-5, 'DRIFT', df.pop('DRIFT'))
 
     # Standardization
     df_features = df.iloc[:, 1:-4]
