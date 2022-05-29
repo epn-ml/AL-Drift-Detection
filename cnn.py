@@ -57,15 +57,14 @@ def cnn(shape):
 # Train classifier based on drift
 def train_clf(df, one_clf=True):
 
-    len_features = len(df.iloc[:, 1:-4].columns)
-    df.insert(len(df.columns)-5, 'DRIFT', df.pop('DRIFT'))
+    len_features = len(df.iloc[:, 1:-5].columns)
 
     # Standardization
-    df_features = df.iloc[:, 1:-4]
+    df_features = df.iloc[:, 1:-5]
     print_(f'features:\n{df.columns}')
 
-    df.iloc[:, 1:-4] = (df_features - df_features.mean()) / df_features.std()
-    # print_(f'standardized:\n{df.iloc[:, 1:-4].head()}')
+    df.iloc[:, 1:-5] = (df_features - df_features.mean()) / df_features.std()
+    # print_(f'standardized:\n{df.iloc[:, 1:-5].head()}')
     print_(f'total size = {len(df.index)}')
 
     drifts = pd.unique(df['DRIFT']).tolist()
@@ -83,7 +82,7 @@ def train_clf(df, one_clf=True):
         print_(f'{len(orbit_numbers)} train orbits')
         print_(f'selected orbits for training: {orbit_numbers}')
 
-        features = df_train.iloc[:, 1:-4].values
+        features = df_train.iloc[:, 1:-5].values
         labels = df_train['LABEL'].tolist()
 
         x_train = np.array(features, copy=True)
@@ -123,7 +122,7 @@ def train_clf(df, one_clf=True):
         print_(f'{len(orbit_numbers_test)} test orbits')
         print_(f'selected orbits for testing: {orbit_numbers_test}')
 
-        features_test = df_test.iloc[:, 1:-4].values
+        features_test = df_test.iloc[:, 1:-5].values
         x_test = np.array(features_test, copy=True)
         x_test = x_test.reshape(-1, x_test.shape[1], 1)
 
@@ -162,7 +161,7 @@ def train_clf(df, one_clf=True):
             for orbit in orbit_numbers:
 
                 df_orbit = df_drift_train.loc[df['ORBIT'] == orbit]
-                features = df_orbit.iloc[:, 1:-4].values
+                features = df_orbit.iloc[:, 1:-5].values
                 labels = df_orbit['LABEL'].tolist()
 
                 x = np.array(features, copy=True)
@@ -211,7 +210,7 @@ def train_clf(df, one_clf=True):
             print_(f'{len(orbit_numbers_test)} test orbits with drift {drift}')
             print_(f'selected orbits for testing: {orbit_numbers_test}')
 
-            features_test = df_drift_test.iloc[:, 1:-4].values
+            features_test = df_drift_test.iloc[:, 1:-5].values
             x_test = np.array(features_test, copy=True)
             x_test = x_test.reshape(-1, x_test.shape[1], 1)
 
@@ -236,14 +235,14 @@ def train_clf(df, one_clf=True):
 def test_clfs(df, clf):
 
     # Standardization
-    df_features = df.iloc[:, 1:-4]
+    df_features = df.iloc[:, 1:-5]
     print_(f'features:\n{df_features.head()}')
 
-    df.iloc[:, 1:-4] = (df_features - df_features.mean()) / df_features.std()
-    print_(f'standardized:\n{df.iloc[:, 1:-4].head()}')
+    df.iloc[:, 1:-5] = (df_features - df_features.mean()) / df_features.std()
+    print_(f'standardized:\n{df.iloc[:, 1:-5].head()}')
     print_(f'total size = {len(df.index)}')
 
-    features = df.iloc[:, 1:-4].values
+    features = df.iloc[:, 1:-5].values
     x = np.array(features, copy=True)
     x = x.reshape(-1, x.shape[1], 1)
 
