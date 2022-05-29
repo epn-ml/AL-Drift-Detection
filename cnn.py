@@ -57,6 +57,9 @@ def cnn(shape):
 # Train classifier based on drift
 def train_clf(df, one_clf=True):
 
+    len_features = len(df.iloc[:, 1:-4].columns)
+    df.insert(len_features-5, 'DRIFT', df.pop('DRIFT'))
+
     # Standardization
     df_features = df.iloc[:, 1:-4]
     print_(f'features:\n{df.columns}')
@@ -65,7 +68,6 @@ def train_clf(df, one_clf=True):
     # print_(f'standardized:\n{df.iloc[:, 1:-4].head()}')
     print_(f'total size = {len(df.index)}')
 
-    len_features = len(df.iloc[:, 1:-4].columns)
     drifts = pd.unique(df['DRIFT']).tolist()
     print_(f'drifts: {drifts}')
     print_(f'========================================')
@@ -77,7 +79,7 @@ def train_clf(df, one_clf=True):
         clf.summary(print_fn=print_)
 
         df_train = df.loc[df['SPLIT'] == 'train']
-        orbit_numbers = pd.unique(df_train['ORBIT']).tolist()  # don't standardize
+        orbit_numbers = pd.unique(df_train['ORBIT']).tolist()
         print_(f'{len(orbit_numbers)} train orbits')
         print_(f'selected orbits for training: {orbit_numbers}')
 
@@ -268,7 +270,7 @@ def plot_orbits(logs, dataset, df, test=False, pred=False, draw=[1, 3]):
     label_col = 'LABEL'
     if pred:
         label_col = 'LABEL_PRED'
-        title = 'Preicted ' + title
+        title = 'Predicted ' + title
         folder += 'pred'
     else:
         title = 'True ' + title
@@ -283,18 +285,18 @@ def plot_orbits(logs, dataset, df, test=False, pred=False, draw=[1, 3]):
         fig = go.Figure()
 
         # Plotting components of the magnetic field B_x, B_y, B_z in MSO coordinates
-        # fig.add_trace(go.Scatter(
-        #     x=df_orbit['DATE'], y=df_orbit['BX_MSO'], name='B_x'))
-        # fig.add_trace(go.Scatter(
-        #     x=df_orbit['DATE'], y=df_orbit['BY_MSO'], name='B_y'))
+        fig.add_trace(go.Scatter(
+            x=df_orbit['DATE'], y=df_orbit['BX_MSO'], name='B_x'))
+        fig.add_trace(go.Scatter(
+            x=df_orbit['DATE'], y=df_orbit['BY_MSO'], name='B_y'))
         fig.add_trace(go.Scatter(
             x=df_orbit['DATE'], y=df_orbit['BZ_MSO'], name='B_z'))
-        fig.add_trace(go.Scatter(
-            x=df_orbit['DATE'], y=df_orbit['COSALPHA'], name='cos_a'))
+        # fig.add_trace(go.Scatter(
+        #     x=df_orbit['DATE'], y=df_orbit['COSALPHA'], name='cos_a'))
 
         # Plotting total magnetic field magnitude B along the orbit
-        # fig.add_trace(go.Scatter(
-        #     x=df_orbit['DATE'], y=-df_orbit['B_tot'], name='|B|', line_color='darkgray'))
+        fig.add_trace(go.Scatter(
+            x=df_orbit['DATE'], y=-df_orbit['B_tot'], name='|B|', line_color='darkgray'))
         fig.add_trace(go.Scatter(x=df_orbit['DATE'], y=df_orbit['B_tot'], name='|B|',
                                  line_color='darkgray', showlegend=False))
 
@@ -305,7 +307,7 @@ def plot_orbits(logs, dataset, df, test=False, pred=False, draw=[1, 3]):
                     y=[-450, 450],
                     mode='lines',
                     line_color=colours[i],
-                    opacity=0.1,
+                    opacity=0.03,
                     showlegend=False
                 ))
 
