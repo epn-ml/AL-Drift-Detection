@@ -104,7 +104,7 @@ def train_clf(df, one_clf=True):
 
         clf.fit(x=x_train, y=y_train,
                 batch_size=16,
-                epochs=6,
+                epochs=10,
                 callbacks=[WandbCallback()],
                 class_weight={k: v for k,
                               v in enumerate(weights)},
@@ -189,7 +189,7 @@ def train_clf(df, one_clf=True):
 
             clf.fit(x=x_train, y=y_train,
                     batch_size=16,
-                    epochs=6,
+                    epochs=10,
                     callbacks=[WandbCallback()],
                     class_weight={k: v for k,
                                   v in enumerate(weights)},
@@ -342,7 +342,7 @@ wandb.init(project="cnn", entity="irodionr", config={
     "units_lstm": 64,
     "units_dense": 16,
     "batch_size": 128,
-    "epochs": 6,
+    "epochs": 10,
     "max_orbits": 10,
     "learning_rate": 0.001
 })
