@@ -412,12 +412,14 @@ for drift in pd.unique(df['DRIFT']).tolist():
     for orb in list_orbits[:train_count]:
         list_train.append(orb.iloc[0]["ORBIT"])
     print_(f'drift {drift} training orbits ({len(list_train)}): {list_train}')
+    print_(f'entropy: {list(map(get_entropy, list_orbits[:train_count]))}')
 
     list_test = []
     for orb in list_orbits[train_count:]:
         list_test.append(orb.iloc[0]["ORBIT"])
         df.loc[df['ORBIT'] == orb.iloc[0]['ORBIT'], 'SPLIT'] = 'test'
     print_(f'drift {drift} testing orbits ({len(list_test)}): {list_test}')
+    print_(f'entropy: {list(map(get_entropy, list_orbits[train_count:]))}')
 
 
 # %% Training classifiers
