@@ -64,6 +64,8 @@ def get_entropy(df):
 # Train classifier based on drift
 def train_clf(df, one_clf=True):
 
+    np.set_printoptions(precision=3)
+
     # Standardization
     df_features = df.iloc[:, 1:-5]
     len_features = len(df.iloc[:, 1:-5].columns)
@@ -406,14 +408,16 @@ for drift in pd.unique(df['DRIFT']).tolist():
     if train_count > max_orbits:  # or max_orbits
         train_count = max_orbits
 
-    print_(f'drift {drift} training orbits:')
+    list_train = []
     for orb in list_orbits[:train_count]:
-        print_(f'{orb.iloc[0]["ORBIT"]}')
+        list_train.append(orb.iloc[0]["ORBIT"])
+    print_(f'drift {drift} training orbits ({len(list_train)}): {list_train}')
 
-    print_(f'drift {drift} testing orbits:')
+    list_test = []
     for orb in list_orbits[train_count:]:
-        print_(f'{orb.iloc[0]["ORBIT"]}')
+        list_test.append(orb.iloc[0]["ORBIT"])
         df.loc[df['ORBIT'] == orb.iloc[0]['ORBIT'], 'SPLIT'] = 'test'
+    print_(f'drift {drift} testing orbits ({len(list_test)}): {list_test}')
 
 
 # %% Training classifiers
