@@ -408,7 +408,7 @@ for drift in pd.unique(df['DRIFT']).tolist():
 
     print_(f'drift {drift} training orbits:')
     for orb in list_orbits[:train_count]:
-        print_(f'{orb["ORBIT"]}')
+        print_(f'{orb.iloc[0]["ORBIT"]}')
 
     print_(f'drift {drift} testing orbits:')
     for orb in list_orbits[train_count:]:
