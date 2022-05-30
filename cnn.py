@@ -11,6 +11,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import tensorflow as tf
 import wandb
+from scipy.stats import entropy
 from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support)
 from sklearn.utils.class_weight import compute_class_weight
@@ -54,13 +55,18 @@ def cnn(shape):
     return model
 
 
+def get_entropy(df):
+    labels = df['LABEL'].tolist()
+    _, counts = np.unique(labels, return_counts=True)
+    return entropy(counts)
+
+
 # Train classifier based on drift
 def train_clf(df, one_clf=True):
 
-    len_features = len(df.iloc[:, 1:-5].columns)
-
     # Standardization
     df_features = df.iloc[:, 1:-5]
+    len_features = len(df.iloc[:, 1:-5].columns)
     print_(f'features:\n{df.columns}')
 
     df.iloc[:, 1:-5] = (df_features - df_features.mean()) / df_features.std()
@@ -96,7 +102,7 @@ def train_clf(df, one_clf=True):
 
         clf.fit(x=x_train, y=y_train,
                 batch_size=16,
-                epochs=13,
+                epochs=6,
                 callbacks=[WandbCallback()],
                 class_weight={k: v for k,
                               v in enumerate(weights)},
@@ -181,7 +187,7 @@ def train_clf(df, one_clf=True):
 
             clf.fit(x=x_train, y=y_train,
                     batch_size=16,
-                    epochs=13,
+                    epochs=6,
                     callbacks=[WandbCallback()],
                     class_weight={k: v for k,
                                   v in enumerate(weights)},
@@ -334,7 +340,8 @@ wandb.init(project="cnn", entity="irodionr", config={
     "units_lstm": 64,
     "units_dense": 16,
     "batch_size": 128,
-    "epochs": 13,
+    "epochs": 6,
+    "max_orbits": 10,
     "learning_rate": 0.001
 })
 
@@ -373,43 +380,40 @@ df['LABEL_PRED'] = 0
 df['SPLIT'] = 'train'
 print_(f'selected data:\n{df.columns}')
 
-# Randomly select orbits for testing
-len_train = 0
-len_test = 0
-max_orbits = 10
+# Assign drifts to orbits
 for drift in pd.unique(list(drift_orbits.values())).tolist():
-
     all_orbits = [k for k, v in drift_orbits.items() if v == drift]
-    train_count = len(all_orbits) * 4 // 5  # 80% of orbits
+    print_(f'{len(all_orbits)} orbits with drift {drift}')
+    for orb in all_orbits:
+        df.loc[df['ORBIT'] == orb, 'DRIFT'] = drift
+
+# Select orbits for testing
+max_orbits = 10
+for drift in pd.unique(df['DRIFT']).tolist():
+    df_drift = df.loc[df['DRIFT'] == drift]
+    list_orbits = []
+    for orbit in pd.unique(df_drift['ORBIT']).tolist():
+        list_orbits.append(df_drift.loc[df_drift['ORBIT'] == orbit])
+
+    # List of orbits in a drift with descending entropy
+    list_orbits.sort(key=get_entropy, reverse=True)
+
+    train_count = len(list_orbits) * 4 // 5  # 80% of orbits
     if train_count == 0:
-        train_count = len(all_orbits) - 1
+        train_count = len(list_orbits) - 1
         if train_count == 0:
             train_count = 1
-    if train_count > max_orbits:
+    if train_count > max_orbits:  # or max_orbits
         train_count = max_orbits
 
-    if train_count != len(all_orbits):
-        train_orbits = [
-            all_orbits[i] for i in sorted(random.sample(range(len(all_orbits)), train_count))
-        ]
-    else:
-        train_orbits = all_orbits
+    print_(f'drift {drift} training orbits:')
+    for orb in list_orbits[:train_count]:
+        print_(f'{orb["ORBIT"]}')
 
-    test_orbits = [orb for orb in all_orbits if orb not in train_orbits]
-    len_train += len(train_orbits)
-    len_test += len(test_orbits)
-
-    print_(f'train orbits for drift {drift}: {train_orbits}')
-    for orb in train_orbits:
-        df.loc[df['ORBIT'] == orb, 'DRIFT'] = drift
-    print_(f'test orbits for drift {drift}: {test_orbits}')
-    for orb in test_orbits:
-        df.loc[df['ORBIT'] == orb, 'DRIFT'] = drift
-        df.loc[df['ORBIT'] == orb, 'SPLIT'] = 'test'
-
-# print_(f'selected data:\n{df.head()}')
-print_(f'total train orbits: {len_train}')
-print_(f'total test orbits: {len_test}')
+    print_(f'drift {drift} testing orbits:')
+    for orb in list_orbits[train_count:]:
+        print_(f'{orb.iloc[0]["ORBIT"]}')
+        df.loc[df['ORBIT'] == orb.iloc[0]['ORBIT'], 'SPLIT'] = 'test'
 
 
 # %% Training classifiers
