@@ -62,7 +62,7 @@ def get_entropy(df):
 
 
 # Train classifier based on drift
-def train_clf(df, one_clf=True):
+def train_clf(df, one_clf=False):
 
     np.set_printoptions(precision=3)
 
@@ -254,7 +254,7 @@ def test_clfs(df, clf):
     x = np.array(features, copy=True)
     x = x.reshape(-1, x.shape[1], 1)
 
-    labels_pred = clf.predict(x)  # window vs step
+    labels_pred = clf.predict(x)
     labels_pred = labels_pred.argmax(axis=-1)
     df['LABEL_PRED'] = labels_pred
 
@@ -390,6 +390,7 @@ for drift in pd.unique(list(drift_orbits.values())).tolist():
         df.loc[df['ORBIT'] == orb, 'DRIFT'] = drift
 
 # Select orbits for testing
+np.set_printoptions(precision=3)
 max_orbits = 10
 for drift in pd.unique(df['DRIFT']).tolist():
     df_drift = df.loc[df['DRIFT'] == drift]
@@ -398,6 +399,7 @@ for drift in pd.unique(df['DRIFT']).tolist():
         list_orbits.append(df_drift.loc[df_drift['ORBIT'] == orbit])
 
     # List of orbits in a drift with descending entropy
+    # TODO: entropy of testing orbits
     list_orbits.sort(key=get_entropy, reverse=True)
 
     train_count = len(list_orbits) * 4 // 5  # 80% of orbits
