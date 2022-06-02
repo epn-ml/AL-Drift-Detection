@@ -438,6 +438,11 @@ for drift in pd.unique(df['DRIFT']).tolist():
 
     # Pick orbits for validation set
     list_valid_orbits = random.sample(list_orbits, valid_count)
+    list_valid = []
+    for orb in list_valid_orbits:
+        list_valid.append(orb.iloc[0]["ORBIT"])
+        df.loc[df['ORBIT'] == orb.iloc[0]['ORBIT'], 'SPLIT'] = 'valid'
+
     list_test = [orb for orb in list_all if orb not in list_valid]
     list_test_orbits = []
     for orbit in list_test:
@@ -457,7 +462,6 @@ for drift in pd.unique(df['DRIFT']).tolist():
     list_valid = []
     for orb in list_valid_orbits:
         list_valid.append(orb.iloc[0]["ORBIT"])
-        df.loc[df['ORBIT'] == orb.iloc[0]['ORBIT'], 'SPLIT'] = 'valid'
 
     print_(f'drift {drift} training orbits ({len(list_train)}): {list_train}')
     print_(f'entropy: {list(map(get_entropy, list_train_orbits))}')
