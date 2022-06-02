@@ -296,17 +296,13 @@ def test_clf(df, clf, one_clf=False):
 def plot_orbits(logs, dataset, df, test=False, pred=False, draw=[1, 3]):
 
     colours = {0: 'red', 1: 'green', 2: 'yellow', 3: 'blue', 4: 'purple'}
-    title = 'labels in training orbit '
+    title = 'labels in'
     folder = 'train-'
     if test:
-        title = 'labels in testing orbit '
         folder = 'test-'
         df = df.loc[df['SPLIT'] == 'test']
     else:
         df = df.loc[df['SPLIT'] != 'test']
-
-    if df.iloc[0]['SPLIT'] == 'valid':
-        title.replace('training', 'validation')
 
     label_col = 'LABEL'
     if pred:
@@ -323,6 +319,9 @@ def plot_orbits(logs, dataset, df, test=False, pred=False, draw=[1, 3]):
     for orbit in pd.unique(df['ORBIT']).tolist():
 
         df_orbit = df.loc[df['ORBIT'] == orbit]
+        subtitle = 'training'
+        if df_orbit.iloc[0]['SPLIT'] == 'valid':
+            subtitle = 'validation'
         fig = go.Figure()
 
         # Plotting components of the magnetic field B_x, B_y, B_z in MSO coordinates
@@ -348,12 +347,12 @@ def plot_orbits(logs, dataset, df, test=False, pred=False, draw=[1, 3]):
                     y=[-450, 450],
                     mode='lines',
                     line_color=colours[i],
-                    opacity=0.01,
+                    opacity=0.005,
                     showlegend=False
                 ))
 
         fig.update_layout(
-            {'title': f'{title}{orbit} (drift {df_orbit.iloc[0]["DRIFT"]})'})
+            {'title': f'{title} {subtitle} orbit {orbit} (drift {df_orbit.iloc[0]["DRIFT"]})'})
         fig.write_image(
             f'{logs}/plots_set{dataset}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png')
         # fig.write_html(
