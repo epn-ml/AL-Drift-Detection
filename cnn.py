@@ -323,6 +323,8 @@ def plot_orbits(logs, dataset, df, test=False, pred=False, draw=[1, 3]):
         subtitle = 'training'
         if df_orbit.iloc[0]['SPLIT'] == 'valid':
             subtitle = 'validation'
+        elif df_orbit.iloc[0]['SPLIT'] == 'test':
+            subtitle = 'testing'
         fig = go.Figure()
 
         # Plotting components of the magnetic field B_x, B_y, B_z in MSO coordinates
@@ -348,7 +350,7 @@ def plot_orbits(logs, dataset, df, test=False, pred=False, draw=[1, 3]):
                     y=[-450, 450],
                     mode='lines',
                     line_color=colours[i],
-                    opacity=0.005,
+                    opacity=0.002,
                     showlegend=False
                 ))
 
