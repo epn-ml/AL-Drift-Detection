@@ -62,7 +62,7 @@ def get_entropy(df):
 
 
 # Train classifier based on drift
-def train_clf(df, one_clf=False):
+def train_clf(df, one_clf=True):
 
     np.set_printoptions(precision=3)
 
@@ -243,7 +243,7 @@ def train_clf(df, one_clf=False):
 
 
 # Test classifier
-def test_clf(df, clf, one_clf=False):
+def test_clf(df, clf, one_clf=True):
 
     # Standardization
     df_features = df.iloc[:, 1:-5]
