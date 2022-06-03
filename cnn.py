@@ -220,21 +220,22 @@ def train_clf(df, one_clf=False):
                 f'{len(orbit_numbers_test)} validation orbits with drift {drift}')
             print_(f'selected orbits for validation: {orbit_numbers_test}')
 
-            features_test = df_drift_test.iloc[:, 1:-5].values
-            x_test = np.array(features_test, copy=True)
-            x_test = x_test.reshape(-1, x_test.shape[1], 1)
+            if orbit_numbers_test:
+                features_test = df_drift_test.iloc[:, 1:-5].values
+                x_test = np.array(features_test, copy=True)
+                x_test = x_test.reshape(-1, x_test.shape[1], 1)
 
-            # Testing evaluation
-            labels_pred_test = clf.predict(x_test)
-            labels_pred_test = labels_pred_test.argmax(axis=-1)
-            df.loc[(df['DRIFT'] == drift) & (df['SPLIT'] == 'valid'),
-                   'LABEL_PRED'] = labels_pred_test
-            y_test = df_drift_test['LABEL'].tolist()
-            prf_test = precision_recall_fscore_support(
-                y_true=y_test, y_pred=labels_pred_test, average=None, labels=classes)
-            print_(f'validation precision: {prf_test[0]}')
-            print_(f'validation recall: {prf_test[1]}')
-            print_(f'validation f-score: {prf_test[2]}')
+                # Testing evaluation
+                labels_pred_test = clf.predict(x_test)
+                labels_pred_test = labels_pred_test.argmax(axis=-1)
+                df.loc[(df['DRIFT'] == drift) & (df['SPLIT'] == 'valid'),
+                    'LABEL_PRED'] = labels_pred_test
+                y_test = df_drift_test['LABEL'].tolist()
+                prf_test = precision_recall_fscore_support(
+                    y_true=y_test, y_pred=labels_pred_test, average=None, labels=classes)
+                print_(f'validation precision: {prf_test[0]}')
+                print_(f'validation recall: {prf_test[1]}')
+                print_(f'validation f-score: {prf_test[2]}')
 
             print_(f'========================================')
 
@@ -449,7 +450,7 @@ for drift in pd.unique(df['DRIFT']).tolist():
 
     # List of orbits in a drift with descending entropy
     list_valid_orbits.sort(key=get_entropy, reverse=True)
-    train_count = min(max_orbits, len(list_valid_orbits))
+    train_count = min(max_orbits, len(list_valid_orbits) - 1)
     list_train_orbits = list_valid_orbits[:train_count]
     list_valid_orbits = list_valid_orbits[train_count:]
 
