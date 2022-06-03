@@ -32,9 +32,9 @@ def print_(print_str, with_date=True):
     global fptr
     print_f(fptr, print_str, with_date)
     if with_date:
-        print(f'{str(datetime.now())}: {print_str}')
+        print(f'{str(datetime.now())}: {print_str}', flush=True)
     else:
-        print(print_str)
+        print(print_str, flush=True)
 
 
 # Create CNN model
@@ -86,7 +86,7 @@ def train_clf(df, one_clf=False):
 
         df_train = df.loc[df['SPLIT'] == 'train']
         orbit_numbers = pd.unique(df_train['ORBIT']).tolist()
-        print_(f'{len(orbit_numbers)} train orbits')
+        print_(f'{len(orbit_numbers)} training orbits')
         print_(f'selected orbits for training: {orbit_numbers}')
 
         features = df_train.iloc[:, 1:-5].values
@@ -162,7 +162,7 @@ def train_clf(df, one_clf=False):
             df_drift_train = df.loc[(df['DRIFT'] == drift)
                                     & (df['SPLIT'] == 'train')]
             orbit_numbers = pd.unique(df_drift_train['ORBIT']).tolist()
-            print_(f'train orbits with drift {drift}: {orbit_numbers}')
+            print_(f'training orbits with drift {drift}: {orbit_numbers}')
 
             x_train = []
             y_train = []

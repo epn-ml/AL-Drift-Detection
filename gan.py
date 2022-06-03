@@ -30,7 +30,10 @@ def print_(print_str, with_date=True):
 
     global fptr
     print_f(fptr, print_str, with_date)
-    print(print_str)
+    if with_date:
+        print(f'{str(datetime.now())}: {print_str}', flush=True)
+    else:
+        print(print_str, flush=True)
 
 
 # Generator class
