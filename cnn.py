@@ -350,7 +350,7 @@ def plot_orbits(logs, dataset, df, test=False, pred=False, draw=[1, 3]):
                     y=[-450, 450],
                     mode='lines',
                     line_color=colours[i],
-                    opacity=0.002,
+                    opacity=0.004,
                     showlegend=False
                 ))
 
