@@ -320,6 +320,11 @@ def plot_orbits(logs, dataset, df, test=False, pred=False, draw=[1, 3]):
     for orbit in pd.unique(df['ORBIT']).tolist():
 
         df_orbit = df.loc[df['ORBIT'] == orbit]
+        idx = df_orbit.index[df_orbit[label_col] == 1]
+        start = max(idx[0]-1500, df_orbit.index[0])
+        end = min(idx[-1]+1500, df_orbit.index[-1])
+        df_orbit = df_orbit.loc[start:end]
+
         subtitle = 'training'
         if df_orbit.iloc[0]['SPLIT'] == 'valid':
             subtitle = 'validation'
@@ -350,7 +355,7 @@ def plot_orbits(logs, dataset, df, test=False, pred=False, draw=[1, 3]):
                     y=[-450, 450],
                     mode='lines',
                     line_color=colours[i],
-                    opacity=0.004,
+                    opacity=0.005,
                     showlegend=False
                 ))
 
@@ -359,7 +364,7 @@ def plot_orbits(logs, dataset, df, test=False, pred=False, draw=[1, 3]):
         fig.write_image(
             f'{logs}/plots_set{dataset}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png')
         # fig.write_html(
-        #     f'{logs}/{folder}/fig_{orbit}.png')
+        #     f'{logs}/plots_set{dataset}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.html')
 
 
 # %% Setup
