@@ -61,7 +61,7 @@ def get_entropy(df):
     return entropy(counts)
 
 
-def smooth(labels, window_size=20):
+def smooth(labels, window_size=75):
     for i in range(len(labels)-window_size):
         window = labels[i:i+window_size]
         if window[0] == window[-1]:
@@ -382,8 +382,8 @@ def plot_orbits(logs, dataset, df, orb_idx, test=False, pred=False, draw=[1, 3])
             {'title': f'{title} {subtitle} orbit {orbit} (drift {df_orbit.iloc[0]["DRIFT"]})'})
         fig.write_image(
             f'{logs}/plots_set{dataset}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png')
-        fig.write_html(
-            f'{logs}/plots_set{dataset}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.html')
+        # fig.write_html(
+        #     f'{logs}/plots_set{dataset}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.html')
 
         print_(
             f'orbit {orbits.index(orbit) + 1}/{len(orbits)} (fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png)')
