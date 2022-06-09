@@ -495,12 +495,12 @@ for drift in pd.unique(df['DRIFT']).tolist():
         list_valid.append(orb.iloc[0]["ORBIT"])
 
     print_(f'drift {drift} training orbits ({len(list_train)}): {list_train}')
-    print_(f'entropy: {list(map(get_entropy, list_train_orbits))}')
+    # print_(f'entropy: {list(map(get_entropy, list_train_orbits))}')
     print_(
         f'drift {drift} validation orbits ({len(list_valid)}): {list_valid}')
-    print_(f'entropy: {list(map(get_entropy, list_valid_orbits))}')
+    # print_(f'entropy: {list(map(get_entropy, list_valid_orbits))}')
     print_(f'drift {drift} testing orbits ({len(list_test)}): {list_test}')
-    print_(f'entropy: {list(map(get_entropy, list_test_orbits))}')
+    # print_(f'entropy: {list(map(get_entropy, list_test_orbits))}')
 
 
 # %% Training classifiers
