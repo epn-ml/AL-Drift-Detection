@@ -61,7 +61,7 @@ def get_entropy(df):
     return entropy(counts)
 
 
-def smooth(labels, window_size):
+def smooth(labels, window_size=20):
     for i in range(len(labels)-window_size):
         window = labels[i:i+window_size]
         if window[0] == window[-1]:
@@ -124,7 +124,7 @@ def train_clf(df, one_clf=True):
         # Training evaluation
         labels_pred = clf.predict(x_train)
         labels_pred = labels_pred.argmax(axis=-1)
-        labels_pred = smooth(labels_pred, 4)
+        labels_pred = smooth(labels_pred)
         df.loc[df['SPLIT'] == 'train', 'LABEL_PRED'] = labels_pred
         prf = precision_recall_fscore_support(
             y_true=y_train, y_pred=labels_pred, average=None, labels=classes)
@@ -145,7 +145,7 @@ def train_clf(df, one_clf=True):
         # Testing evaluation
         labels_pred_test = clf.predict(x_test)
         labels_pred_test = labels_pred_test.argmax(axis=-1)
-        labels_pred_test = smooth(labels_pred_test, 4)
+        labels_pred_test = smooth(labels_pred_test)
         df.loc[df['SPLIT'] == 'valid', 'LABEL_PRED'] = labels_pred_test
         y_test = df_test['LABEL'].tolist()
         prf_test = precision_recall_fscore_support(
@@ -214,7 +214,7 @@ def train_clf(df, one_clf=True):
             # Training evaluation
             labels_pred = clf.predict(x_train)
             labels_pred = labels_pred.argmax(axis=-1)
-            labels_pred = smooth(labels_pred, 4)
+            labels_pred = smooth(labels_pred)
             df.loc[(df['DRIFT'] == drift) & (df['SPLIT'] ==
                                              'train'), 'LABEL_PRED'] = labels_pred
             prf = precision_recall_fscore_support(
@@ -239,7 +239,7 @@ def train_clf(df, one_clf=True):
                 # Testing evaluation
                 labels_pred_test = clf.predict(x_test)
                 labels_pred_test = labels_pred_test.argmax(axis=-1)
-                labels_pred_test = smooth(labels_pred_test, 4)
+                labels_pred_test = smooth(labels_pred_test)
                 df.loc[(df['DRIFT'] == drift) & (df['SPLIT'] ==
                                                  'valid'), 'LABEL_PRED'] = labels_pred_test
                 y_test = df_drift_test['LABEL'].tolist()
@@ -271,7 +271,7 @@ def test_clf(df, clf, one_clf=True):
         x = x.reshape(-1, x.shape[1], 1)
         labels_pred = clf.predict(x)
         labels_pred = labels_pred.argmax(axis=-1)
-        labels_pred = smooth(labels_pred, 4)
+        labels_pred = smooth(labels_pred)
         df['LABEL_PRED'] = labels_pred
         y_test = df['LABEL'].tolist()
         prf_test = precision_recall_fscore_support(
@@ -294,7 +294,7 @@ def test_clf(df, clf, one_clf=True):
             x = x.reshape(-1, x.shape[1], 1)
             labels_pred = clf[drift].predict(x)
             labels_pred = labels_pred.argmax(axis=-1)
-            labels_pred = smooth(labels_pred, 4)
+            labels_pred = smooth(labels_pred)
             df.loc[df['DRIFT'] == drift, 'LABEL_PRED'] = labels_pred
             y_test = df.loc[df['DRIFT'] == drift, 'LABEL'].tolist()
             prf_test = precision_recall_fscore_support(
@@ -382,8 +382,8 @@ def plot_orbits(logs, dataset, df, orb_idx, test=False, pred=False, draw=[1, 3])
             {'title': f'{title} {subtitle} orbit {orbit} (drift {df_orbit.iloc[0]["DRIFT"]})'})
         fig.write_image(
             f'{logs}/plots_set{dataset}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png')
-        # fig.write_html(
-        #     f'{logs}/plots_set{dataset}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.html')
+        fig.write_html(
+            f'{logs}/plots_set{dataset}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.html')
 
         print_(
             f'orbit {orbits.index(orbit) + 1}/{len(orbits)} (fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png)')
