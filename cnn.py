@@ -385,7 +385,8 @@ def plot_orbits(logs, dataset, df, orb_idx, test=False, pred=False, draw=[1, 3])
         # fig.write_html(
         #     f'{logs}/plots_set{dataset}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.html')
 
-        print_(f'orbit {orbit}/{orbits}')
+        print_(
+            f'orbit {orbits.index(orbit) + 1}/{len(orbits)} (fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png)')
 
     return orb_idx
 
