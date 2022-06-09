@@ -308,7 +308,7 @@ def test_clf(df, clf, one_clf=True):
 
 
 # Plot all orbits with crossings
-def plot_orbits(logs, dataset, df, test=False, pred=False, draw=[1, 3]):
+def plot_orbits(logs, dataset, df, orb_idx, test=False, pred=False, draw=[1, 3]):
 
     colours = {0: 'red', 1: 'green', 2: 'yellow', 3: 'blue', 4: 'purple'}
     title = 'labels in'
@@ -335,9 +335,13 @@ def plot_orbits(logs, dataset, df, test=False, pred=False, draw=[1, 3]):
     for orbit in orbits:
 
         df_orbit = df.loc[df['ORBIT'] == orbit]
-        idx = df_orbit.index[df_orbit[label_col] == 1]
-        start = max(idx[0]-1500, df_orbit.index[0])
-        end = min(idx[-1]+1500, df_orbit.index[-1])
+        if orbit in orb_idx:
+            start, end = orb_idx[orbit]
+        else:
+            idx = df_orbit.index[df_orbit[label_col] == 1]
+            start = max(idx[0]-1500, df_orbit.index[0])
+            end = min(idx[-1]+1500, df_orbit.index[-1])
+            orb_idx[orbit] = (start, end)
         df_orbit = df_orbit.loc[start:end]
 
         subtitle = 'training'
@@ -382,6 +386,8 @@ def plot_orbits(logs, dataset, df, test=False, pred=False, draw=[1, 3]):
         #     f'{logs}/plots_set{dataset}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.html')
 
         print_(f'orbit {orbit}/{orbits}')
+
+    return orb_idx
 
 
 # %% Setup
@@ -598,18 +604,19 @@ print_(
 
 if plots != '5':
     df['B_tot'] = (df['BX_MSO']**2 + df['BY_MSO']**2 + df['BZ_MSO']**2)**0.5
+    orb_idx = {}
     print_(f'plotting {plots}...')
     if '0' in plots:
-        plot_orbits(logs, dataset, df.copy(), test=False, pred=False)
+        plot_orbits(logs, dataset, df.copy(), orb_idx, test=False, pred=False)
         print_(f'plotted train-true')
     if '1' in plots:
-        plot_orbits(logs, dataset, df.copy(), test=False, pred=True)
+        plot_orbits(logs, dataset, df.copy(), orb_idx, test=False, pred=True)
         print_(f'plotted train-pred')
     if '2' in plots:
-        plot_orbits(logs, dataset, df.copy(), test=True, pred=False)
+        plot_orbits(logs, dataset, df.copy(), orb_idx, test=True, pred=False)
         print_(f'plotted test-true')
     if '3' in plots:
-        plot_orbits(logs, dataset, df.copy(), test=True, pred=True)
+        plot_orbits(logs, dataset, df.copy(), orb_idx, test=True, pred=True)
         print_(f'plotted test-pred')
 
 
