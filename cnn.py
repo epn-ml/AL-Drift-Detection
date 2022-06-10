@@ -408,7 +408,7 @@ wandb.init(project="cnn", entity="irodionr", config={
     "units_dense": 16,
     "batch_size": 128,
     "epochs": 10,
-    "max_orbits": 10,
+    "max_orbits": 5,
     "learning_rate": 0.001
 })
 
@@ -456,7 +456,7 @@ for drift in pd.unique(list(drift_orbits.values())).tolist():
 
 # Select orbits for testing
 np.set_printoptions(precision=3)
-max_orbits = 10
+max_orbits = 5
 for drift in pd.unique(df['DRIFT']).tolist():
     df_drift = df.loc[df['DRIFT'] == drift]
     list_orbits = []
