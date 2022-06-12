@@ -1,5 +1,6 @@
 # %% imports
 
+import glob
 import os
 import random
 import sys
@@ -386,14 +387,6 @@ def plot_orbits(logs, dataset, df, orb_idx, test=False, pred=False, draw=[1, 3])
         # fig.write_html(
         #     f'{logs}/plots_set{dataset}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.html')
 
-        if test and pred:
-            fig_true = Image.open(f'{logs}/plots_set{dataset}/test_true/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png')
-            fig_pred = Image.open(f'{logs}/plots_set{dataset}/test_pred/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png')
-            fig_all = Image.new('RGB', (fig_true.size[0], 2*fig_true.size[1]), (255, 255, 255))
-            fig_all.paste(fig_true, (0, 0))
-            fig_all.paste(fig_pred, (0, fig_true.size[1]))
-            fig_all.save(f'{logs}/plots_set{dataset}/test_all/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png', 'PNG')
-
         print_(
             f'orbit {orbits.index(orbit) + 1}/{len(orbits)} (fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png)')
 
@@ -628,6 +621,16 @@ if plots != '5':
     if '3' in plots:
         plot_orbits(logs, dataset, df.copy(), orb_idx, test=True, pred=True)
         print_(f'plotted test-pred')
+
+img_files = glob.glob(f'{logs}/plots_set{dataset}/test-true/*.png')
+for img in img_files:
+    fig_true = Image.open(img)
+    fig_pred = Image.open(img.replace('true', 'pred'))
+    fig_all = Image.new(
+        'RGB', (fig_true.size[0], 2*fig_true.size[1]), (255, 255, 255))
+    fig_all.paste(fig_true, (0, 0))
+    fig_all.paste(fig_pred, (0, fig_true.size[1]))
+    fig_all.save(img.replace('true', 'all'), 'PNG')
 
 
 # %% Close log file
