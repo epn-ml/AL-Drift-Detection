@@ -393,6 +393,23 @@ def plot_orbits(logs, dataset, df, orb_idx, test=False, pred=False, draw=[1, 3])
     return orb_idx
 
 
+def merge_plots(folder, split):
+
+    img_files = glob.glob(f'{folder}/{split}-true/*.png')
+
+    if not os.path.exists(f'{folder}/{split}-all'):
+        os.makedirs(f'{folder}/{split}-all')
+
+    for img in img_files:
+        fig_true = Image.open(img)
+        fig_pred = Image.open(img.replace('true', 'pred'))
+        fig_all = Image.new(
+            'RGB', (fig_true.size[0], 2*fig_true.size[1] - 40), (255, 255, 255))
+        fig_all.paste(fig_true, (0, 0))
+        fig_all.paste(fig_pred, (0, fig_true.size[1] - 40))
+        fig_all.save(img.replace('true', 'all'), 'PNG')
+
+
 # %% Setup
 
 gpus = tf.config.list_physical_devices('GPU')
@@ -615,24 +632,16 @@ if plots != '5':
     if '1' in plots:
         plot_orbits(logs, dataset, df.copy(), orb_idx, test=False, pred=True)
         print_(f'plotted train-pred')
+        merge_plots(f'{logs}/plots_set{dataset}', 'train')
+        print_(f'merged train plots')
     if '2' in plots:
         plot_orbits(logs, dataset, df.copy(), orb_idx, test=True, pred=False)
         print_(f'plotted test-true')
     if '3' in plots:
         plot_orbits(logs, dataset, df.copy(), orb_idx, test=True, pred=True)
         print_(f'plotted test-pred')
-
-img_files = glob.glob(f'{logs}/plots_set{dataset}/test-true/*.png')
-if not os.path.exists(f'{logs}/plots_set{dataset}/test-all'):
-    os.makedirs(f'{logs}/plots_set{dataset}/test-all')
-for img in img_files:
-    fig_true = Image.open(img)
-    fig_pred = Image.open(img.replace('true', 'pred'))
-    fig_all = Image.new(
-        'RGB', (fig_true.size[0], 2*fig_true.size[1] - 40), (255, 255, 255))
-    fig_all.paste(fig_true, (0, 0))
-    fig_all.paste(fig_pred, (0, fig_true.size[1] - 40))
-    fig_all.save(img.replace('true', 'all'), 'PNG')
+        merge_plots(f'{logs}/plots_set{dataset}', 'train')
+        print_(f'merged test plots')
 
 
 # %% Close log file
