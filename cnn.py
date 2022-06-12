@@ -623,13 +623,15 @@ if plots != '5':
         print_(f'plotted test-pred')
 
 img_files = glob.glob(f'{logs}/plots_set{dataset}/test-true/*.png')
+if not os.path.exists(f'{logs}/plots_set{dataset}/test-all'):
+    os.makedirs(f'{logs}/plots_set{dataset}/test-all')
 for img in img_files:
     fig_true = Image.open(img)
     fig_pred = Image.open(img.replace('true', 'pred'))
     fig_all = Image.new(
-        'RGB', (fig_true.size[0], 2*fig_true.size[1]), (255, 255, 255))
+        'RGB', (fig_true.size[0], 2*fig_true.size[1] - 40), (255, 255, 255))
     fig_all.paste(fig_true, (0, 0))
-    fig_all.paste(fig_pred, (0, fig_true.size[1]))
+    fig_all.paste(fig_pred, (0, fig_true.size[1] - 40))
     fig_all.save(img.replace('true', 'all'), 'PNG')
 
 
