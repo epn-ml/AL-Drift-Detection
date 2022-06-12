@@ -11,6 +11,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import tensorflow as tf
 import wandb
+from PIL import Image
 from scipy.stats import entropy
 from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support)
@@ -384,6 +385,14 @@ def plot_orbits(logs, dataset, df, orb_idx, test=False, pred=False, draw=[1, 3])
             f'{logs}/plots_set{dataset}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png')
         # fig.write_html(
         #     f'{logs}/plots_set{dataset}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.html')
+
+        if test and pred:
+            fig_true = Image.open(f'{logs}/plots_set{dataset}/test_true/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png')
+            fig_pred = Image.open(f'{logs}/plots_set{dataset}/test_pred/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png')
+            fig_all = Image.new('RGB', (fig_true.size[0], 2*fig_true.size[1]), (255, 255, 255))
+            fig_all.paste(fig_true, (0, 0))
+            fig_all.paste(fig_pred, (0, fig_true.size[1]))
+            fig_all.save(f'{logs}/plots_set{dataset}/test_all/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png', 'PNG')
 
         print_(
             f'orbit {orbits.index(orbit) + 1}/{len(orbits)} (fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png)')
