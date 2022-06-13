@@ -640,7 +640,7 @@ if plots != '5':
     if '3' in plots:
         plot_orbits(logs, dataset, df.copy(), orb_idx, test=True, pred=True)
         print_(f'plotted test-pred')
-        merge_plots(f'{logs}/plots_set{dataset}', 'train')
+        merge_plots(f'{logs}/plots_set{dataset}', 'test')
         print_(f'merged test plots')
 
 
