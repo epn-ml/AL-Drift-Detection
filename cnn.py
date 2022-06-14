@@ -550,6 +550,8 @@ print_(f'========== EVALUATION ==========')
 drifts = pd.unique(df['DRIFT']).tolist()
 print_(f'drifts: {drifts}')
 
+high_orbits = []
+
 for drift in drifts:
 
     df_drift = df.loc[df['DRIFT'] == drift]
@@ -578,6 +580,12 @@ for drift in drifts:
             y_true=labels, y_pred=labels_pred, average=None, labels=classes)
         print_(
             f'{df_orbit.iloc[0]["SPLIT"]} orbit {orbit} f-score: {prf[2]}, recall: {prf[1]}, precision: {prf[0]}')
+        if df_orbit.iloc[0]["SPLIT"] == 'test' or df_orbit.iloc[0]["SPLIT"] == 'valid':
+            if prf[2][1] > 0.5 and prf[2][3] > 0.5:
+                high_orbits.append(orbit)
+                print_(f'--------------------')
+
+print_(f'orbits with high performance: {high_orbits}')
 
 labels_train_true = df.loc[df['SPLIT'] == 'train', 'LABEL'].tolist()
 labels_train_pred = df.loc[df['SPLIT'] == 'train', 'LABEL_PRED'].tolist()
