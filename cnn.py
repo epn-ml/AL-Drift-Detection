@@ -63,7 +63,7 @@ def get_entropy(df):
     return entropy(counts)
 
 
-def smooth(labels, window_size=75):
+def smooth(labels, window_size=100):
     for i in range(len(labels)-window_size):
         window = labels[i:i+window_size]
         if window[0] == window[-1]:
