@@ -563,14 +563,14 @@ for drift in drifts:
 
     df_drift = df.loc[df['DRIFT'] == drift]
 
-    labels = df_drift['LABEL'].tolist()
-    labels_pred = df_drift['LABEL_PRED'].tolist()
+    labels = df_drift[df_drift['SPLIT'] == 'test', 'LABEL'].tolist()
+    labels_pred = df_drift[df_drift['SPLIT'] == 'test', 'LABEL_PRED'].tolist()
     classes = np.unique(labels)
 
     prf = precision_recall_fscore_support(
         y_true=labels, y_pred=labels_pred, average=None, labels=classes)
     print_(
-        f'drift {drift} f-score: {prf[2]}, recall: {prf[1]}, precision: {prf[0]}')
+        f'drift {drift} testing f-score: {prf[2]}, recall: {prf[1]}, precision: {prf[0]}')
 
     orbit_numbers = pd.unique(df_drift['ORBIT']).tolist()
     print_(f'{len(orbit_numbers)} orbits with drift {drift}')
