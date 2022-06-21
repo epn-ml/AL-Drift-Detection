@@ -563,8 +563,9 @@ for drift in drifts:
 
     df_drift = df.loc[df['DRIFT'] == drift]
 
-    labels = df_drift[df_drift['SPLIT'] == 'test', 'LABEL'].tolist()
-    labels_pred = df_drift[df_drift['SPLIT'] == 'test', 'LABEL_PRED'].tolist()
+    labels = df_drift.loc[df_drift['SPLIT'] == 'test', 'LABEL'].tolist()
+    labels_pred = df_drift.loc[df_drift['SPLIT']
+                               == 'test', 'LABEL_PRED'].tolist()
     classes = np.unique(labels)
 
     prf = precision_recall_fscore_support(
