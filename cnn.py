@@ -485,7 +485,7 @@ wandb.init(project="cnn", entity="irodionr", config={
     "units_dense": 16,
     "batch_size": 128,
     "epochs": 10,
-    "max_orbits": 5,
+    "max_orbits": max_orbits,
     "learning_rate": 0.001
 })
 
