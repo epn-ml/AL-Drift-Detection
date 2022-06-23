@@ -43,7 +43,7 @@ def print_(print_str, with_date=True):
 def cnn(shape):
 
     model = keras.Sequential()
-    model.add(layers.Conv1D(128, 3, strides=1, activation='relu',
+    model.add(layers.Conv1D(64, 3, strides=1, activation='relu',
                             padding='same', input_shape=shape))
     model.add(layers.LSTM(64, return_sequences=True))
     model.add(layers.Dense(16, activation='relu'))
