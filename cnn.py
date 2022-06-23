@@ -63,6 +63,40 @@ def get_entropy(df):
     return entropy(counts)
 
 
+def get_accuracy(y_true, y_pred):
+    cm = confusion_matrix(y_true, y_pred)
+    acc = []
+    for i in range(len(cm)):
+        tp = cm[i][i]
+        fn = cm[i].sum() - tp
+        fp = cm[:, i].sum() - tp
+        tn = cm.sum() - tp - fn - fp
+        acc.append((tp + tn) / cm.sum())
+    return acc
+
+
+def get_error_rate(y_true, y_pred):
+    cm = confusion_matrix(y_true, y_pred)
+    er = []
+    subs = []
+    dels = []
+    inss = []
+    for i in range(len(cm)):
+        tp = cm[i][i]
+        fn = cm[i].sum() - tp
+        fp = cm[:, i].sum() - tp
+        s = min(fn, fp)
+        d = max(0, fn - fp)
+        ins = max(0, fp - fn)
+        e = (s + d + ins) / len(y_true)
+        subs.append(s)
+        dels.append(d)
+        inss.append(ins)
+        er.append(e)
+    er_macro = (sum(subs) + sum(dels) + sum(inss)) / (len(cm) * len(y_true))
+    return er_macro, er
+
+
 def smooth(labels, window_size=100, window_size2=10):
     for i in range(len(labels)-window_size2):
         window = labels[i:i+window_size2]
@@ -376,6 +410,9 @@ def plot_orbits(logs, dataset, df, orb_idx, test=False, pred=False, draw=[1, 3])
                                  line_color='darkgray', showlegend=False))
 
         for i in draw:
+            crossing = 'SK'
+            if i == 3:
+                crossing = 'MP'
             for _, row in df_orbit.loc[df_orbit[label_col] == i].iterrows():
                 fig.add_trace(go.Scatter(
                     x=[row['DATE'], row['DATE']],
@@ -383,7 +420,8 @@ def plot_orbits(logs, dataset, df, orb_idx, test=False, pred=False, draw=[1, 3])
                     mode='lines',
                     line_color=colours[i],
                     opacity=0.005,
-                    showlegend=False
+                    legendgroup=crossing,
+                    legendgrouptitle_text=crossing
                 ))
 
         fig.update_layout(
@@ -427,6 +465,19 @@ if gpus:
     except RuntimeError as e:
         print_(e)
 
+logs = sys.argv[1]
+dataset = int(sys.argv[2])
+plots = sys.argv[3]
+max_orbits = int(sys.argv[4])
+# logs = 'logs_cnn'
+# dataset = 1
+# plots = '0123'
+if not os.path.exists(logs):
+    os.makedirs(logs)
+
+fptr = open(f'{logs}/log_cnn_set{dataset}.txt', 'w')
+print_(f'dataset: {dataset}')
+
 wandb.init(project="cnn", entity="irodionr", config={
     "filters": 64,
     "kernel_size": 2,
@@ -437,18 +488,6 @@ wandb.init(project="cnn", entity="irodionr", config={
     "max_orbits": 5,
     "learning_rate": 0.001
 })
-
-logs = sys.argv[1]
-dataset = int(sys.argv[2])
-plots = sys.argv[3]
-# logs = 'logs_cnn'
-# dataset = 1
-# plots = '0123'
-if not os.path.exists(logs):
-    os.makedirs(logs)
-
-fptr = open(f'{logs}/log_cnn_set{dataset}.txt', 'w')
-print_(f'dataset: {dataset}')
 
 
 # %% Load data
@@ -482,7 +521,9 @@ for drift in pd.unique(list(drift_orbits.values())).tolist():
 
 # Select orbits for testing
 np.set_printoptions(precision=3)
-max_orbits = 5
+total_train = []
+total_valid = []
+total_test = []
 for drift in pd.unique(df['DRIFT']).tolist():
     df_drift = df.loc[df['DRIFT'] == drift]
     list_orbits = []
@@ -507,7 +548,7 @@ for drift in pd.unique(df['DRIFT']).tolist():
 
     # List of orbits in a drift with descending entropy
     list_valid_orbits.sort(key=get_entropy, reverse=True)
-    train_count = min(max_orbits, len(list_valid_orbits) - 1)
+    train_count = min(max_orbits, len(list_valid_orbits))
     list_train_orbits = list_valid_orbits[:train_count]
     list_valid_orbits = list_valid_orbits[train_count:]
 
@@ -520,13 +561,24 @@ for drift in pd.unique(df['DRIFT']).tolist():
     for orb in list_valid_orbits:
         list_valid.append(orb.iloc[0]["ORBIT"])
 
+    total_train += list_train
     print_(f'drift {drift} training orbits ({len(list_train)}): {list_train}')
     # print_(f'entropy: {list(map(get_entropy, list_train_orbits))}')
+    total_valid += list_valid
     print_(
         f'drift {drift} validation orbits ({len(list_valid)}): {list_valid}')
     # print_(f'entropy: {list(map(get_entropy, list_valid_orbits))}')
+    total_test += list_test
     print_(f'drift {drift} testing orbits ({len(list_test)}): {list_test}')
     # print_(f'entropy: {list(map(get_entropy, list_test_orbits))}')
+
+wandb.log({"training_orbits": len(total_train)})
+print_(f'total training orbits: {len(total_train)}')
+print_(f'{total_train}')
+print_(f'total validation orbits: {len(total_valid)}')
+print_(f'{total_valid}')
+print_(f'total testing orbits: {len(total_test)}')
+print_(f'{total_test}')
 
 
 # %% Training classifiers
@@ -579,7 +631,7 @@ for drift in drifts:
 
     for orbit in orbit_numbers:
 
-        df_orbit = df_drift.loc[df['ORBIT'] == orbit]
+        df_orbit = df_drift.loc[df_drift['ORBIT'] == orbit]
         labels = df_orbit['LABEL'].tolist()
         labels_pred = df_orbit['LABEL_PRED'].tolist()
         classes = np.unique(labels)
@@ -594,6 +646,33 @@ for drift in drifts:
                 print_(f'--------------------')
 
 print_(f'orbits with high performance: {high_orbits}')
+df_orbits = df.loc[df['ORBIT'].isin(high_orbits)]
+print_(f'from drifts: {pd.unique(df_orbits["DRIFT"]).tolist()}')
+labels = df_orbits['LABEL'].tolist()
+labels_pred = df_orbits['LABEL_PRED'].tolist()
+classes = np.unique(labels)
+
+auc_value = accuracy_score(y_true=labels, y_pred=labels_pred)
+print_(f'accuracy value is {auc_value} for high orbits')
+wandb.log({"macro accuracy h": auc_value})
+prf = precision_recall_fscore_support(
+    y_true=labels, y_pred=labels_pred, average=None, labels=classes)
+er_macro, er = get_error_rate(labels, labels_pred)
+acc = get_accuracy(labels, labels_pred)
+print_(f'high orbits accuracy: {acc}')
+print_(f'high orbits macro error rate: {er_macro}')
+print_(f'high orbits error rate: {er}')
+print_(f'high orbits f-score: {prf[2]}, recall: {prf[1]}, precision: {prf[0]}')
+wandb.log({"SK accuracy h": acc[1]})
+wandb.log({"MP accuracy h": acc[3]})
+wandb.log({"SK error rate h": er[1]})
+wandb.log({"MP error rate h": er[3]})
+wandb.log({"SK precision h": prf[0][1]})
+wandb.log({"MP precision h": prf[0][3]})
+wandb.log({"SK recall h": prf[1][1]})
+wandb.log({"MP recall h": prf[1][3]})
+wandb.log({"SK f-score h": prf[2][1]})
+wandb.log({"MP f-score h": prf[2][3]})
 
 labels_train_true = df.loc[df['SPLIT'] == 'train', 'LABEL'].tolist()
 labels_train_pred = df.loc[df['SPLIT'] == 'train', 'LABEL_PRED'].tolist()
@@ -604,8 +683,15 @@ labels_test_pred = df.loc[df['SPLIT'] == 'test', 'LABEL_PRED'].tolist()
 
 auc_value = accuracy_score(y_true=labels_train_true, y_pred=labels_train_pred)
 print_(f'accuracy value is {auc_value} for training dataset')
+print_(
+    f'accuracy per label: {get_accuracy(labels_train_true, labels_train_pred)}')
 prf = precision_recall_fscore_support(
     labels_train_true, labels_train_pred, average=None, labels=np.unique(labels_train_true))
+er_macro, er = get_error_rate(labels_train_true, labels_train_pred)
+acc = get_accuracy(labels_train_true, labels_train_pred)
+print_(f'accuracy: {acc}')
+print_(f'macro error rate: {er_macro}')
+print_(f'error rate: {er}')
 print_(f'precision: {prf[0]}')
 print_(f'recall: {prf[1]}')
 print_(f'f-score: {prf[2]}')
@@ -615,8 +701,15 @@ print_(
 
 auc_value = accuracy_score(y_true=labels_valid_true, y_pred=labels_valid_pred)
 print_(f'accuracy value is {auc_value} for validation dataset')
+print_(
+    f'accuracy per label: {get_accuracy(labels_valid_true, labels_valid_pred)}')
 prf = precision_recall_fscore_support(
     labels_valid_true, labels_valid_pred, average=None, labels=np.unique(labels_valid_true))
+er_macro, er = get_error_rate(labels_valid_true, labels_valid_pred)
+acc = get_accuracy(labels_valid_true, labels_valid_pred)
+print_(f'accuracy: {acc}')
+print_(f'macro error rate: {er_macro}')
+print_(f'error rate: {er}')
 print_(f'precision: {prf[0]}')
 print_(f'recall: {prf[1]}')
 print_(f'f-score: {prf[2]}')
@@ -626,14 +719,32 @@ print_(
 
 auc_value = accuracy_score(y_true=labels_test_true, y_pred=labels_test_pred)
 print_(f'accuracy value is {auc_value} for testing dataset')
+wandb.log({"macro accuracy": auc_value})
+print_(
+    f'accuracy per label: {get_accuracy(labels_test_true, labels_test_pred)}')
 prf = precision_recall_fscore_support(
     labels_test_true, labels_test_pred, average=None, labels=np.unique(labels_test_true))
+er_macro, er = get_error_rate(labels_test_true, labels_test_pred)
+acc = get_accuracy(labels_test_true, labels_test_pred)
+print_(f'accuracy: {acc}')
+print_(f'macro error rate: {er_macro}')
+print_(f'error rate: {er}')
 print_(f'precision: {prf[0]}')
 print_(f'recall: {prf[1]}')
 print_(f'f-score: {prf[2]}')
 print_(f'support: {prf[3]}')
 print_(
     f'confusion matrix:\n{confusion_matrix(labels_test_true, labels_test_pred)}')
+wandb.log({"SK accuracy": acc[1]})
+wandb.log({"MP accuracy": acc[3]})
+wandb.log({"SK error rate": er[1]})
+wandb.log({"MP error rate": er[3]})
+wandb.log({"SK precision": prf[0][1]})
+wandb.log({"MP precision": prf[0][3]})
+wandb.log({"SK recall": prf[1][1]})
+wandb.log({"MP recall": prf[1][3]})
+wandb.log({"SK f-score": prf[2][1]})
+wandb.log({"MP f-score": prf[2][3]})
 
 
 # %% Plots
