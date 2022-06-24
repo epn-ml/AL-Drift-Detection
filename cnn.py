@@ -350,7 +350,7 @@ def test_clf(df, clf, one_clf=True):
 
 
 # Plot all orbits with crossings
-def plot_orbits(logs, dataset, df, orb_idx, test=False, pred=False, draw=[1, 3]):
+def plot_orbits(logs, dataset, df, orb_idx, max_orbits, test=False, pred=False, draw=[1, 3]):
 
     colours = {0: 'red', 1: 'green', 2: 'yellow', 3: 'blue', 4: 'purple'}
     title = ' labels'
@@ -428,7 +428,7 @@ def plot_orbits(logs, dataset, df, orb_idx, test=False, pred=False, draw=[1, 3])
         fig.update_layout(
             {'title': f'Orbit {orbit} (drift {df_orbit.iloc[0]["DRIFT"]}) {title}'})
         fig.write_image(
-            f'{logs}/plots_set{dataset}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png')
+            f'{logs}/plots_set{dataset}_{max_orbits}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png')
         # fig.write_html(
         #     f'{logs}/plots_set{dataset}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.html')
 
@@ -755,18 +755,22 @@ if plots != '5':
     orb_idx = {}
     print_(f'plotting {plots}...')
     if '0' in plots:
-        plot_orbits(logs, dataset, df.copy(), orb_idx, test=False, pred=False)
+        plot_orbits(logs, dataset, df.copy(), orb_idx,
+                    max_orbits, test=False, pred=False)
         print_(f'plotted train-true')
     if '1' in plots:
-        plot_orbits(logs, dataset, df.copy(), orb_idx, test=False, pred=True)
+        plot_orbits(logs, dataset, df.copy(), orb_idx,
+                    max_orbits, test=False, pred=True)
         print_(f'plotted train-pred')
         merge_plots(f'{logs}/plots_set{dataset}', 'train')
         print_(f'merged train plots')
     if '2' in plots:
-        plot_orbits(logs, dataset, df.copy(), orb_idx, test=True, pred=False)
+        plot_orbits(logs, dataset, df.copy(), orb_idx,
+                    max_orbits, test=True, pred=False)
         print_(f'plotted test-true')
     if '3' in plots:
-        plot_orbits(logs, dataset, df.copy(), orb_idx, test=True, pred=True)
+        plot_orbits(logs, dataset, df.copy(), orb_idx,
+                    max_orbits, test=True, pred=True)
         print_(f'plotted test-pred')
         merge_plots(f'{logs}/plots_set{dataset}', 'test')
         print_(f'merged test plots')
