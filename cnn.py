@@ -574,6 +574,11 @@ for drift in pd.unique(df['DRIFT']).tolist():
     print_(f'drift {drift} testing orbits ({len(list_test)}): {list_test}')
     # print_(f'entropy: {list(map(get_entropy, list_test_orbits))}')
 
+if not total_train:
+    total_train.append(total_valid[0])
+    total_valid = total_valid[1:]
+    print_(f'add 1 training orbit')
+
 wandb.log({"training_orbits": len(total_train)})
 print_(f'total training orbits: {len(total_train)}')
 print_(f'{total_train}')
