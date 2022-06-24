@@ -178,7 +178,7 @@ def train_clf(df, one_clf=True):
         df_test = df.loc[df['SPLIT'] == 'valid']
         orbit_numbers_test = pd.unique(df_test['ORBIT']).tolist()
         print_(f'{len(orbit_numbers_test)} validation orbits')
-        print_(f'selected orbits for validation: {orbit_numbers_test}')
+        # print_(f'selected orbits for validation: {orbit_numbers_test}')
 
         features_test = df_test.iloc[:, 1:-5].values
         x_test = np.array(features_test, copy=True)
@@ -271,7 +271,7 @@ def train_clf(df, one_clf=True):
             orbit_numbers_test = pd.unique(df_drift_test['ORBIT']).tolist()
             print_(
                 f'{len(orbit_numbers_test)} validation orbits with drift {drift}')
-            print_(f'selected orbits for validation: {orbit_numbers_test}')
+            # print_(f'selected orbits for validation: {orbit_numbers_test}')
 
             if orbit_numbers_test:
                 features_test = df_drift_test.iloc[:, 1:-5].values
@@ -567,8 +567,8 @@ for drift in pd.unique(df['DRIFT']).tolist():
     print_(f'drift {drift} training orbits ({len(list_train)}): {list_train}')
     # print_(f'entropy: {list(map(get_entropy, list_train_orbits))}')
     total_valid += list_valid
-    print_(
-        f'drift {drift} validation orbits ({len(list_valid)}): {list_valid}')
+    # print_(
+    #     f'drift {drift} validation orbits ({len(list_valid)}): {list_valid}')
     # print_(f'entropy: {list(map(get_entropy, list_valid_orbits))}')
     total_test += list_test
     print_(f'drift {drift} testing orbits ({len(list_test)}): {list_test}')
@@ -577,13 +577,14 @@ for drift in pd.unique(df['DRIFT']).tolist():
 if not total_train:
     total_train.append(total_valid[0])
     total_valid = total_valid[1:]
+    df.loc[df['ORBIT'] == total_train[0], 'SPLIT'] = 'train'
     print_(f'add 1 training orbit')
 
 wandb.log({"training_orbits": len(total_train)})
 print_(f'total training orbits: {len(total_train)}')
 print_(f'{total_train}')
-print_(f'total validation orbits: {len(total_valid)}')
-print_(f'{total_valid}')
+# print_(f'total validation orbits: {len(total_valid)}')
+# print_(f'{total_valid}')
 print_(f'total testing orbits: {len(total_test)}')
 print_(f'{total_test}')
 
