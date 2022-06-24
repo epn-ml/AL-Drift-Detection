@@ -77,6 +77,8 @@ def get_accuracy(y_true, y_pred):
 
 def get_error_rate(y_true, y_pred):
     cm = confusion_matrix(y_true, y_pred)
+    if len(cm) == 0 or len(y_true) == 0:
+        return 1.0, np.full(5, 1.0)
     er = []
     subs = []
     dels = []
