@@ -684,8 +684,6 @@ labels_test_pred = df.loc[df['SPLIT'] == 'test', 'LABEL_PRED'].tolist()
 
 auc_value = accuracy_score(y_true=labels_train_true, y_pred=labels_train_pred)
 print_(f'accuracy value is {auc_value} for training dataset')
-print_(
-    f'accuracy per label: {get_accuracy(labels_train_true, labels_train_pred)}')
 prf = precision_recall_fscore_support(
     labels_train_true, labels_train_pred, average=None, labels=np.unique(labels_train_true))
 er_macro, er = get_error_rate(labels_train_true, labels_train_pred)
@@ -702,8 +700,6 @@ print_(
 
 auc_value = accuracy_score(y_true=labels_valid_true, y_pred=labels_valid_pred)
 print_(f'accuracy value is {auc_value} for validation dataset')
-print_(
-    f'accuracy per label: {get_accuracy(labels_valid_true, labels_valid_pred)}')
 prf = precision_recall_fscore_support(
     labels_valid_true, labels_valid_pred, average=None, labels=np.unique(labels_valid_true))
 er_macro, er = get_error_rate(labels_valid_true, labels_valid_pred)
@@ -721,8 +717,6 @@ print_(
 auc_value = accuracy_score(y_true=labels_test_true, y_pred=labels_test_pred)
 print_(f'accuracy value is {auc_value} for testing dataset')
 wandb.log({"macro accuracy": auc_value})
-print_(
-    f'accuracy per label: {get_accuracy(labels_test_true, labels_test_pred)}')
 prf = precision_recall_fscore_support(
     labels_test_true, labels_test_pred, average=None, labels=np.unique(labels_test_true))
 er_macro, er = get_error_rate(labels_test_true, labels_test_pred)
