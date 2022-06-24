@@ -72,7 +72,7 @@ def get_accuracy(y_true, y_pred):
         fp = cm[:, i].sum() - tp
         tn = cm.sum() - tp - fn - fp
         acc.append((tp + tn) / cm.sum())
-    return acc
+    return np.array(acc)
 
 
 def get_error_rate(y_true, y_pred):
@@ -94,7 +94,7 @@ def get_error_rate(y_true, y_pred):
         inss.append(ins)
         er.append(e)
     er_macro = (sum(subs) + sum(dels) + sum(inss)) / (len(cm) * len(y_true))
-    return er_macro, er
+    return er_macro, np.array(er)
 
 
 def smooth(labels, window_size=120, window_size2=60):
