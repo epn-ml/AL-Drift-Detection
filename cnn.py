@@ -97,7 +97,7 @@ def get_error_rate(y_true, y_pred):
     return er_macro, er
 
 
-def smooth(labels, window_size=100, window_size2=10):
+def smooth(labels, window_size=120, window_size2=60):
     for i in range(len(labels)-window_size2):
         window = labels[i:i+window_size2]
         if window[0] == window[-1]:
@@ -353,7 +353,7 @@ def test_clf(df, clf, one_clf=True):
 def plot_orbits(logs, dataset, df, orb_idx, test=False, pred=False, draw=[1, 3]):
 
     colours = {0: 'red', 1: 'green', 2: 'yellow', 3: 'blue', 4: 'purple'}
-    title = 'labels in'
+    title = ' labels'
     folder = 'train-'
     if test:
         folder = 'test-'
@@ -364,10 +364,10 @@ def plot_orbits(logs, dataset, df, orb_idx, test=False, pred=False, draw=[1, 3])
     label_col = 'LABEL'
     if pred:
         label_col = 'LABEL_PRED'
-        title = 'Predicted ' + title
+        title = 'predicted' + title
         folder += 'pred'
     else:
-        title = 'True ' + title
+        title = 'true' + title
         folder += 'true'
 
     if not os.path.exists(f'{logs}/plots_set{dataset}/{folder}'):
@@ -386,11 +386,6 @@ def plot_orbits(logs, dataset, df, orb_idx, test=False, pred=False, draw=[1, 3])
             orb_idx[orbit] = (start, end)
         df_orbit = df_orbit.loc[start:end]
 
-        subtitle = 'training'
-        if df_orbit.iloc[0]['SPLIT'] == 'valid':
-            subtitle = 'validation'
-        elif df_orbit.iloc[0]['SPLIT'] == 'test':
-            subtitle = 'testing'
         fig = go.Figure()
 
         # Plotting components of the magnetic field B_x, B_y, B_z in MSO coordinates
@@ -409,23 +404,29 @@ def plot_orbits(logs, dataset, df, orb_idx, test=False, pred=False, draw=[1, 3])
         fig.add_trace(go.Scatter(x=df_orbit['DATE'], y=df_orbit['B_tot'], name='|B|',
                                  line_color='darkgray', showlegend=False))
 
+        ann = {1: 'SK', 3: 'MP'}
         for i in draw:
-            crossing = 'SK'
-            if i == 3:
-                crossing = 'MP'
-            for _, row in df_orbit.loc[df_orbit[label_col] == i].iterrows():
+            df_label = df_orbit.loc[df_orbit[label_col] == i]
+            fig.add_annotation(x=df_label.iloc[0]['DATE'], y=450,
+                               text=ann[i],
+                               showarrow=False,
+                               yshift=10)
+            fig.add_annotation(x=df_label.iloc[-1]['DATE'], y=450,
+                               text=ann[i],
+                               showarrow=False,
+                               yshift=10)
+            for _, row in df_label.iterrows():
                 fig.add_trace(go.Scatter(
                     x=[row['DATE'], row['DATE']],
                     y=[-450, 450],
                     mode='lines',
                     line_color=colours[i],
                     opacity=0.005,
-                    legendgroup=crossing,
-                    legendgrouptitle_text=crossing
+                    showlegend=False
                 ))
 
         fig.update_layout(
-            {'title': f'{title} {subtitle} orbit {orbit} (drift {df_orbit.iloc[0]["DRIFT"]})'})
+            {'title': f'Orbit {orbit} (drift {df_orbit.iloc[0]["DRIFT"]}) {title}'})
         fig.write_image(
             f'{logs}/plots_set{dataset}/{folder}/fig{orbit}_drift{df_orbit.iloc[0]["DRIFT"]}.png')
         # fig.write_html(
