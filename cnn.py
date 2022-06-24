@@ -65,6 +65,8 @@ def get_entropy(df):
 
 def get_accuracy(y_true, y_pred):
     cm = confusion_matrix(y_true, y_pred)
+    if len(cm) == 0 or cm.sum() == 0:
+        return np.full(5, 0.0)
     acc = []
     for i in range(len(cm)):
         tp = cm[i][i]
