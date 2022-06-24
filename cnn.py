@@ -407,14 +407,15 @@ def plot_orbits(logs, dataset, df, orb_idx, max_orbits, test=False, pred=False, 
         ann = {1: 'SK', 3: 'MP'}
         for i in draw:
             df_label = df_orbit.loc[df_orbit[label_col] == i]
-            fig.add_annotation(x=df_label.iloc[0]['DATE'], y=450,
-                               text=ann[i],
-                               showarrow=False,
-                               yshift=10)
-            fig.add_annotation(x=df_label.iloc[-1]['DATE'], y=450,
-                               text=ann[i],
-                               showarrow=False,
-                               yshift=10)
+            if len(df_label) > 0:
+                fig.add_annotation(x=df_label.iloc[0]['DATE'], y=450,
+                                   text=ann[i],
+                                   showarrow=False,
+                                   yshift=10)
+                fig.add_annotation(x=df_label.iloc[-1]['DATE'], y=450,
+                                   text=ann[i],
+                                   showarrow=False,
+                                   yshift=10)
             for _, row in df_label.iterrows():
                 fig.add_trace(go.Scatter(
                     x=[row['DATE'], row['DATE']],
@@ -756,7 +757,7 @@ if plots != '5':
         plot_orbits(logs, dataset, df.copy(), orb_idx,
                     max_orbits, test=False, pred=True)
         print_(f'plotted train-pred')
-        merge_plots(f'{logs}/plots_set{dataset}', 'train')
+        merge_plots(f'{logs}/plots_set{dataset}_{max_orbits}', 'train')
         print_(f'merged train plots')
     if '2' in plots:
         plot_orbits(logs, dataset, df.copy(), orb_idx,
@@ -766,7 +767,7 @@ if plots != '5':
         plot_orbits(logs, dataset, df.copy(), orb_idx,
                     max_orbits, test=True, pred=True)
         print_(f'plotted test-pred')
-        merge_plots(f'{logs}/plots_set{dataset}', 'test')
+        merge_plots(f'{logs}/plots_set{dataset}_{max_orbits}', 'test')
         print_(f'merged test plots')
 
 
