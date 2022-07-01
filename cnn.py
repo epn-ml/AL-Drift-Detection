@@ -481,7 +481,7 @@ max_orbits = int(sys.argv[4])
 if not os.path.exists(logs):
     os.makedirs(logs)
 
-fptr = open(f'{logs}/log_cnn_set{dataset}.txt', 'w')
+fptr = open(f'{logs}/log_cnn_set{dataset}_{max_orbits}.txt', 'w')
 print_(f'dataset: {dataset}')
 
 wandb.init(project="cnn", entity="irodionr", config={

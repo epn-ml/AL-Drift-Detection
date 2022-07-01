@@ -705,7 +705,6 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         if cur_orbit < 100:
             orbits_max = 21
         else:
-            # model doesn't detect where a new drift should end
             orbits_max = random.randrange(14, 22)
 
         while end_orbit < len(orbit_numbers):
