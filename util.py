@@ -5,9 +5,15 @@ from datetime import datetime
 import pandas as pd
 
 
-# Function to write the log to file
 def print_f(fptr, print_str, with_date=True):
+    """
+    Writes the log to file.
 
+    Args:
+        fptr: File-like object.
+        print_str: Value to be printed.
+        with_date: If ``True``, append current datetime before the value.
+    """
     if with_date:
         fptr.write(str(datetime.now()) + ': ' + str(print_str) + '\n')
     else:
@@ -17,9 +23,17 @@ def print_f(fptr, print_str, with_date=True):
     os.fsync(fptr.fileno())
 
 
-# Load orbits listed in file
 def load_data(files, add_known_drifts=False):
+    """
+    Loads orbits listed in file.
 
+    Args:
+        files: List of file paths to orbit data.
+        add_known_drifts: If ``True``, load orbits with known drifts first.
+
+    Returns:
+        df: DataFrame with all loaded orbit data.
+    """
     df_list = []
 
     # Load known orbits from a separate directory
@@ -40,9 +54,17 @@ def load_data(files, add_known_drifts=False):
     return df
 
 
-# Select features listed in a file
 def select_features(df, features_file):
+    """
+    Selects features listed in a file.
 
+    Args:
+        df: DataFrame with loaded orbit data.
+        features_file: File with listed features for selection.
+
+    Returns:
+        df: Orbit with only selected features.
+    """
     with open(features_file, 'r') as features:
         cols = features.read().splitlines()
 
@@ -56,12 +78,21 @@ def select_features(df, features_file):
     if 'INDEX' in cols:
         drop_col.remove('Unnamed: 0')
 
-    return df.drop(drop_col, axis=1)
+    df = df.drop(drop_col, axis=1)
+
+    return df
 
 
-# Load orbits and drifts from file
 def load_drifts(drifts_file):
+    """
+    Loads orbits and drifts from file.
 
+    Args:
+        drifts_file: File with orbit numbers and drift labels.
+
+    Returns:
+        drift_orbits: Orbit numbers and corresponding drift labels.
+    """
     drift_orbits = {}
     with open(drifts_file, 'r') as drifts:
         for line in drifts.read().splitlines():

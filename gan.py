@@ -1,5 +1,3 @@
-# %% Imports
-
 import glob
 import os
 import random
@@ -20,14 +18,19 @@ from torch.utils.data import DataLoader
 from util import load_data, print_f, select_features
 
 global seq_len
+"""Value for the collate function to split the rows into sequences accordingly."""
 global fptr
+"""File-like object for storing output as text."""
 
 
-# %% Functions
-
-# Wrapper for print function
 def print_(print_str, with_date=True):
+    """
+    Prints a value to a file-like object ``fptr`` and to ``sys.stdout``.
 
+    Args:
+        print_str: Value to be printed.
+        with_date: If ``True``, append current datetime before the value.
+    """
     global fptr
     print_f(fptr, print_str, with_date)
     if with_date:
@@ -36,8 +39,19 @@ def print_(print_str, with_date=True):
         print(print_str, flush=True)
 
 
-# Generator class
 class Generator(Module):
+    """
+    PyTorch neural network module for the generator.
+
+    Attributes:
+        net: Network model.
+
+    Methods:
+        __init__(self, inp, out, sequence_length=2, num_layers=3):
+            Initializes the network.
+        forward(self, x_):
+            Computes output tensors.
+    """
 
     def __init__(self, inp, out, sequence_length=2, num_layers=3):
         super(Generator, self).__init__()
@@ -49,20 +63,57 @@ class Generator(Module):
             # Linear(256, 1024), Dropout(inplace=True),
             Linear(4096, inp)
         )
+    """
+    Initializes the internal network state.
+
+    Args:
+        inp: Number of sequences in the input of the first layer.
+        sequence_length: Length of each sequence in the input.
+    """
 
     def forward(self, x_):
         x_r = x_.reshape(x_.shape[0], x_.shape[1] * x_.shape[2])
         output = self.net(x_r)
 
-        # output = output.reshape(output.shape[0], output.shape[1] * output.shape[2])
         return output
+    """
+    Computes output tensors from input tensors.
+
+    Args:
+        x_: Input tensor.
+    
+    Returns:
+        output: Output tensor.
+    """
 
     def move(self, device):
         pass
 
 
-# Discriminator class
 class Discriminator(Module):
+    """
+    PyTorch neural network module for the discriminator.
+
+    Attributes:
+        input_connections: Input size of the first layer.
+        incoming_connections: Input size of the last layer.
+        neuron_count: Output size of the last layer.
+        net: Network model.
+        neurons: Last layer of the network.
+        softmax: Softmax function applied to the output of the last layer.
+
+    Methods:
+        __init__(self, inp, final_layer_incoming_connections=512):
+            Initializes the network.
+        forward(self, x_):
+            Computes output tensors.
+        update(self):
+            Increases output size of the last layer by 1.
+        reset_top_layer(self):
+            Reinitializes the last layer.
+        create_network(self):
+            Creates the network except the last layer.
+    """
 
     def __init__(self, inp, final_layer_incoming_connections=512):
         super(Discriminator, self).__init__()
@@ -75,25 +126,45 @@ class Discriminator(Module):
         self.neurons = Linear(
             final_layer_incoming_connections, self.neuron_count)
         self.softmax = nn.Softmax(dim=1)
+    """
+    Initializes the internal network state.
+
+    Args:
+        inp: Input size of the first layer.
+        final_layer_incoming_connections: Input size of the last layer.
+    """
 
     def forward(self, x_):
-        result = self.net(x_)
-        result = self.neurons(result)
-        result = self.softmax(result)
-        return result
+        output = self.net(x_)
+        output = self.neurons(output)
+        output = self.softmax(output)
+        return output
+    """
+    Computes output tensors from input tensors.
+
+    Args:
+        x_: Input tensor.
+    
+    Returns:
+        output: Output tensor.
+    """
 
     def update(self):
-        # self.reset_layers()
         self.neuron_count += 1
         layer = Linear(self.incoming_connections, self.neuron_count)
         self.neurons = layer
         return
+    """
+    Reinitializes the last layer and increases its output size by 1.
+    """
 
     def reset_top_layer(self):
-        # self.reset_layers()
         layer = Linear(self.incoming_connections, self.neuron_count)
         self.neurons = layer
         return
+    """
+    Reinitializes the last layer.
+    """
 
     def reset_layers(self):
         self.net = self.create_network()
@@ -106,47 +177,79 @@ class Discriminator(Module):
             nn.Sigmoid())
 
         return net
+    """
+    Initializes the network except the last layer.
+    
+    Returns:
+        net: Network model.
+    """
 
 
 def collate(batch):
     """
-    Function for collating the batch to be used by the data loader. This function does not handle labels
-    :param batch:
-    :return:
+    Collates the batch to be used by the data loader for the discriminator.
+
+    Args:
+        batch: Batch of features and labels.
+
+    Returns:
+        x: Features.
+        y: Labels.
     """
     # Stack each tensor variable
     x = torch.stack([torch.tensor(x[:-1]) for x in batch])
     y = torch.Tensor([x[-1] for x in batch]).to(torch.long)
 
-    # Return features and labels
     return x, y
 
 
 def collate_generator(batch):
     """
-    Function for collating the batch to be used by the data loader. This function does handle labels
-    :param batch:
-    :return:
+    Collates the batch to be used by the data loader for the generator.
+
+    Args:
+        batch: Batch of features and labels.
+
+    Returns:
+        x: All features except ``y``.
+        y: Last ``feature_length`` features.
+        labels: Labels.
     """
     global seq_len
 
     # Stack each tensor variable
     feature_length = int(len(batch[0]) / (seq_len + 1))
-    # The last feature length corresponds to the feature we want to predict and
-    # the last value is the label of the drift class
+
+    # The last feature length corresponds to the feature that should be predicted
+    # the last value is the drift label
     x = torch.stack([torch.Tensor(np.reshape(x[:-feature_length-1], newshape=(seq_len, feature_length)))
                      for x in batch])
     y = torch.stack([torch.tensor(x[-feature_length-1:-1]) for x in batch])
     labels = torch.stack([torch.tensor(x[-1]) for x in batch])
+    x = x.to(torch.double)
 
-    # Return features and targets
-    return x.to(torch.double), y, labels
+    return x, y, labels
 
 
 # Train discriminator on real and generated data
 def train_discriminator(real_data, fake_data, discriminator, generator, optimizer, loss_fn,
                         generator_labels, device):
+    """
+    Trains discriminator on real and generated data.
 
+    Args:
+        real_data: Real data for training the discriminator.
+        fake_data: Generated data.
+        discriminator: The discriminator model.
+        generator: The generator model.
+        optimizer: Optimization algorithm.
+        loss_fn: Loss function.
+        generator_labels: Generator label for new drifts.
+        device: CPU or GPU.
+
+    Returns:
+        discriminator: The trained discriminator model.
+    """
     for features, labels in real_data:
         # Set the gradients as zero
         discriminator.zero_grad()
@@ -160,10 +263,10 @@ def train_discriminator(real_data, fake_data, discriminator, generator, optimize
         # Get the output for the real features
         output_discriminator = discriminator(features)
 
-        # The real data is without any concept drift. Evaluate loss against zeros
+        # The real data doesn't any concept drift, evaluate loss against zeros
         real_data_loss = loss_fn(output_discriminator, labels)
 
-        # Get the output from the generator for the generated data compared to ones which is drifted data
+        # Get the output from the generator for the generated data compared to ones, which is drifted data
         generator_input = None
         for input_sequence, _, _ in fake_data:
             generator_input = input_sequence.to(device).to(torch.float)
@@ -172,7 +275,6 @@ def train_discriminator(real_data, fake_data, discriminator, generator, optimize
 
         generated_output_discriminator = discriminator(generated_output)
 
-        # Here instead of ones it should be the label of the drift category
         generated_data_loss = loss_fn(
             generated_output_discriminator, generator_labels)
         wandb.log({"generated_data_loss": generated_data_loss})
@@ -188,9 +290,23 @@ def train_discriminator(real_data, fake_data, discriminator, generator, optimize
     return discriminator
 
 
-# Train generator on output of discriminator
 def train_generator(data_loader, discriminator, generator, optimizer, loss_fn, loss_mse, steps, device):
+    """
+    Trains generator on the output of discriminator.
 
+    Args:
+        data_loader: Concatenated data for training the generator.
+        discriminator: The discriminator model.
+        generator: The generator model.
+        optimizer: Optimization algorithm.
+        loss_fn: Loss function for generated data.
+        loss_mse: Loss function for ideal target values.
+        steps: Number of steps for training.
+        device: CPU or GPU.
+
+    Returns:
+        generator: The trained generator model.
+    """
     epoch_loss = 0
 
     for idx in range(steps):
@@ -229,9 +345,18 @@ def train_generator(data_loader, discriminator, generator, optimizer, loss_fn, l
     return generator
 
 
-# Concatenate feature vectors into one vector for entire dataset
 def concatenate_features(data, sequence_len=2, has_label=True):
+    """
+    Concatenates feature vectors into one vector for entire dataset.
 
+    Args:
+        data: Input data that consists of feature vectors.
+        sequence_len: Number of past feature vectors for concatenating into a current feature vector.
+        has_label: ``True`` if input data is labelled.
+
+    Returns:
+        output: Input data with concatenated feature vectors.
+    """
     if has_label is True:
         modified_data = data[:, :-1]
     else:
@@ -260,9 +385,18 @@ def concatenate_features(data, sequence_len=2, has_label=True):
     return output
 
 
-# Select features according to drift indices and append drift labeles
 def create_training_dataset(dataset, indices, drift_labels, max_length=100):
+    """
+    Creates training dataset according to drift indices and appends drift labels.
 
+    Args:
+        data: Input data that consists of feature vectors.
+        sequence_len: Number of past feature vectors for concatenating into a current feature vector.
+        has_label: ``True`` if input data is labelled.
+
+    Returns:
+        output: Data that consists of concatenated feature vectors.
+    """
     removed = {}
     while len(drift_labels) > max_length:
         indices = indices.copy()
@@ -277,14 +411,6 @@ def create_training_dataset(dataset, indices, drift_labels, max_length=100):
 
         del indices[i]
         del drift_labels[i]
-
-    # if len(removed) > 0:
-    #     print_(f'removed labels = {removed}')
-
-    # print_(
-    #     f'training dataset indices = {(indices[0][0], indices[-1][-1])}')
-    # print_(
-    #     f'training dataset labels len = {len(drift_labels)}, unique =\n{np.array(np.unique(drift_labels, return_counts=True))}')
 
     # If there is a periodicity, we switch all previous drifts to the same label
     modified_drift_labels = [x for x in drift_labels]
@@ -308,9 +434,17 @@ def create_training_dataset(dataset, indices, drift_labels, max_length=100):
     return training_dataset
 
 
-# Equalize number of drift labels used for training
 def equalize_classes(features, max_count=500):
+    """
+    Equalizes the number of training instances across different drift labels.
 
+    Args:
+        features: Input data that consists of feature vectors.
+        max_count: Maximum amount of feature vectors with the same drift label.
+
+    Returns:
+        modified_dataset: Data with equalized drift labels.
+    """
     modified_dataset = None
     labels = features[:, -1]
     unique_labels, counts = np.unique(labels, return_counts=True)
@@ -327,22 +461,44 @@ def equalize_classes(features, max_count=500):
             continue
         modified_dataset = np.vstack(
             (modified_dataset, features[chosen_indices, :]))
+
     return modified_dataset
 
 
-# Concatenate feature vectors into one vector
 def concat_feature(data, idx, sequence_len=2):
+    """
+    Concatenate feature vectors into one vector in one instance.
 
+    Args:
+        data: Input data that consists of feature vectors.
+        idx: Index of a feature vector from which the concatenation starts.
+        sequence_len: Number of past feature vectors for concatenating into a current feature vector.
+
+    Returns:
+        output: Data with a concatenated vector.
+    """
     if idx < len(data) - sequence_len - 1:
         return data[idx:idx + sequence_len + 1, :].flatten()
     if idx == len(data) - sequence_len - 1:
         return data[idx:, :].flatten()
-    return np.hstack((data[idx:idx + sequence_len, :].flatten(), data[sequence_length - 1]))
+    output = np.hstack(
+        (data[idx:idx + sequence_len, :].flatten(), data[sequence_length - 1]))
+
+    return output
 
 
-# Equalize before concatenating
 def equalize_and_concatenate(features, max_count=500, sequence_len=2):
+    """
+    Equalizes data and then concatenates feature vectors into one vector for the entire dataset.
 
+    Args:
+        features: Input data that consists of feature vectors.
+        max_count: Maximum amount of feature vectors with the same drift label.
+        sequence_len: Number of past feature vectors for concatenating into a current feature vector.
+
+    Returns:
+        output: Equalized data with concatenated feature vectors.
+    """
     modified_features = features[:, :-1]
     modified_features = np.vstack(
         (np.zeros((sequence_len - 1, len(modified_features[sequence_len]))), modified_features))
@@ -351,7 +507,7 @@ def equalize_and_concatenate(features, max_count=500, sequence_len=2):
     labels[-1] = features[0][-1]
 
     unique_labels, counts = np.unique(labels, return_counts=True)
-    min_count = min(min(counts), max_count)  # change max_count?
+    min_count = min(min(counts), max_count)
 
     if min_count == max(counts) == max_count:
         print_(f'counts = {counts} (min_count = {min_count})')
@@ -377,7 +533,28 @@ def equalize_and_concatenate(features, max_count=500, sequence_len=2):
 def train_gan(features, device, discriminator, generator, epochs=100, steps_generator=100, weight_decay=0.0005,
               max_label=1, generator_batch_size=1, seed=0, batch_size=8, lr=0.0001, momentum=0.9, equalize=True,
               sequence_length=2):
+    """
+    Trains GAN on labelled data.
 
+    Args:
+        features: Training dataset with drift labels.
+        device: CPU or GPU.
+        discriminator: The discriminator model.
+        generator: The generator model.
+        epochs: Number of epochs for GAN training.
+        steps_generator: Number of steps for generator training.
+        weight_decay: Weight decay for the optimization algorithm.
+        max_label: Generator label for new drifts.
+        generator_batch_size: Batch size for the generator's training data.
+        seed: Seed for PyTorch and NumPy.
+        batch_size: Batch size for the discriminator's training data.
+        equalize: ``True`` if data for the generator needs to be equalized.
+        sequence_length: Number of past feature vectors for concatenating into a current feature vector.
+
+    Returns:
+        discriminator: The trained discriminator model.
+        generator: The trained generator model.
+    """
     # Set the seed for torch and numpy
     torch.manual_seed(seed=seed)
     torch.cuda.manual_seed(seed=seed)
@@ -417,7 +594,6 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
     # This is the label for new drifts (any input other than the currently learned distributions)
     generator_label = ones * max_label
 
-    # print_(f'training GAN...')
     for epochs_trained in range(epochs):
         discriminator = train_discriminator(real_data=real_data, fake_data=generator_data, discriminator=discriminator,
                                             generator=generator, optimizer=optimizer_discriminator,
@@ -434,20 +610,24 @@ def train_gan(features, device, discriminator, generator, epochs=100, steps_gene
 def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, test_batch_size=4,
                   seed=0, batch_size=8, lr=0.001, momentum=0.9, weight_decay=0.0005,
                   generator_batch_size=1, sequence_length=2):
+    """
+    Detects concept drift in data from orbits.
 
-    # Standardization
-    # features = df.iloc[:, 1:-2].values
-    # print_(f'features:\n{features[:5]}')
-    # print_(f'mean:\n{features.mean(axis=0)}')
+    Args:
+        df: DataFrame with loaded orbit data.
+        device: CPU or GPU.
+        epochs: Number of epochs for GAN training.
+        steps_generator: Number of steps for generator training.
+        equalize: ``True`` if data for the generator needs to be equalized.
+        test_batch_size: Number of instances that should have the same label for a drift to be confirmed.
+        seed: Seed for PyTorch and NumPy.
+        weight_decay: Weight decay for the optimization algorithm.
+        generator_batch_size: Batch size for the generator's training data.
+        sequence_length: Number of past feature vectors for concatenating into a current feature vector.
 
-    # mean = np.mean(features, axis=1).reshape(features.shape[0], 1)
-    # std = np.std(features, axis=1).reshape(features.shape[0], 1)
-    # features = (features - mean) / (std + 0.000001)
-    # print_(f'standardized:\n{features[:5]}')
-    # print_(f'mean:\n{features.mean(axis=0)}')
-    # print_(f'total size = {len(features)}')
-
-    # df = df.loc[df['LABEL'] == 0]
+    Returns:
+        drift_orbits: Orbit numbers with assigned drift labels.
+    """
     df_features = df.iloc[:, 1:-2]
     print_(f'features:\n{df.columns}')
 
@@ -482,9 +662,6 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     cur_orbit = 1
     drift_labels = []
     drift_orbits = {orbit_numbers[0]: 1}
-    # queue_idx = orbits_idx[1:100].copy()
-    # queue_labels = 12*[1] + 14*[2] + 15*[3] + \
-    #     8*[4] + 13*[5] + 14*[6] + 12*[7] + 11*[8]
 
     random.seed(seed)
     torch.manual_seed(seed=seed)
@@ -517,8 +694,6 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     initial_epochs = epochs * 2
 
     # Create training dataset
-    # print_(f'training dataset indices = {drift_indices}')
-    # print_(f'training dataset labels  = {drift_labels+temp_label}')
     training_dataset = create_training_dataset(
         dataset=features, indices=drift_indices, drift_labels=drift_labels+temp_label)
 
@@ -557,17 +732,12 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             max_idx = max_idx.cpu().detach().numpy()
 
         if not np.array_equal(max_idx, max_idx_prev):
-            # print_(
-            #     f'max_idx {max_idx_prev} -> {max_idx} [{index}]', with_date=False)
-            # print_(f'prob = {prob.cpu().detach().numpy()}')
-            # print_(f'discriminator output:\n{result.cpu().detach().numpy()}')
             max_idx_prev = max_idx
 
         drift_found = False
 
         if np.all(max_idx[1:] != max_idx[0]) or max_idx[0] == 0:
 
-            # Should not be reached
             if index - no_drifts >= 500000:
                 print_(
                     f'no drifts detected from index {no_drifts} to {index}, terminating')
@@ -587,7 +757,6 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             continue
 
         # Drift detected
-        # End of orbit scenario
         if index >= orbits_idx[cur_orbit][1]:
 
             next_drift = drift_orbits[orbit_numbers[cur_orbit-1]]
@@ -602,52 +771,27 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         else:
 
             next_drift = max_idx[0]
-            # print_(f'orbit {cur_orbit} / {len(orbit_numbers)}')
-            # print_(
-            #     f'{index} / {orbits_idx[-1][-1]} {100 * index / orbits_idx[-1][-1]:.2f}%')
             next_label = generator_label
 
             if temp_label[0] != 0:
-                # add the index of the previous drift if it was a recurring drift
+                # Add the index of the previous drift if it was a recurring drift
                 next_label = temp_label[0]
-                # print_(f'recurring drift {next_label} (temp_label[0])')
-            # else:
-            #     print_(f'new drift {next_label} (generator_label)')
-
-            # Drift in the middle
-            # if no_drifts != index:
-            #     print_(
-            #         f'no drifts detected from index {no_drifts} to {index}')
-
-            # Drift at the start
-            # else:
-            #     print_(
-            #         f'detected drift at the start of orbit {orbit_numbers[cur_orbit]} - {orbits_idx[cur_orbit]}')
 
         max_idx = max_idx[0]
         prob = prob[0]
         if max_idx != generator_label:
             # Increase the max_idx by 1 if it is above the previous drift
             if temp_label[0] <= max_idx and temp_label[0] != 0:
-                # print_(
-                #     f'temp_label[0] {temp_label[0]} <= max_idx {max_idx}, max_idx += 1')
                 if next_drift == max_idx and end_orbit != cur_orbit + 1:
                     next_drift += 1
                 max_idx += 1
-            # We reset the top layer predictions because the drift order has changed and the network should be retrained
-            # print_(
-            #     f'discriminator.reset_top_layer(), temp_label[0] {temp_label[0]} -> max_idx {max_idx}')
+            # Reset the top layer predictions because the drift order has changed and the network should be retrained
             temp_label = [max_idx]
             discriminator.reset_top_layer()
             discriminator = discriminator.to(device)
-            # print_(
-            #     f'Previous drift {max_idx} occured at {index} (orbits {orbit_numbers[cur_orbit]} - {orbit_numbers[end_orbit-1]})')
 
         else:
-            # If this is a new drift, label for the previous drift training dataset is the previous highest label
-            # which is the generator label
-            # print_(
-            #     f'discriminator.update(), temp_label[0] {temp_label[0]} -> 0, generator_label {generator_label} += 1')
+            # If this is a new drift, increase the generator label
             temp_label = [0]
             discriminator.update()
             discriminator = discriminator.to(device)
@@ -696,9 +840,6 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
         index = orbits_idx[end_orbit-1][1]
         no_drifts = index
-        # if cur_orbit + orbits_max < len(orbit_numbers):
-        #     print_(
-        #         f'orbit change {orbit_numbers[cur_orbit]} -> {orbit_numbers[cur_orbit+orbits_max]}')
 
         cur_orbit = end_orbit
         end_orbit = cur_orbit + 1
@@ -708,14 +849,12 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
             orbits_max = random.randrange(14, 22)
 
         while end_orbit < len(orbit_numbers):
-            # 6 - max difference between orbits in the same drift
+            # 6 - max difference between orbit numbers in the same drift
             if abs(orbit_numbers[end_orbit] - orbit_numbers[end_orbit-1]) > 6:
                 break
             if orbit_numbers[end_orbit] - orbit_numbers[cur_orbit] >= orbits_max:
                 break
             end_orbit += 1
-
-        # print_('===========================')
 
     drift_labels = [1] + drift_labels
     print_(
@@ -735,58 +874,45 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     return drift_orbits
 
 
-# %% Setup
-
+# Command line arguments
 logs = sys.argv[1]
 dataset = int(sys.argv[2])
 if not os.path.exists(logs):
     os.makedirs(logs)
 
+# Parameters
 fptr = open(f'{logs}/log_set{dataset}.txt', 'w')
 print_(f'dataset: {dataset}')
 
-# Set the number of epochs the GAN should be trained
 epochs = 20  # 50
 print_(f'epochs: {epochs}')
 
-# Equalize the number of training instances across different drifts
 equalize = True
 
-# How far in to the past is required for generating current data
 sequence_length = 10
 print_(f'sequence_length: {sequence_length}')
-# For the collate function to split the rows accordingly
 seq_len = sequence_length
 
-# Steps for generator training
 steps_generator = 20
 print_(f'steps_generator: {steps_generator}')
 
-# Set the batch_size for DataLoader
 batch_size = 8
 print_(f'batch_size: {batch_size}')
 generator_batch_size = 2
 print_(f'generator_batch_size: {generator_batch_size}')
-# Number of instances that should have the same label for a drift to be confirmed
 test_batch_size = 4
 print_(f'test_batch_size: {test_batch_size}')
-
-# Set the learning rate
-lr = 0.025  # Changed to Adadelta with a default learning rate of 1
+lr = 0.025
 print_(f'learning rate: {lr}')
-
-# Set the weight decay rate
 weight_decay = 0.000000
 print_(f'weight_decay: {weight_decay}')
 
-# Set a random seed for the experiment
 seed = np.random.randint(65536)
 
 device_name = 'cuda'
 if len(sys.argv) > 3:
     device_name = sys.argv[3]
 
-# Get the device the experiment will run on
 device = torch.device(device_name if torch.cuda.is_available() else 'cpu')
 
 print_(
@@ -803,12 +929,11 @@ wandb.init(project="gan", entity="irodionr", config={
     "learning_rate": 0.025
 })
 
-# %% Load data
-
+# Selecting and loading data
 files = glob.glob('data/orbits/*.csv')
 files.sort(key=lambda x: int(''.join(i for i in x if i.isdigit())))
 
-if dataset == 1:
+if dataset == 1 or len(files) < 1000:
     pass  # full dataset
 elif dataset == 2:
     files = files[460:760]
@@ -822,15 +947,11 @@ elif dataset == 5:
     idx = random.randrange(0, len(files) - 1000)
     files = files[idx:idx+1000]
 
-
-# %% Select data
-
 df = load_data(files, add_known_drifts=True)
 df = select_features(df, 'data/features_gan.txt')
 print_(f'selected data:\n{df.columns}')
 
-# %% Training GAN
-
+# Drift detection
 t1 = time.perf_counter()
 drift_orbits = detect_drifts(df=df, device=device, epochs=epochs, steps_generator=steps_generator,
                              seed=seed, batch_size=batch_size, lr=lr, momentum=0.9,
@@ -840,12 +961,11 @@ drift_orbits = detect_drifts(df=df, device=device, epochs=epochs, steps_generato
 t2 = time.perf_counter()
 print_(f'drift detection time is {t2 - t1:.2f} seconds')
 
+# Output drifts and orbits
 with open(f'{logs}/drifts_set{dataset}.txt', 'w') as drifts_file_log:
     for orbit in drift_orbits:
         drifts_file_log.write(
             f'{orbit} {drift_orbits[orbit]}\n')
-
-# %% Close log file
 
 if fptr is not None:
     fptr.close()
