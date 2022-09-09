@@ -710,11 +710,11 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
     no_drifts = index
     max_idx_prev = np.array(test_batch_size * [0])
-    end_orbit = 13
     prev_drift = -1
 
     _, _, known_drifts = next(os.walk('data/drifts/'))
     known_drift_count = len(known_drifts)
+    end_orbit = min(13, known_drift_count)
 
     print_(
         f'starting drift detection from index = {index} (orbits {orbit_numbers[cur_orbit]} - {orbit_numbers[end_orbit-1]})')
