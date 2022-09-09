@@ -116,7 +116,7 @@ Plots are distributed in subdirectories like `test_true`, `test_pred`, `test_all
 
 After crossing prediction is finished, its performance values and plots can be used for further analysis.
 
-Project Organization
+Project organization
 ------------
 
     ├── README.md                  <- Top-level README for using this project
