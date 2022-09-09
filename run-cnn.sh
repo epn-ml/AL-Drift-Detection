@@ -1,7 +1,7 @@
 #!/bin/bash
 log="logs/cnn_$(date '+%Y-%m-%d_%H-%M-%S')"
 echo $log
-for i in {26..50}; do
-    echo "max_orbits $i/50"
-    python cnn.py $log 6 $1 $i
+for i in {1..5}; do
+    echo "$i/5"
+    python cnn.py $log $i $1 $2
 done

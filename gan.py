@@ -713,6 +713,9 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     end_orbit = 13
     prev_drift = -1
 
+    _, _, known_drifts = next(os.walk('data/drifts/'))
+    known_drift_count = len(known_drifts)
+
     print_(
         f'starting drift detection from index = {index} (orbits {orbit_numbers[cur_orbit]} - {orbit_numbers[end_orbit-1]})')
     print_('===========================')
@@ -720,7 +723,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     while index < orbits_idx[-1][-1]:
 
         # Pre-train
-        if cur_orbit < 100:
+        if cur_orbit < known_drift_count:
             max_idx = max_idx_prev + 1
             prob = np.full(max_idx.shape, 1)
         else:
@@ -843,7 +846,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
 
         cur_orbit = end_orbit
         end_orbit = cur_orbit + 1
-        if cur_orbit < 100:
+        if cur_orbit < known_drift_count:
             orbits_max = 21
         else:
             orbits_max = random.randrange(14, 22)
@@ -933,7 +936,7 @@ wandb.init(project="gan", entity="irodionr", config={
 files = glob.glob('data/orbits/*.csv')
 files.sort(key=lambda x: int(''.join(i for i in x if i.isdigit())))
 
-if dataset == 1 or len(files) < 1000:
+if len(files) < 1000:
     pass  # full dataset
 elif dataset == 2:
     files = files[460:760]
@@ -946,6 +949,8 @@ elif dataset == 4:
 elif dataset == 5:
     idx = random.randrange(0, len(files) - 1000)
     files = files[idx:idx+1000]
+else:  # dataset == 1
+    pass
 
 df = load_data(files, add_known_drifts=True)
 df = select_features(df, 'data/features_gan.txt')
