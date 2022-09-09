@@ -78,7 +78,11 @@ def select_features(df, features_file):
                 'RHO', 'RXY',
                 'X', 'Y', 'Z',
                 'VX', 'VY', 'VZ', 'VABS',
-                'D', 'COSALPHA', 'EXTREMA']
+                'D', 'COSALPHA', 'EXTREMA',
+                'X_AB', 'Y_AB', 'Z_AB',
+                'BX_AB', 'BY_AB', 'BZ_AB',
+                'DBX_AB', 'DBY_AB', 'DBZ_AB',
+                'RHO_AB', 'RXY_AB']
 
     for col in cols:
         if col in drop_col:
