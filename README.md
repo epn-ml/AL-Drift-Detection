@@ -123,7 +123,9 @@ Project Organization
     ├── data
     │   ├── drifts                 <- Orbit files with initially known drifts
     │   ├── orbits                 <- Orbit files for drift detection
-    |   └── drifts_set1.txt        <- Detected drifts for use during crossing prediction
+    |   ├── drifts_set1.txt        <- Detected drifts for use during crossing prediction
+    |   ├── features_cnn.txt       <- Selected features for crossing prediction
+    |   └── features_gan.txt       <- Selected features for drift detection
     │
     ├── logs                       <- Generated logs
     |   ├── cnn                    <- Logs for crossing prediction
