@@ -75,7 +75,6 @@ def select_features(df, features_file):
         cols = features.read().splitlines()
 
     drop_col = ['Unnamed: 0',
-                'TIME_TAG', 'NAVG',
                 'X_MSO', 'Y_MSO', 'Z_MSO',
                 'BX_MSO', 'BY_MSO', 'BZ_MSO',
                 'DBX_MSO', 'DBY_MSO', 'DBZ_MSO',
@@ -98,6 +97,10 @@ def select_features(df, features_file):
         drop_col.remove('Unnamed: 0')
 
     df = df.drop(drop_col, axis=1)
+    if 'TIME_TAG' in df:
+        df.drop('TIME_TAG', axis=1)
+    if 'NAVG' in df:
+        df.drop('NAVG', axis=1)
 
     return df
 
