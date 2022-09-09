@@ -51,7 +51,7 @@ def load_data(files, add_known_drifts=False):
     for f in files:
         df_orbit = pd.read_csv(f, index_col=None, header=0).dropna()
         if not 'ORBIT' in df_orbit:
-            orbit = int(f.split('_')[1].split['.'][0])
+            orbit = int(f.split('_')[1].split('.')[0])
             df_orbit['ORBIT'] = orbit
         df_list.append(df_orbit)
 
