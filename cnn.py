@@ -465,10 +465,12 @@ wandb.init(project="cnn", entity="irodionr", config={
 
 # Loading data
 drift_orbits = load_drifts(f'data/drifts_set{dataset}.txt')
+_, _, known_drifts = next(os.walk('data/drifts/'))
+known_drift_count = len(known_drifts)
 files = []
 cur_orbit = 0
 for orb in drift_orbits:
-    if cur_orbit < 100:
+    if cur_orbit < known_drift_count:
         files.append(f'data/drifts/df_{orb}.csv')
         print_(f'data/drifts/df_{orb}.csv', with_date=False)
     else:
