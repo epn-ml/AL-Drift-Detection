@@ -134,7 +134,7 @@ Project Organization
 	|   |
     |   └── gan                    <- Logs for drift detection
 	|       ├── drifts_set1.txt    <- Detected drift for each orbit
-	|       └── log.txt            <- Text log
+	|       └── log_set1.txt       <- Text log
     │
     ├── cnn.py                     <- Main script for crossing prediction
     ├── gan.py                     <- Main script for drift detection
