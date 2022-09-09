@@ -1,0 +1,58 @@
+2022-09-09 16:25:12.392916: dataset: 1
+2022-09-09 16:25:12.393681: epochs: 20
+2022-09-09 16:25:12.394260: sequence_length: 10
+2022-09-09 16:25:12.394850: steps_generator: 20
+2022-09-09 16:25:12.395486: batch_size: 8
+2022-09-09 16:25:12.396122: generator_batch_size: 2
+2022-09-09 16:25:12.396715: test_batch_size: 4
+2022-09-09 16:25:12.397208: learning rate: 0.025
+2022-09-09 16:25:12.397641: weight_decay: 0.0
+2022-09-09 16:25:12.454414: the seed for the current execution is 8414 for MESSENGER dataset with device cuda
+2022-09-09 16:25:20.705191: selected data:
+Index(['DATE', 'BZ_MSO', 'COSALPHA', 'ORBIT', 'LABEL'], dtype='object')
+2022-09-09 16:25:20.706929: features:
+Index(['DATE', 'BZ_MSO', 'COSALPHA', 'ORBIT', 'LABEL'], dtype='object')
+2022-09-09 16:25:20.728912: rolling mean:
+     BZ_MSO  COSALPHA
+0  0.182242  0.908571
+1  0.184050  0.908571
+2  0.183463  0.908571
+3  0.183732  0.908571
+4  0.184384  0.908571
+2022-09-09 16:25:20.729499: total size = 169662
+2022-09-09 16:25:20.731567: total number of orbits = 4
+233 - (0, 42484) - (2011-07-17 18:42:44, 2011-07-18 06:30:47)
+234 - (42484, 84968) - (2011-07-18 06:30:47, 2011-07-18 18:18:50)
+380 - (84968, 127315) - (2011-09-28 16:52:26, 2011-09-29 04:38:12)
+381 - (127315, 169662) - (2011-09-29 04:38:12, 2011-09-29 16:23:58)
+2022-09-09 16:25:48.364681: starting drift detection from index = 42484 (orbits 234 - 234)
+2022-09-09 16:25:48.365408: ===========================
+2022-09-09 16:25:48.367299: 2/4 orbits 234 - 234 (1) -- drift 1, prob 1
+2022-09-09 16:26:11.077480: 4/4 orbits 380 - 381 (2) -- drift 2, prob 0.6000791788101196
+2022-09-09 16:26:33.546733: stopping drift detection, 169662 >= 169662
+2022-09-09 16:26:33.547419: len(drifts_detected) = 3
+2022-09-09 16:26:33.547929: len(drift_labels) = 3
+2022-09-09 16:26:33.548438: len(drift_indices) = 3
+indices (0, 42484) -- drift 1
+indices (42484, 84968) -- drift 1
+indices (84968, 169662) -- drift 2
+2022-09-09 16:26:33.557251: Generator(
+  (net): Sequential(
+    (0): Linear(in_features=20, out_features=128, bias=True)
+    (1): Linear(in_features=128, out_features=4096, bias=True)
+    (2): ReLU(inplace=True)
+    (3): Linear(in_features=4096, out_features=2, bias=True)
+  )
+)
+2022-09-09 16:26:33.560183: Discriminator(
+  (net): Sequential(
+    (0): Linear(in_features=2, out_features=1024, bias=True)
+    (1): Linear(in_features=1024, out_features=1024, bias=True)
+    (2): ReLU(inplace=True)
+    (3): Linear(in_features=1024, out_features=512, bias=True)
+    (4): Sigmoid()
+  )
+  (neurons): Linear(in_features=512, out_features=3, bias=True)
+  (softmax): Softmax(dim=1)
+)
+2022-09-09 16:26:33.561676: drift detection time is 72.86 seconds
