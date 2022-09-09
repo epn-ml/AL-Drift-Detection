@@ -277,12 +277,12 @@ def train_discriminator(real_data, fake_data, discriminator, generator, optimize
 
         generated_data_loss = loss_fn(
             generated_output_discriminator, generator_labels)
-        wandb.log({"generated_data_loss": generated_data_loss})
+        # wandb.log({"generated_data_loss": generated_data_loss})
 
         # Add the loss and compute back prop
         total_iter_loss = generated_data_loss + real_data_loss
         total_iter_loss.backward()
-        wandb.log({"total_discriminator_loss": total_iter_loss})
+        # wandb.log({"total_discriminator_loss": total_iter_loss})
 
         # Update parameters
         optimizer.step()
@@ -335,7 +335,7 @@ def train_generator(data_loader, discriminator, generator, optimizer, loss_fn, l
         loss_lstm = loss_mse(generated_output, target)
 
         total_generator_loss = loss_generated + loss_lstm
-        wandb.log({"total_generator_loss": total_generator_loss})
+        # wandb.log({"total_generator_loss": total_generator_loss})
 
         # Back prop and parameter update
         total_generator_loss.backward()
@@ -682,7 +682,7 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
     discriminator = Discriminator(
         inp=features.shape[1], final_layer_incoming_connections=512)
 
-    wandb.watch(discriminator)
+    # wandb.watch(discriminator)
 
     generator.move(device=device)
 
@@ -809,8 +809,8 @@ def detect_drifts(df, device, epochs=100, steps_generator=100, equalize=True, te
         prev_drift = next_drift
         print_(
             f'{end_orbit}/{len(orbit_numbers)} orbits {new_orbits[0]} - {new_orbits[-1]} ({end_orbit-cur_orbit}) -- drift {next_drift}, prob {prob}')
-        wandb.log({"orbit": end_orbit})
-        wandb.log({"drift": next_drift})
+        # wandb.log({"orbit": end_orbit})
+        # wandb.log({"drift": next_drift})
 
         drift_indices.append(
             (orbits_idx[cur_orbit][0], orbits_idx[end_orbit-1][1]))
@@ -921,16 +921,17 @@ device = torch.device(device_name if torch.cuda.is_available() else 'cpu')
 print_(
     f'the seed for the current execution is {seed} for MESSENGER dataset with device {device}')
 
-wandb.init(project="gan", entity="irodionr", config={
-    "sequence_length": 10,
-    "steps_generator": 20,
-    "batch_size": 8,
-    "generator_batch_size": 2,
-    "test_batch_size": 4,
-    "epochs": 20,
-    "weight_decay": 0.000000,
-    "learning_rate": 0.025
-})
+# Enter wandb project and entity
+# wandb.init(project="_", entity="_", config={
+#     "sequence_length": 10,
+#     "steps_generator": 20,
+#     "batch_size": 8,
+#     "generator_batch_size": 2,
+#     "test_batch_size": 4,
+#     "epochs": 20,
+#     "weight_decay": 0.000000,
+#     "learning_rate": 0.025
+# })
 
 # Selecting and loading data
 files = glob.glob('data/orbits/*.csv')

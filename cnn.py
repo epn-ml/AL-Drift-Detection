@@ -454,16 +454,17 @@ if not os.path.exists(logs):
 fptr = open(f'{logs}/log_cnn_set{dataset}_{max_orbits}.txt', 'w')
 print_(f'dataset: {dataset}')
 
-wandb.init(project="cnn", entity="irodionr", config={
-    "filters": 64,
-    "kernel_size": 2,
-    "units_lstm": 64,
-    "units_dense": 16,
-    "batch_size": 128,
-    "epochs": 10,
-    "max_orbits": max_orbits,
-    "learning_rate": 0.001
-})
+# Enter wandb project and entity
+# wandb.init(project="_", entity="_", config={
+#     "filters": 64,
+#     "kernel_size": 2,
+#     "units_lstm": 64,
+#     "units_dense": 16,
+#     "batch_size": 128,
+#     "epochs": 10,
+#     "max_orbits": max_orbits,
+#     "learning_rate": 0.001
+# })
 
 # Loading data
 if not os.path.exists(f'data/drifts_set{dataset}.txt'):
@@ -552,7 +553,7 @@ if not total_train:
     df.loc[df['ORBIT'] == total_train[0], 'SPLIT'] = 'train'
     print_(f'add 1 training orbit')
 
-wandb.log({"training_orbits": len(total_train)})
+# wandb.log({"training_orbits": len(total_train)})
 print_(f'total training orbits: {len(total_train)}')
 print_(f'{total_train}')
 print_(f'total testing orbits: {len(total_test)}')
@@ -650,7 +651,7 @@ print_(
 
 auc_value = accuracy_score(y_true=labels_test_true, y_pred=labels_test_pred)
 print_(f'accuracy value is {auc_value} for testing dataset')
-wandb.log({"macro accuracy": auc_value})
+# wandb.log({"macro accuracy": auc_value})
 prf = precision_recall_fscore_support(
     labels_test_true, labels_test_pred, average=None, labels=np.unique(labels_test_true))
 er_macro, er = get_error_rate(labels_test_true, labels_test_pred)
@@ -664,16 +665,16 @@ print_(f'f-score: {prf[2]}')
 print_(f'support: {prf[3]}')
 print_(
     f'confusion matrix:\n{confusion_matrix(labels_test_true, labels_test_pred)}')
-wandb.log({"SK accuracy": acc[1]})
-wandb.log({"MP accuracy": acc[3]})
-wandb.log({"SK error rate": er[1]})
-wandb.log({"MP error rate": er[3]})
-wandb.log({"SK precision": prf[0][1]})
-wandb.log({"MP precision": prf[0][3]})
-wandb.log({"SK recall": prf[1][1]})
-wandb.log({"MP recall": prf[1][3]})
-wandb.log({"SK f-score": prf[2][1]})
-wandb.log({"MP f-score": prf[2][3]})
+# wandb.log({"SK accuracy": acc[1]})
+# wandb.log({"MP accuracy": acc[3]})
+# wandb.log({"SK error rate": er[1]})
+# wandb.log({"MP error rate": er[3]})
+# wandb.log({"SK precision": prf[0][1]})
+# wandb.log({"MP precision": prf[0][3]})
+# wandb.log({"SK recall": prf[1][1]})
+# wandb.log({"MP recall": prf[1][3]})
+# wandb.log({"SK f-score": prf[2][1]})
+# wandb.log({"MP f-score": prf[2][3]})
 
 # Plotting
 if plots != '5':
