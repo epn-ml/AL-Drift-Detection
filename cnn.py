@@ -466,7 +466,10 @@ wandb.init(project="cnn", entity="irodionr", config={
 })
 
 # Loading data
-drift_orbits = load_drifts(f'data/drifts_set{dataset}.txt')
+if not os.path.exists(f'data/drifts_set{dataset}.txt'):
+    drift_orbits = load_drifts(f'data/drifts_set1.txt')
+else:
+    drift_orbits = load_drifts(f'data/drifts_set{dataset}.txt')
 _, _, known_drifts = next(os.walk('data/drifts/'))
 known_drift_count = len(known_drifts)
 files = []
