@@ -221,7 +221,7 @@ def train_clf(df):
     clf.fit(x=x_train, y=y_train,
             batch_size=16,
             epochs=10,
-            callbacks=[WandbCallback()],
+            # callbacks=[WandbCallback()],
             class_weight={k: v for k,
                           v in enumerate(weights)},
             verbose=2)
