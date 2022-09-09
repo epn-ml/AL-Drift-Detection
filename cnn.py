@@ -243,28 +243,30 @@ def train_clf(df):
 
     # Testing on validation set
     df_test = df.loc[df['SPLIT'] == 'valid']
-    orbit_numbers_test = pd.unique(df_test['ORBIT']).tolist()
-    print_(f'{len(orbit_numbers_test)} validation orbits')
 
-    features_test = df_test.iloc[:, 1:-5].values
-    x_test = np.array(features_test, copy=True)
-    x_test = x_test.reshape(-1, x_test.shape[1], 1)
+    if len(df_test.index) > 0:
+        orbit_numbers_test = pd.unique(df_test['ORBIT']).tolist()
+        print_(f'{len(orbit_numbers_test)} validation orbits')
 
-    # Testing evaluation
-    labels_pred_test = clf.predict(x_test)
-    labels_pred_test = labels_pred_test.argmax(axis=-1)
-    labels_pred_test = smooth(labels_pred_test)
-    df.loc[df['SPLIT'] == 'valid', 'LABEL_PRED'] = labels_pred_test
-    y_test = df_test['LABEL'].tolist()
-    prf_test = precision_recall_fscore_support(
-        y_true=y_test, y_pred=labels_pred_test, average=None, labels=np.unique(y_test))
-    print_(f'validation precision: {prf_test[0]}')
-    print_(f'validation recall: {prf_test[1]}')
-    print_(f'validation f-score: {prf_test[2]}')
+        features_test = df_test.iloc[:, 1:-5].values
+        x_test = np.array(features_test, copy=True)
+        x_test = x_test.reshape(-1, x_test.shape[1], 1)
+
+        # Testing evaluation
+        labels_pred_test = clf.predict(x_test)
+        labels_pred_test = labels_pred_test.argmax(axis=-1)
+        labels_pred_test = smooth(labels_pred_test)
+        df.loc[df['SPLIT'] == 'valid', 'LABEL_PRED'] = labels_pred_test
+        y_test = df_test['LABEL'].tolist()
+        prf_test = precision_recall_fscore_support(
+            y_true=y_test, y_pred=labels_pred_test, average=None, labels=np.unique(y_test))
+        print_(f'validation precision: {prf_test[0]}')
+        print_(f'validation recall: {prf_test[1]}')
+        print_(f'validation f-score: {prf_test[2]}')
+
+        labels_pred = df['LABEL_PRED']
 
     print_(f'========================================')
-
-    labels_pred = df['LABEL_PRED']
 
     return labels_pred, clf
 
