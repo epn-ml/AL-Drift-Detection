@@ -68,8 +68,17 @@ def select_features(df, features_file):
     with open(features_file, 'r') as features:
         cols = features.read().splitlines()
 
-    drop_col = ['Unnamed: 0', 'X_MSO', 'Y_MSO', 'Z_MSO', 'BX_MSO', 'BY_MSO', 'BZ_MSO', 'DBX_MSO', 'DBY_MSO', 'DBZ_MSO', 'RHO_DIPOLE', 'PHI_DIPOLE', 'THETA_DIPOLE',
-                'BABS_DIPOLE', 'BX_DIPOLE', 'BY_DIPOLE', 'BZ_DIPOLE', 'RHO', 'RXY', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ', 'VABS', 'D', 'COSALPHA', 'EXTREMA']
+    drop_col = ['Unnamed: 0',
+                'TIME_TAG', 'NAVG',
+                'X_MSO', 'Y_MSO', 'Z_MSO',
+                'BX_MSO', 'BY_MSO', 'BZ_MSO',
+                'DBX_MSO', 'DBY_MSO', 'DBZ_MSO',
+                'RHO_DIPOLE', 'PHI_DIPOLE', 'THETA_DIPOLE',
+                'BABS_DIPOLE', 'BX_DIPOLE', 'BY_DIPOLE', 'BZ_DIPOLE',
+                'RHO', 'RXY',
+                'X', 'Y', 'Z',
+                'VX', 'VY', 'VZ', 'VABS',
+                'D', 'COSALPHA', 'EXTREMA']
 
     for col in cols:
         if col in drop_col:
