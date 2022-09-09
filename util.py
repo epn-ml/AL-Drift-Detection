@@ -83,11 +83,7 @@ def select_features(df, features_file):
                 'RHO', 'RXY',
                 'X', 'Y', 'Z',
                 'VX', 'VY', 'VZ', 'VABS',
-                'D', 'COSALPHA', 'EXTREMA',
-                'X_AB', 'Y_AB', 'Z_AB',
-                'BX_AB', 'BY_AB', 'BZ_AB',
-                'DBX_AB', 'DBY_AB', 'DBZ_AB',
-                'RHO_AB', 'RXY_AB']
+                'D', 'COSALPHA', 'EXTREMA']
 
     for col in cols:
         if col in drop_col:
@@ -97,10 +93,7 @@ def select_features(df, features_file):
         drop_col.remove('Unnamed: 0')
 
     df = df.drop(drop_col, axis=1)
-    if 'TIME_TAG' in df:
-        df.drop('TIME_TAG', axis=1)
-    if 'NAVG' in df:
-        df.drop('NAVG', axis=1)
+    df = df.dropna(axis=1)
 
     return df
 
