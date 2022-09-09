@@ -19,7 +19,7 @@ Before starting drift detection, orbits with initially known drifts need to be p
 - 1507-1526
 - 1560-1577
 
-All files corresponding to these orbits need to be placed in `data/drifts/`. Program was tested with 8 groups of orbits with known drifts, consisting of the following 100 orbits:
+All files corresponding to these orbits need to be placed in `data/drifts/`. The format of orbit files is `df_N.csv`, where `N` is the orbit number. Program was tested with 8 groups of orbits with known drifts, consisting of the following 100 orbits:
 
 ```
 1383  1464  1497  381  558  626
