@@ -142,6 +142,7 @@ Project organization
 	|   |   └── log_cnn_set1.txt   <- Text log
 	|   |
     |   └── gan                    <- Logs for drift detection
+    |       ├── drifts_all.txt     <- Catalogue of detected drifts for all available orbits.
 	|       ├── drifts_set1.txt    <- Detected drift for each orbit
 	|       └── log_set1.txt       <- Text log
     │
