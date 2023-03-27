@@ -22,23 +22,30 @@ Before starting drift detection, orbits with initially known drifts need to be p
 All files corresponding to these orbits need to be placed in `data/drifts/`. The format of orbit files is `df_N.csv`, where `N` is the orbit number. Program was tested with 8 groups of orbits with known drifts, consisting of the following 100 orbits:
 
 ```
-1383  1464  1497  381  558  626
-1384  1465  1498  382  559  627
-1385  1466  1499  384  560  751
-1386  1467  233   387  561  752
-1387  1468  234   388  562  753
-1388  1469  235   389  564  754
-1389  1470  236   390  565  755
-1390  1471  237   391  566  756
-1391  1474  238   394  567  757
-1392  1489  239   396  569  758
-1393  1490  240   397  570  759
-1394  1491  241   398  607  760
-1395  1492  242   399  612  761
-1396  1493  244   553  613  762
-1460  1494  245   554  619  763
-1461  1495  247   556  621
-1462  1496  380   557  625
+1383  1470  242   558  754  
+1384  1471  244   559  755  
+1385  1474  245   560  756  
+1386  ----  247   561  757  
+1387  1489  ----  562  758  
+1388  1490  380   564  759  
+1389  1491  381   565  760  
+1390  1492  382   566  761  
+1391  1493  384   567  762  
+1392  1494  387   569  763  
+1393  1495  388   570  
+1394  1496  389   ---- 
+1395  1497  390   607  
+1396  1498  391   612  
+----  1499  394   613  
+1460  ----  396   619  
+1461  233   397   621  
+1462  234   398   625  
+1464  235   399   626  
+1465  236   ----  627  
+1466  237   553   ---- 
+1467  239   554   751  
+1468  240   556   752  
+1469  241   557   753  
 ```
 
 All other orbits for drift detection and crossing prediction need to be put in `data/orbits/`. Orbits with known drifts from `data/drifts/` are included automatically, so their files do not need to be added to `data/orbits/` again. Program was tested on datasets of different sizes between 100 to 3000 orbits.
@@ -82,6 +89,8 @@ File `drifts_set1.txt` contains orbit numbers and drift labels assigned to them,
 37 3
 38 3
 ```
+
+A catalogue of drift predictions for a full set of avaiable orbits is stored in `drifts_all.txt`.
 
 Crossing prediction
 ------------
